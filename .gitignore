@@ -1,0 +1,13 @@
+# Godot cache and editor data
+.godot/
+*.translation
+
+# Build output
+build/
+*.apk
+*.aab
+*.idsig
+
+# Never commit release keystores
+*.keystore
+*.jks
