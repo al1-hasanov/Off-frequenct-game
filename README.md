@@ -1,4 +1,4 @@
-# Off Frequency — v0.3
+# Off Frequency — v0.3.1
 
 A 2D sci-fi point-and-click mystery for Android (iOS later), built in **Godot 4.7** with GDScript.
 The full story is in the *Off Frequency — Story Bible* doc; this build covers the prologue, Act 1 and Act 2.
@@ -8,6 +8,25 @@ The full story is in the *Off Frequency — Story Bible* doc; this build covers 
 ## What's in v0.3
 
 About 70–80 minutes of play. Both branches of Choice 1 and both of Choice 2, from the 1980 snowfield to the mine under the mountain.
+
+### New in v0.3.1: chapter select (debug)
+
+The title screen has a **Chapters (debug)** button (debug builds only, which includes this APK). Pick a tab (Prologue, Act 1, Act 2), set how **Choice 1** and **Choice 2** went, and tap a chapter. You start there with the story set exactly as a full playthrough reached it: inventory, flags, frequency, `FRACTURE`, clock, emergency lighting. Jumping replaces your save, so **Continue** resumes from the chapter.
+
+| | Starts in | | | Starts in |
+| --- | --- | --- | --- | --- |
+| P1 The snowfield, 1980 | snowfield (new game) | | 2.1 Main Street | Main Street, arriving |
+| P2 Night shift | main corridor, 1:40 | | 2.2 Pike Radio | June's shop |
+| P3 2:14 AM | receiver room, fuse in hand | | 2.3 Cal's crystal | Main Street, after June's diagnosis |
+| 1.2 The body | control room | | 2.4 Eighty-One | Ash Street, radio repaired |
+| 1.3 The phone | lobby | | 2.5 The Lantern | the diner |
+| 1.4 The first crossing | corridor, calls made | | 2.6 Snowfield, 1980 | frequency 12, with Ma's truck keys |
+| 1.5 Light keeps you home | corridor, back from 01 | | 2.7 The mine tunnel | the tunnel mouth |
+| 1.6 Tomas's box | basement | | | |
+| 1.7 The garage | garage | | | |
+| 1.8 The road down | the snowcat, on 03 | | | |
+
+Choice 1 matters from 1.2 on; Choice 2 only for 2.7. The starting states are recorded from the automated playthroughs (see Testing), so they stay correct as the game changes: rerun and regenerate.
 
 ### New in v0.3: Act 2, "The overlap"
 
@@ -57,7 +76,7 @@ Branch differences: cutting the power switches home to red emergency light, leav
 
 ## Play it
 
-**On Android:** copy `OffFrequency-v0.3-debug.apk` to the phone, open it, and allow "Install unknown apps" when asked. It installs over earlier versions and keeps your save. Needs Android 7.0 or newer. It's a debug build, so it's for testing, not the Play Store.
+**On Android:** copy `OffFrequency-v0.3.1-debug.apk` to the phone, open it, and allow "Install unknown apps" when asked. It installs over earlier versions and keeps your save. Needs Android 7.0 or newer. It's a debug build, so it's for testing, not the Play Store.
 
 **On your computer:** download Godot 4.7 (the standard build, not .NET), choose *Import*, pick this folder's `project.godot`, then press **F5**.
 
@@ -79,6 +98,8 @@ scripts/
                            document reader, glitch effect, fades, menus
   tuner_ui.gd              Tomas's radio: the dial, bands, station sounds, lock lamp, hold mode
   story.gd                 Works out the objective and the ? button's hint from the flags
+  chapters.gd              Debug chapter select: the chapter list and lookups
+  chapter_states.gd        GENERATED: each chapter's starting state (tools/gen_chapters.py)
   room.gd                  Base class for every screen: hotspots, walking, frequency, darkness,
                            flashlight, glow layer, hint layer
   station_room.gd          Shared look and ambience for the observatory interior
@@ -123,18 +144,33 @@ func on_hotspot(id: String) -> void:
 
 ## Testing
 
-The automated playthrough taps through the real game and checks the story state after each beat (213 checks across three runs, and every step must have a hint):
+The automated playthrough taps through the real game and checks the story state after each beat (556 checks across six runs, and every step must have a hint):
 
 ```
-godot --headless --path . -- --autotest=answer     # answer the voice, then take Tomas: Acts 1 and 2
-godot --headless --path . -- --autotest=cut        # cut the power, then leave Tomas: Acts 1 and 2
-godot --headless --path . -- --autotest=continue   # save, quit, Continue (also inside 01 and 05)
+godot --headless --path . -- --autotest=answer        # answer the voice, then take Tomas: Acts 1 and 2
+godot --headless --path . -- --autotest=cut           # cut the power, then leave Tomas
+godot --headless --path . -- --autotest=answer_leave  # answer the voice, then leave Tomas
+godot --headless --path . -- --autotest=cut_take      # cut the power, then take Tomas
+godot --headless --path . -- --autotest=continue      # save, quit, Continue (also inside 01 and 05)
+godot --headless --path . -- --autotest=chapters      # chapter select: every chapter, every choice combination
 godot --headless --path . -- --check               # compile every room script and quit
 godot --path . -- --autotest=tuner --shots=/tmp/t   # opens the Tuner in the dark garage and screenshots it
 godot --path . -- --autotest=rooms --shots=/tmp/r   # screenshots every Act 2 room
 ```
 
-Each exits with code 0 on pass, 1 on failure, so they can run in GitLab CI. Add `--shots=/some/folder` (and drop `--headless`) to also save screenshots of key moments, the Tuner and the documents.
+Each exits with code 0 on pass, 1 on failure, so they can run in GitLab CI.
+
+**Regenerating the chapter states** after changing the story: add `--chapters=FILE` to the four playthroughs, then build `scripts/chapter_states.gd` from them:
+
+```
+godot --headless --path . -- --autotest=answer       --chapters=ch_answer.json
+godot --headless --path . -- --autotest=answer_leave --chapters=ch_answer_leave.json
+godot --headless --path . -- --autotest=cut_take     --chapters=ch_cut_take.json
+godot --headless --path . -- --autotest=cut          --chapters=ch_cut.json
+python3 tools/gen_chapters.py ch_*.json
+```
+
+The playthrough marks where each chapter starts (`_mark("2.4", "ash_street")` in `autotest.gd`) and saves the state as that room loads. To add a chapter, add a `_mark` there and an entry in `Chapters.LIST`. Add `--shots=/some/folder` (and drop `--headless`) to also save screenshots of key moments, the Tuner and the documents.
 
 ## Building the APK yourself
 

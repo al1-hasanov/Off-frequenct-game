@@ -12,6 +12,7 @@ extends CanvasLayer
 signal advance
 signal chosen(index: int)
 signal menu_chosen(action: String)
+signal chapter_chosen(pick: Dictionary)
 signal doc_turn(step: int)
 ## Only used by the screenshot run: a line finished typing / buttons appeared.
 signal line_shown(speaker: String, text: String)
@@ -56,6 +57,12 @@ var doc_text: Label
 var doc_page: Label
 var doc_prev: Button
 var doc_next: Button
+var chapter_layer: ColorRect
+var _ch_grid: GridContainer
+var _ch_tabs := {}
+var _ch_tab := "Prologue"
+var _ch_answered := true
+var _ch_took := true
 
 var _typing := false
 var _type_tween: Tween
@@ -647,6 +654,8 @@ func main_menu(has_save: bool) -> String:
 	if has_save:
 		items.append(["Continue", "continue"])
 	items.append(["New game", "new"])
+	if OS.is_debug_build():
+		items.append(["Chapters (debug)", "chapters"])
 	if OS.get_name() != "iOS":
 		items.append(["Quit", "quit"])
 	for it in items:
@@ -665,6 +674,138 @@ func main_menu(has_save: bool) -> String:
 	menu_box.visible = false
 	Audio.sfx("click", -8.0)
 	return picked
+
+
+# --- chapter select (debug) ---------------------------------------------------------
+
+## Debug screen: pick a chapter and how Choice 1 and Choice 2 went.
+## Returns {id, answered, took}, or {} for Back.
+func chapter_select() -> Dictionary:
+	if chapter_layer == null:
+		_build_chapter_select()
+	_fill_chapters()
+	chapter_layer.visible = true
+	var pick: Dictionary = await chapter_chosen
+	chapter_layer.visible = false
+	Audio.sfx("click", -8.0)
+	return pick
+
+
+func _build_chapter_select() -> void:
+	chapter_layer = ColorRect.new()
+	chapter_layer.color = Color(0.015, 0.02, 0.035, 0.97)
+	chapter_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	chapter_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	chapter_layer.visible = false
+	root.add_child(chapter_layer)
+	var v := VBoxContainer.new()
+	v.anchor_left = 0.5
+	v.anchor_right = 0.5
+	v.offset_left = -600.0
+	v.offset_right = 600.0
+	v.offset_top = 22.0
+	v.add_theme_constant_override("separation", 14)
+	chapter_layer.add_child(v)
+
+	var head := HBoxContainer.new()
+	v.add_child(head)
+	var tv := VBoxContainer.new()
+	tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tv.add_theme_constant_override("separation", 0)
+	head.add_child(tv)
+	tv.add_child(_label("Chapter select", 34, C_TEXT))
+	tv.add_child(_label("Debug. Starts the chapter as a full playthrough reached it. Replaces your save.", 18, C_DIM))
+	var back := _ch_button("Back", Vector2(170, 60))
+	back.pressed.connect(func() -> void: chapter_chosen.emit({}))
+	head.add_child(back)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	v.add_child(row)
+	var tabs := ButtonGroup.new()
+	for act in Chapters.ACTS:
+		var b := _ch_button(act, Vector2(180, 56))
+		b.toggle_mode = true
+		b.button_group = tabs
+		b.button_pressed = act == _ch_tab
+		_ch_tabs[act] = b
+		b.pressed.connect(func() -> void:
+			_ch_tab = act
+			_fill_chapters())
+		row.add_child(b)
+
+	var choices := HBoxContainer.new()
+	choices.add_theme_constant_override("separation", 10)
+	v.add_child(choices)
+	_ch_toggle(choices, "Choice 1", ["Answered", "Cut the power"], _ch_answered,
+		func(first: bool) -> void: _ch_answered = first)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(24, 0)
+	choices.add_child(gap)
+	_ch_toggle(choices, "Choice 2", ["Took Tomas", "Left Tomas"], _ch_took,
+		func(first: bool) -> void: _ch_took = first)
+
+	_ch_grid = GridContainer.new()
+	_ch_grid.columns = 2
+	_ch_grid.add_theme_constant_override("h_separation", 14)
+	_ch_grid.add_theme_constant_override("v_separation", 12)
+	v.add_child(_ch_grid)
+
+
+func _ch_button(text: String, min_size: Vector2) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = min_size
+	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_font_size_override("font_size", 22)
+	return b
+
+
+## A label and two toggle buttons; `set_first(true)` when the first is picked.
+func _ch_toggle(parent: Control, title: String, names: Array, first: bool, set_first: Callable) -> void:
+	var l := _label(title, 20, C_DIM)
+	l.custom_minimum_size = Vector2(96, 0)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.size_flags_vertical = Control.SIZE_FILL
+	parent.add_child(l)
+	var group := ButtonGroup.new()
+	for i in 2:
+		var b := _ch_button(names[i], Vector2(176, 54))
+		b.toggle_mode = true
+		b.button_group = group
+		b.button_pressed = (i == 0) == first
+		b.pressed.connect(func() -> void: set_first.call(i == 0))
+		parent.add_child(b)
+
+
+func _fill_chapters() -> void:
+	for c in _ch_grid.get_children():
+		c.queue_free()
+	for ch in Chapters.in_act(_ch_tab):
+		var b := _ch_button("", Vector2(593, 96))
+		var m := VBoxContainer.new()
+		m.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		m.offset_left = 18.0
+		m.offset_right = -18.0
+		m.offset_top = 12.0
+		m.offset_bottom = -10.0
+		m.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		m.add_theme_constant_override("separation", 4)
+		b.add_child(m)
+		var top := HBoxContainer.new()
+		top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		m.add_child(top)
+		var t := _label("%s   %s" % [ch.num, ch.title], 26, C_TEXT)
+		t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		top.add_child(t)
+		var needs := Chapters.needs(ch.id)
+		if needs > 0:
+			top.add_child(_label("Choice 1" if needs == 1 else "Choices 1 + 2", 17, C_ACCENT))
+		m.add_child(_label(ch.blurb, 19, C_DIM))
+		var id: String = ch.id
+		b.pressed.connect(func() -> void:
+			chapter_chosen.emit({"id": id, "answered": _ch_answered, "took": _ch_took}))
+		_ch_grid.add_child(b)
 
 
 # --- the Tuner ---------------------------------------------------------------------

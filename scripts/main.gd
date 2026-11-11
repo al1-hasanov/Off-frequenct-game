@@ -28,6 +28,10 @@ const ROOMS := {
 	"end_card": "res://scripts/rooms/end_card.gd",
 }
 
+## Fired as a room change begins, before the new room's arrival scene runs.
+## The automated playthrough uses it to record chapter starting points.
+signal entering(id: String, entry: String)
+
 var hud: Hud
 var room: Room
 var room_id := ""
@@ -46,6 +50,7 @@ func _ready() -> void:
 
 	var test := ""
 	var shots := ""
+	var chapters_out := ""
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--check":
 			# Compile every room script with the autoloads present, then quit.
@@ -58,9 +63,12 @@ func _ready() -> void:
 			test = arg.get_slice("=", 1)
 		elif arg.begins_with("--shots="):
 			shots = arg.get_slice("=", 1)
+		elif arg.begins_with("--chapters="):
+			chapters_out = arg.get_slice("=", 1)
 	if test != "":
 		var tester: Node = load("res://scripts/autotest.gd").new()
 		tester.set("shots_dir", shots)
+		tester.set("chapters_out", chapters_out)
 		add_child(tester)
 		tester.call("start", self, test)
 	else:
@@ -108,6 +116,7 @@ func cross(freq: String, id: String, entry: String = "") -> void:
 
 
 func _go(id: String, entry: String) -> void:
+	entering.emit(id, entry)
 	busy_count += 1
 	if room != null:
 		await hud.fade_out(0.4)
@@ -145,6 +154,25 @@ func start_new_game() -> void:
 	GameState.new_game()
 	GameState.delete_save()
 	change_room("snowfield_1980")
+
+
+## Debug chapter select: jump to the start of a chapter with the story state a
+## full playthrough had at that moment (see scripts/chapters.gd).
+func start_chapter(id: String, answered: bool, took_tomas: bool) -> void:
+	var ch := Chapters.find(id)
+	var st := Chapters.state(id, answered, took_tomas)
+	busy_count += 1
+	Audio.stop_all(0.4)
+	await hud.fade_out(0.4)
+	if not ch.is_empty() and not GameState.test_mode:
+		await hud.card(str(ch.num), str(ch.title), 1.2)
+	busy_count -= 1
+	if st.is_empty():
+		start_new_game()
+		return
+	GameState.new_game()
+	GameState.apply_snapshot(st)
+	_go(GameState.room, GameState.entry)
 
 
 func continue_game() -> void:

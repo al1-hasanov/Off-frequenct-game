@@ -4,6 +4,14 @@ extends Node
 ##   godot --headless --path . -- --autotest=answer
 ##   godot --headless --path . -- --autotest=cut
 ##   godot --headless --path . -- --autotest=continue
+##   godot --headless --path . -- --autotest=answer_leave   (or cut_take)
+##   godot --headless --path . -- --autotest=chapters       (loads every chapter)
+##
+## Branches: answer = answer the voice + take Tomas, cut = cut the power +
+## leave him; answer_leave and cut_take mix the two choices the other way.
+## Add --chapters=FILE to a playthrough to write each chapter's starting
+## state to FILE (tools/gen_chapters.py turns four of those into
+## scripts/chapter_states.gd).
 ##
 ## It taps hotspots through the same code path as a player, checks the story
 ## state after each beat, and exits with code 0 on success, 1 on failure.
@@ -11,6 +19,15 @@ extends Node
 var main: Node
 var branch := ""
 var failures: Array[String] = []
+## Choice 1 (answer the voice?) and Choice 2 (take Tomas?) for this run.
+var answered := true
+var take_tomas := true
+
+## Chapter recording: each queued [chapter, room] is saved as that chapter's
+## starting state at the next room change into that room.
+var chapters_out := ""
+var _marks: Array = []
+var _snaps := {}
 
 ## Screenshot mode (needs a real renderer, not --headless):
 ##   godot --path . -- --autotest=answer --shots=/some/dir
@@ -31,6 +48,9 @@ const SHOT_LINES := [
 func start(m: Node, b: String) -> void:
 	main = m
 	branch = b
+	answered = b.begins_with("answer")
+	take_tomas = b in ["answer", "cut_take"]
+	main.entering.connect(_on_entering)
 	GameState.test_mode = true
 	GameState.use_test_paths()
 	Engine.time_scale = 8.0
@@ -61,6 +81,9 @@ func _run() -> void:
 	if branch == "rooms":
 		await _run_rooms()
 		return
+	if branch == "chapters":
+		await _run_chapters()
+		return
 
 	print("  -- P1 snowfield")
 	await _tap("truck")
@@ -68,6 +91,7 @@ func _run() -> void:
 	_expect(not GameState.has("p1_done"), "gate should not lock before talking to Tomas")
 	await _tap("tomas")
 	_expect(GameState.has("p1_talked"), "talked to Tomas")
+	_mark("P2", "corridor")
 	await _tap("padlock")
 	await _wait_room("corridor")
 	await _press_hint()
@@ -89,6 +113,7 @@ func _run() -> void:
 	await _wait_room("corridor")
 	await _tap("vending")
 	_expect(GameState.has_item("fuse"), "fuse taken from the vending machine")
+	_mark("P3", "receiver_room")
 	await _tap("receiver_door")
 	await _wait_room("receiver_room")
 	await _use("red_tape", "fuse_slot")
@@ -102,8 +127,8 @@ func _run() -> void:
 	_expect(GameState.has("heard_transmission"), "heard the transmission")
 	_expect(GameState.clock_frozen and GameState.clock_text == "2:14", "clocks frozen at 2:14")
 
-	print("  -- Act 1.1 Choice 1: ", branch)
-	if branch == "answer":
+	print("  -- Act 1.1 Choice 1: ", "answer" if answered else "cut")
+	if answered:
 		await _tap("mic")
 		_expect(GameState.story["ANSWERED"] == true, "ANSWERED = yes")
 		_expect(not GameState.emergency, "power still on")
@@ -116,6 +141,7 @@ func _run() -> void:
 	print("  -- Act 1.2 the body")
 	await _tap("door")
 	await _wait_room("corridor")
+	_mark("1.2", "control_room")
 	await _tap("control_door")
 	await _wait_room("control_room")
 	_expect(GameState.has("body_seen"), "body reveal played")
@@ -131,15 +157,16 @@ func _run() -> void:
 	_expect(GameState.load_game(), "save loads")
 	_expect(GameState.flags == flags_before, "flags survive save/load")
 	_expect(GameState.inventory == inv_before, "inventory survives save/load")
-	_expect(GameState.story["ANSWERED"] == (branch == "answer"), "ANSWERED survives save/load")
+	_expect(GameState.story["ANSWERED"] == answered, "ANSWERED survives save/load")
 
 	print("  -- Act 1.3 the phone")
 	await _tap("door")
 	await _wait_room("corridor")
+	_mark("1.3", "lobby")
 	await _tap("lobby_door")
 	await _wait_room("lobby")
 	await _tap("front_door")
-	if branch == "cut":
+	if not answered:
 		_expect(not main.room.get_hotspot("footprints").is_empty() and main.room.hotspot_enabled(main.room.get_hotspot("footprints")), "footprints visible")
 		await _tap("footprints")
 	await _tap("phone")
@@ -161,6 +188,7 @@ func _run() -> void:
 	_expect(not GameState.has("booth_open"), "booth stays locked without Sollen's keys")
 
 	print("  -- Act 1.4 the first crossing")
+	_mark("1.4", "corridor")
 	await _tap("corridor_door")
 	await _wait_room("corridor")
 	await _tap("east_wing")
@@ -191,6 +219,7 @@ func _run() -> void:
 	_expect(not main.room.is_dark(), "office light still spills into the corridor")
 	await _tap("office_door")
 	_expect(GameState.has("office_closed_01") and main.room.is_dark(), "office door shut: total darkness")
+	_mark("1.5", "corridor")
 	await _tap("fire_doors")
 	await _wait_room("corridor")
 	_expect(GameState.frequency == "H" and int(GameState.story["FRACTURE"]) == 2, "crossed home in the dark, FRACTURE = 2")
@@ -231,7 +260,7 @@ func _run() -> void:
 	await _tap("drawer")
 	_expect(GameState.has("garage_key"), "garage key from the desk drawer")
 	await _tap("lamp")
-	if branch == "answer":
+	if answered:
 		_expect(not main.room.is_dark(), "desk lamp works: the power is on")
 	else:
 		_expect(main.room.is_dark(), "desk lamp is dead: Mara cut the power")
@@ -239,6 +268,7 @@ func _run() -> void:
 	await _wait_room("east_corridor")
 
 	print("  -- Act 1.5-1.6 Tomas's box and the knock")
+	_mark("1.6", "basement")
 	await _tap("basement_door")
 	await _wait_room("basement")
 	await _tap("plaster")
@@ -254,6 +284,7 @@ func _run() -> void:
 	await _wait_room("east_corridor")
 
 	print("  -- Act 1.7 the garage")
+	_mark("1.7", "garage")
 	await _tap("garage_door")
 	await _wait_room("garage")
 	await _examine("tuner")
@@ -272,6 +303,8 @@ func _run() -> void:
 	await _tap("snowcat")
 	_expect(main.room_id == "garage", "no key in the 03 snowcat")
 	GameState.test_tune = ["00", "", "H"]
+	_mark("1.8", "road_down")
+	_mark("2.1", "main_street")
 	await _use("keys", "snowcat")
 	await _wait_room("main_street", 200.0)
 	_expect(GameState.has("road_done"), "drove down and found home in the underpass")
@@ -300,10 +333,12 @@ func _run_act2() -> void:
 	await _wait_room("main_street")
 
 	print("  -- Act 2.2 Pike Radio")
+	_mark("2.2", "pike_radio")
 	await _tap("pike_door")
 	await _wait_room("pike_radio")
 	await _tap("june")
 	_expect(GameState.has("june_diag"), "June finds the cracked crystal")
+	_mark("2.3", "main_street")
 	await _tap("door")
 	await _wait_room("main_street")
 
@@ -339,6 +374,7 @@ func _run_act2() -> void:
 	await _wait_room("main_street")
 
 	print("  -- Act 2.4 Ash Street, Eighty-One and the switch")
+	_mark("2.4", "ash_street")
 	await _tap("ash_street")
 	await _wait_room("ash_street")
 	GameState.test_tune = ["H", "61", "14"]
@@ -364,6 +400,7 @@ func _run_act2() -> void:
 	await _wait_room("main_street")
 
 	print("  -- Act 2.5 the Lantern")
+	_mark("2.5", "diner")
 	await _tap("diner_door")
 	await _wait_room("diner")
 	await _tap("pantry")
@@ -379,14 +416,15 @@ func _run_act2() -> void:
 	_expect(main.room_id == "diner", "keys first")
 	await _tap("keys")
 	_expect(GameState.has_item("truck_keys"), "took Ma's truck keys, 1980")
+	_mark("2.6", "snowfield_1980")
 	await _tap("back_door")
 	await _wait_room("snowfield_1980")
 
-	print("  -- Act 2.6 Choice 2: ", "take Tomas" if branch == "answer" else "leave Tomas")
-	GameState.test_choices = [0 if branch == "answer" else 1]
+	print("  -- Act 2.6 Choice 2: ", "take Tomas" if take_tomas else "leave Tomas")
+	GameState.test_choices = [0 if take_tomas else 1]
 	GameState.test_tune = ["12", "H"]
 	await _tap("tomas")
-	if branch == "answer":
+	if take_tomas:
 		await _wait_room("pike_radio", 120.0)
 		_expect(GameState.story.get("TOMAS") == "taken", "TOMAS = taken")
 		_expect(main.room.tomas.visible, "Tomas is safe at June's")
@@ -403,6 +441,7 @@ func _run_act2() -> void:
 	_expect(int(GameState.story["FRACTURE"]) == 10, "FRACTURE = 10")
 
 	print("  -- Act 2.7 the mine tunnel")
+	_mark("2.7", "mine_tunnel")
 	await _tap("tunnel")
 	await _wait_room("end_card", 200.0)
 	_expect(GameState.has("tunnel_done") and GameState.has("act2_done"), "through the mine and up into the basement")
@@ -512,6 +551,8 @@ func _run_tuner() -> void:
 
 func _finish() -> void:
 	Engine.time_scale = 1.0
+	if chapters_out != "" and failures.is_empty():
+		_write_chapters()
 	if failures.is_empty():
 		print("AUTOTEST PASS: branch=", branch)
 		get_tree().quit(0)
@@ -660,3 +701,96 @@ func _use(item: String, id: String, allow_missing: bool = false) -> void:
 	GameState.selected_item = item
 	print("  > use ", item, " on ", id)
 	await _tap(id)
+
+
+# --- chapters ------------------------------------------------------------------------
+
+## Chapter `ch` starts at the next room change into `room`: record the state then.
+func _mark(ch: String, room: String) -> void:
+	_marks.append([ch, room])
+
+
+func _on_entering(id: String, entry: String) -> void:
+	if _marks.is_empty() or id != _marks[0][1]:
+		return
+	var ch: String = _marks.pop_front()[0]
+	var d := GameState.snapshot()
+	d["room"] = id
+	d["entry"] = entry
+	d.erase("objective")
+	_snaps[ch] = d
+	print("    [chapter %s] %s (%s) on %s, FRACTURE %d" % [ch, id, entry, d.frequency, int(d.story.FRACTURE)])
+
+
+func _write_chapters() -> void:
+	if not _marks.is_empty():
+		_fail("chapters never recorded: %s" % str(_marks))
+		return
+	var f := FileAccess.open(chapters_out, FileAccess.WRITE)
+	if f == null:
+		_fail("can't write " + chapters_out)
+		return
+	f.store_string(JSON.stringify({"branch": branch, "answered": answered, "take_tomas": take_tomas, "chapters": _snaps}, "\t", false))
+	print("  chapters written: ", _snaps.size(), " -> ", chapters_out)
+
+
+## Debug chapter select: load every chapter (every choice combination) and
+## check it lands in the right room, on the right frequency, with the right
+## choices and a hint. Scenes that play on by themselves (the road down, the
+## mine) are let run to wherever they stop.
+func _run_chapters() -> void:
+	# The screen itself: a tab per act, each with that act's chapters, and Back.
+	var hud: Node = main.hud
+	hud.chapter_select()  # not awaited: closed with Back below
+	await get_tree().process_frame
+	_expect(hud.chapter_layer.visible, "chapter select opens")
+	for act in Chapters.ACTS:
+		var tab: Button = hud._ch_tabs[act]
+		tab.button_pressed = true
+		tab.pressed.emit()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_expect(hud._ch_grid.get_child_count() == Chapters.in_act(act).size(), "%s tab lists %d chapters" % [act, Chapters.in_act(act).size()])
+		if shots_dir != "":
+			await get_tree().create_timer(0.3).timeout
+			await _capture("chapter_select_" + act)
+	hud.chapter_chosen.emit({})
+	await get_tree().process_frame
+	_expect(not hud.chapter_layer.visible, "Back closes chapter select")
+
+	for ch in Chapters.LIST:
+		var combos: Array = [[true, true]]
+		var needs := Chapters.needs(ch.id)
+		if needs >= 1:
+			combos = [[true, true], [false, false]]
+		if needs >= 2:
+			combos = [[true, true], [true, false], [false, true], [false, false]]
+		for c in combos:
+			var st := Chapters.state(ch.id, c[0], c[1])
+			var want_room: String = st.get("room", "snowfield_1980")
+			var want_freq: String = st.get("frequency", "H")
+			print("  -- chapter %s %s  (answered=%s, took Tomas=%s)" % [ch.num, ch.title, c[0], c[1]])
+			GameState.test_tune = ["00", "", "H"] if want_room == "road_down" else []
+			var before: Node = main.room
+			main.start_chapter(ch.id, c[0], c[1])
+			var waited := 0.0
+			while (main.room == before or main.room_id != want_room) and waited < 30.0:
+				await get_tree().process_frame
+				waited += get_process_delta_time()
+			_expect(main.room_id == want_room, "chapter %s opens %s" % [ch.num, want_room])
+			_expect(GameState.frequency == want_freq and main.room.freq == want_freq, "chapter %s is on frequency %s" % [ch.num, want_freq])
+			if needs >= 1:
+				_expect(GameState.story.get("ANSWERED") == c[0], "chapter %s: ANSWERED = %s" % [ch.num, c[0]])
+			if needs >= 2:
+				_expect(GameState.story.get("TOMAS") == ("taken" if c[1] else "left"), "chapter %s: TOMAS = %s" % [ch.num, "taken" if c[1] else "left"])
+			waited = 0.0
+			while main.is_busy() and waited < 200.0:
+				await get_tree().process_frame
+				waited += get_process_delta_time()
+			_expect(not main.is_busy(), "chapter %s settles (now in %s)" % [ch.num, main.room_id])
+			await _idle()
+			if shots_dir != "":
+				await _capture("chapter_%s_%s" % [ch.num, main.room_id])
+			if main.room_id == want_room:
+				_check_hint()
+	_finish()

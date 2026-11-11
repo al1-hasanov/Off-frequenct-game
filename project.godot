@@ -7,7 +7,7 @@ config_version=5
 
 config/name="Off Frequency"
 config/description="A 2D sci-fi point-and-click mystery. v0.3: the prologue, Act 1 and Act 2, with step-by-step hints."
-config/version="0.3.0"
+config/version="0.3.1"
 run/main_scene="res://scenes/main.tscn"
 config/quit_on_go_back=false
 config/features=PackedStringArray("4.7", "GL Compatibility")

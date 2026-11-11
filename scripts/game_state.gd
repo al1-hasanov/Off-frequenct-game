@@ -12,7 +12,7 @@ extends Node
 signal changed
 signal inventory_changed
 
-const VERSION := "0.3.0"
+const VERSION := "0.3.1"
 
 const ITEMS := {
 	"red_tape": {
@@ -235,12 +235,13 @@ func set_objective(text: String) -> void:
 
 # --- saving ---------------------------------------------------------------
 
-func save_game() -> void:
-	var data := {
+## Everything a save holds. Chapter select (debug) starts from these too.
+func snapshot() -> Dictionary:
+	return {
 		"version": VERSION,
-		"story": story,
-		"flags": flags,
-		"inventory": inventory,
+		"story": story.duplicate(true),
+		"flags": flags.duplicate(true),
+		"inventory": inventory.duplicate(),  # a copy: Array(inventory) would be the live list
 		"room": room,
 		"entry": entry,
 		"clock_text": clock_text,
@@ -249,9 +250,32 @@ func save_game() -> void:
 		"emergency": emergency,
 		"frequency": frequency,
 	}
+
+
+func apply_snapshot(data: Dictionary) -> void:
+	story = (data.get("story", {}) as Dictionary).duplicate(true)
+	for k in ["ANSWERED", "TOMAS", "EIGHTY", "FINALE"]:
+		if not story.has(k):
+			story[k] = null
+	story["FRACTURE"] = int(story.get("FRACTURE", 0))
+	flags = (data.get("flags", {}) as Dictionary).duplicate(true)
+	inventory.assign(data.get("inventory", []))
+	selected_item = ""
+	room = str(data.get("room", "snowfield_1980"))
+	entry = str(data.get("entry", ""))
+	clock_text = str(data.get("clock_text", "1:40"))
+	clock_frozen = bool(data.get("clock_frozen", false))
+	objective = str(data.get("objective", ""))
+	emergency = bool(data.get("emergency", false))
+	frequency = str(data.get("frequency", "H"))
+	changed.emit()
+	inventory_changed.emit()
+
+
+func save_game() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify(data, "\t"))
+		f.store_string(JSON.stringify(snapshot(), "\t"))
 
 
 func has_save() -> bool:
@@ -264,20 +288,7 @@ func load_game() -> bool:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return false
-	story = parsed.get("story", story)
-	story["FRACTURE"] = int(story.get("FRACTURE", 0))
-	flags = parsed.get("flags", {})
-	inventory.assign(parsed.get("inventory", []))
-	selected_item = ""
-	room = str(parsed.get("room", "snowfield_1980"))
-	entry = str(parsed.get("entry", ""))
-	clock_text = str(parsed.get("clock_text", "1:40"))
-	clock_frozen = bool(parsed.get("clock_frozen", false))
-	objective = str(parsed.get("objective", ""))
-	emergency = bool(parsed.get("emergency", false))
-	frequency = str(parsed.get("frequency", "H"))
-	changed.emit()
-	inventory_changed.emit()
+	apply_snapshot(parsed)
 	return true
 
 

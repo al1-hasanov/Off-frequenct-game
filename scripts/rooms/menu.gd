@@ -18,14 +18,20 @@ func on_arrive() -> void:
 	Audio.stop_all(0.4)
 	Audio.play_loop("drone", -12.0)
 	Audio.play_loop("wind", -20.0)
-	var action: String = await hud.main_menu(GameState.has_save())
-	match action:
-		"continue":
+	while true:
+		var action: String = await hud.main_menu(GameState.has_save())
+		if action == "chapters":
+			var pick: Dictionary = await hud.chapter_select()
+			if pick.is_empty():
+				continue  # Back: show the main menu again
+			main.start_chapter(pick.id, pick.answered, pick.took)
+		elif action == "continue":
 			main.continue_game()
-		"quit":
+		elif action == "quit":
 			get_tree().quit()
-		_:
+		else:
 			main.start_new_game()
+		return
 
 
 func draw_back() -> void:
@@ -49,4 +55,4 @@ func draw_fore(ci: CanvasItem) -> void:
 	if glitch:
 		Kit.text(ci, Vector2(0, 228) + off * 1.6, "OFF FREQUENCY", 104, Color(0.62, 0.83, 0.9, 0.45), HORIZONTAL_ALIGNMENT_CENTER, 1280)
 	Kit.text(ci, Vector2(0, 228) + off, "OFF FREQUENCY", 104, Color("e7e3d6"), HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(ci, Vector2(0, 276), "v0.3 · the prologue, Act 1 and Act 2", 24, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(ci, Vector2(0, 276), "v0.3.1 · the prologue, Act 1 and Act 2", 24, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, 1280)
