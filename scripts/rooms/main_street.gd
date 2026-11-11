@@ -66,6 +66,7 @@ func ambience() -> void:
 	Audio.play_loop("crowd", -19.0)  # the town outside: steps, doors, a shovel, a car
 	if GameState.has("dish_turning"):
 		Audio.play_loop("dish_motor", -26.0)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -224,6 +225,7 @@ func draw_back() -> void:
 	for x in [120.0, 455.0, 1010.0]:
 		_streetlight(x)
 	draw_rect(Rect2(Kit.L, 646, Kit.R - Kit.L, 10), Color("d8dce6"))
+	EnvironmentArt.street_details(self)
 
 
 func _dish(base: Vector2, ang: float) -> void:
@@ -236,7 +238,7 @@ func _dish(base: Vector2, ang: float) -> void:
 
 
 func _diner_building() -> void:
-	draw_rect(Rect2(140, 200, 310, 450), Color("4a3a36"))
+	EnvironmentArt.brick(self, Rect2(140, 200, 310, 450), Color("4a3a36"))
 	draw_rect(Rect2(140, 200, 310, 12), Color("2a201e"))
 	# Upstairs: the Lunds' kitchen window (lit, on the glow layer).
 	draw_rect(Rect2(196, 236, 90, 74), Color("1a1412"))
@@ -254,7 +256,7 @@ func _diner_building() -> void:
 
 
 func _pike_building() -> void:
-	draw_rect(Rect2(466, 300, 236, 350), Color("3a4044"))
+	EnvironmentArt.brick(self, Rect2(466, 300, 236, 350), Color("3a4044"), true)
 	draw_rect(Rect2(466, 300, 236, 10), Color("22272a"))
 	# The ham antenna on the roof.
 	draw_line(Vector2(600, 300), Vector2(600, 190), Color("2a2f33"), 3.0)
@@ -279,7 +281,7 @@ func _alley_art() -> void:
 
 
 func _sheriff_building() -> void:
-	draw_rect(Rect2(766, 320, 250, 330), Color("3e3a34"))
+	EnvironmentArt.brick(self, Rect2(766, 320, 250, 330), Color("3e3a34"), false)
 	draw_rect(Rect2(766, 320, 250, 10), Color("24211d"))
 	# While the Tuner is locked on a station, the windows show that version of
 	# the office: only in 05 is anyone home with the lights on.

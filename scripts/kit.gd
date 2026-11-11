@@ -17,15 +17,24 @@ static func vgrad(ci: CanvasItem, r: Rect2, top: Color, bottom: Color) -> void:
 
 
 static func wall(ci: CanvasItem, floor_y: float, wall_col: Color, low_col: Color, trim: Color) -> void:
-	ci.draw_rect(Rect2(L, -100, R - L, floor_y + 100), wall_col)
-	ci.draw_rect(Rect2(L, floor_y - 120, R - L, 120), low_col)
+	vgrad(ci, Rect2(L, -100, R - L, floor_y + 100), wall_col.darkened(0.32), wall_col.lightened(0.04))
+	vgrad(ci, Rect2(L, floor_y - 120, R - L, 120), low_col, low_col.darkened(0.22))
+	# Fixed plaster marks and panel joints: stable when the camera or light moves.
+	for i in 110:
+		var x := L + fposmod(i * 193.71, R - L)
+		var y := 60.0 + fposmod(i * 77.39, floor_y - 200)
+		ci.draw_line(Vector2(x,y),Vector2(x+4+ i%9,y+1),Color(0.02,0.03,0.03,0.09),1.0)
+	for x in range(-400, 1800, 180):
+		ci.draw_line(Vector2(x,floor_y-116),Vector2(x,floor_y-10),low_col.darkened(0.2),1.0)
 	ci.draw_rect(Rect2(L, floor_y - 124, R - L, 5), trim)
 	ci.draw_rect(Rect2(L, -100, R - L, 126), trim.lightened(0.04))
 	ci.draw_rect(Rect2(L, floor_y - 10, R - L, 10), trim)
+	ci.draw_line(Vector2(L,floor_y-8),Vector2(R,floor_y-8),trim.lightened(0.17),1.0)
+	vgrad(ci,Rect2(L,26,R-L,65),Color(0,0,0,0.24),Color(0,0,0,0))
 
 
 static func floor_tiles(ci: CanvasItem, floor_y: float, base: Color, line: Color) -> void:
-	ci.draw_rect(Rect2(L, floor_y, R - L, 400), base)
+	vgrad(ci,Rect2(L, floor_y, R - L, 400),base.darkened(0.22),base.lightened(0.08))
 	var vanish := Vector2(640, floor_y - 1100)
 	for i in range(-14, 32):
 		var top := Vector2(float(i) * 90.0, floor_y)
@@ -37,6 +46,9 @@ static func floor_tiles(ci: CanvasItem, floor_y: float, base: Color, line: Color
 		ci.draw_line(Vector2(L, y), Vector2(R, y), line, 2.0)
 		y += step
 		step *= 1.45
+	for i in 28:
+		var p := Vector2(L+fposmod(i*119.3,R-L),floor_y+14+fposmod(i*17.31,100))
+		ci.draw_line(p,p+Vector2(12+i%13,1),Color(0.6,0.67,0.66,0.05),1.0)
 
 
 static func ceiling_light(ci: CanvasItem, x: float, floor_y: float, on: bool) -> void:
@@ -70,10 +82,16 @@ static func plate(ci: CanvasItem, center: Vector2, s: String, size: int = 15) ->
 static func door(ci: CanvasItem, r: Rect2, col: Color, label: String = "") -> void:
 	ci.draw_rect(r.grow(8), Color("15191b"))
 	ci.draw_rect(r, col)
+	vgrad(ci,r,col.lightened(0.08),col.darkened(0.12))
+	ci.draw_line(r.position+Vector2(2,2),Vector2(r.position.x+2,r.end.y-2),col.lightened(0.3),2.0)
+	for y in [28.0,r.size.y-46.0]:
+		ci.draw_rect(Rect2(r.position+Vector2(-3,y),Vector2(5,20)),Color("717773"))
 	ci.draw_rect(Rect2(r.position + Vector2(12, 96), Vector2(r.size.x - 24, r.size.y * 0.28)), col.darkened(0.14), false, 2.0)
 	ci.draw_rect(Rect2(r.position + Vector2(12, r.size.y * 0.62), Vector2(r.size.x - 24, r.size.y * 0.32)), col.darkened(0.14), false, 2.0)
 	ci.draw_rect(Rect2(r.position + Vector2(r.size.x * 0.28, 24), Vector2(r.size.x * 0.44, 56)), Color("0b1116"))
 	ci.draw_circle(r.position + Vector2(r.size.x - 15, r.size.y * 0.55), 5.0, Color("9aa3a8"))
+	ci.draw_line(r.position+Vector2(r.size.x-15,r.size.y*.55),r.position+Vector2(r.size.x-27,r.size.y*.55),Color("bdc5bb"),3.0,true)
+	ci.draw_rect(Rect2(r.position+Vector2(8,r.size.y-24),Vector2(r.size.x-16,18)),col.darkened(0.22))
 	if label != "":
 		plate(ci, Vector2(r.get_center().x, r.position.y - 30), label)
 
@@ -110,8 +128,13 @@ static func pines(ci: CanvasItem, base_y: float, col: Color) -> void:
 	while x < R:
 		var h := 60.0 + 34.0 * absf(sin(i * 1.7)) + 20.0 * absf(sin(i * 0.43))
 		var w := 26.0 + 8.0 * absf(sin(i * 2.3))
-		ci.draw_colored_polygon(PackedVector2Array([
-			Vector2(x - w, base_y + 2), Vector2(x + w, base_y + 2), Vector2(x, base_y - h)]), col)
+		ci.draw_line(Vector2(x,base_y+2),Vector2(x,base_y-h),col,4.0)
+		for tier in 5:
+			var tip := base_y-h+tier*h*.16
+			var spread := w*(.32+tier*.17)
+			ci.draw_colored_polygon(PackedVector2Array([
+				Vector2(x,tip),Vector2(x+spread,tip+h*.36),Vector2(x+spread*.2,tip+h*.29),
+				Vector2(x,tip+h*.32),Vector2(x-spread,tip+h*.36)]),col)
 		x += 30.0 + 14.0 * absf(sin(i * 3.1))
 		i += 1
 
@@ -135,11 +158,17 @@ static func night_view(ci: CanvasItem, r: Rect2, t: float, dish_x: float, dish_s
 
 static func window_frame(ci: CanvasItem, r: Rect2, panes: int) -> void:
 	var frame := Color("1b2124")
+	# Quiet glass sheen and frost along the lower edge; never obscure the view.
+	ci.draw_colored_polygon(PackedVector2Array([r.position+Vector2(12,0),r.position+Vector2(40,0),Vector2(r.position.x+90,r.end.y),Vector2(r.position.x+65,r.end.y)]),Color(0.64,0.82,0.9,0.055))
+	for i in int(r.size.x/18):
+		var p := Vector2(r.position.x+9+i*18,r.end.y)
+		ci.draw_line(p,p+Vector2(-4,-6-i%4),Color(0.7,0.84,0.9,0.2),1.0)
 	ci.draw_rect(r.grow(10), frame, false, 20.0)
 	for i in range(1, panes):
 		var x := r.position.x + r.size.x * i / panes
 		ci.draw_rect(Rect2(x - 5, r.position.y, 10, r.size.y), frame)
 	ci.draw_rect(Rect2(r.position.x - 16, r.end.y + 8, r.size.x + 32, 10), Color("2a3134"))
+	ci.draw_line(Vector2(r.position.x-14,r.end.y+9),Vector2(r.end.x+14,r.end.y+9),Color("4b5557"),1.0)
 
 
 ## Sollen's snowcat, side view, facing right. `base` is the ground under its middle.
@@ -168,3 +197,14 @@ static func snowcat(ci: CanvasItem, base: Vector2, s: float, t: float, moving: b
 	ci.draw_line(p.call(-104, -230), p.call(96, -230), Color("2a2a2a"), 6.0 * s)
 	ci.draw_rect(Rect2(p.call(196, -108), Vector2(16, 18) * s), Color("e8e0c0"))
 	ci.draw_rect(Rect2(p.call(-170, -120), Vector2(40, 8) * s), Color("2a2a2a"))
+	# Windscreen reflection, seals, access panels and a perforated engine grille.
+	ci.draw_line(p.call(-96,-208),p.call(-37,-147),Color(0.55,0.72,0.8,0.18),6*s)
+	ci.draw_line(p.call(8,-208),p.call(76,-146),Color(0.55,0.72,0.8,0.12),5*s)
+	ci.draw_line(p.call(42,-145),p.call(72,-185),Color("111b22"),3*s)
+	ci.draw_rect(Rect2(p.call(-116,-129),Vector2(104,65)*s),body.darkened(.2),false,1.5*s)
+	ci.draw_rect(Rect2(p.call(-35,-120),Vector2(17,4)*s),Color("b1ada0"))
+	for i in 10:
+		ci.draw_line(p.call(118+i*7,-111),p.call(118+i*7,-85),body.darkened(.4),2*s)
+	ci.draw_line(p.call(-104,-234),p.call(94,-234),Color("bac5be"),3*s)
+	ci.draw_rect(Rect2(p.call(-176,-88),Vector2(52,18)*s),Color("d4c3a0"))
+	text(ci,p.call(-170,-75),"HRO 03",int(11*s),Color("383c36"))

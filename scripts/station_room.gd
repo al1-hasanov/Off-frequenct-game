@@ -28,6 +28,7 @@ func ambience() -> void:
 		Audio.play_loop("radio_music", music_db())
 	else:
 		Audio.stop_loop("radio_music", 0.3)
+	Audio.set_environment(str(name), freq)
 
 
 func music_db() -> float:
@@ -36,6 +37,7 @@ func music_db() -> float:
 
 func draw_shell(lights: Array) -> void:
 	Kit.wall(self, floor_y, WALL, WALL_LOW, TRIM)
+	EnvironmentArt.wall_props(self, str(name))
 	Kit.floor_tiles(self, floor_y, FLOOR, FLOOR_LINE)
 	var red := GameState.emergency and freq == "H"
 	for x in lights:

@@ -77,6 +77,7 @@ func ambience() -> void:
 		Audio.play_loop("snore", -24.0)
 	else:
 		Audio.stop_loop("snore", 0.6)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -271,6 +272,7 @@ func _garage_door() -> void:
 
 func draw_back() -> void:
 	Kit.wall(self, floor_y, WALL, WALL_LOW, TRIM)
+	EnvironmentArt.wall_props(self, str(name))
 	Kit.floor_tiles(self, floor_y, FLOOR, FLOOR_LINE)
 	for x in [420.0, 900.0]:
 		Kit.ceiling_light(self, x, floor_y, false)

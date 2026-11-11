@@ -1,21 +1,38 @@
-# Off Frequency — v0.3.2
+# Off Frequency — v0.4.0: After Hours
 
-A 2D sci-fi point-and-click mystery for Android (iOS later), built in **Godot 4.7** with GDScript.
+A 2D sci-fi point-and-click mystery for Android (iOS later), built in **Godot 4.6.3** with GDScript.
 The full story is in the *Off Frequency — Story Bible* doc; this build covers the prologue, Act 1 and Act 2.
 
 ![Preview](docs/preview.png)
 
-## What's in v0.3
+## New in v0.4.0
+
+- More detailed 2D characters: profile faces, blinking, hair strands, stitched coats, pockets, boot laces, clothing folds, radio grilles and contact shadows.
+- More detailed rooms and streets: brickwork, siding, snow caps, drainpipes, shop glass, awnings, gutter grates, worn floors, plaster, vents, exposed plumbing, framed notices, tools and coiled cables. Windows have subtle glass/frost detail; trees have layered branches and the snowcat has extra bodywork.
+- Six new stereo Vorbis tracks: a 64-second gentle mystery score; distant street traffic; indistinct nonverbal people ambience; indoor room tone; diner ambience; and an original late-night radio melody.
+- **Sound & atmosphere** in the title and pause menus: background music ON/OFF plus overall, music, environment and effect volumes. Preferences save automatically and are independent of story saves.
+- Score and ambience ease under dialogue and the Tuner. The mine's listening puzzle suppresses the score, and its intentional silence is preserved.
+- Room changes fade old ambience out, so a shop's radio or street crowd does not follow you into unrelated rooms.
+
+### Install this test build
+
+Open `OffFrequency-v0.4.0-debug.apk` on an Android 7.0+ ARM phone. It appears as **Off Frequency 0.4** and installs alongside the previous game. The original APK's signing key was not supplied, so this build uses `com.alihasanov.offfrequency.ambience` and its own development key. Your old installation and its save stay available. **The two installations have separate saves.** Use **Chapters (debug)** to jump to your preferred chapter in this build.
+
+To disable the new score: **Sound & atmosphere → Background music → OFF → Done**. The setting survives closing and reopening the app. Radio sounds remain part of the environment volume.
+
+See [UPDATE_v0.4.0.md](UPDATE_v0.4.0.md) for testing and build details.
+
+## Story content inherited from v0.3
 
 About 70–80 minutes of play. Both branches of Choice 1 and both of Choice 2, from the 1980 snowfield to the mine under the mountain.
 
-### New in v0.3.2: no more fake voices
+### Previous update, v0.3.2: no more fake voices
 
 - **Main Street** now sounds like a street full of people at 2 AM instead of a murmur: boots crunching past at different distances, doors, a snow shovel, someone stamping off snow, a cough, keys, a car door, a car crawling by on packed snow, a dog blocks away, somebody whistling. Louder than before, with a little echo off the house fronts.
 - **Radios are radio**, with no speech-like sound anywhere. The police scanner (Pike Radio, the sheriff's office, station 05) opens its squelch on weak, fluttering carriers, with roger beeps and a data burst. June's shop adds a shortwave loop: Morse code, a tuning whistle, fading static. Under the 2:14 voice's lines, the squelch opens on a fading, warbling carrier.
-- Every other sound is byte-for-byte unchanged.
+- That update retained the other sound effects; v0.4.0 adds the layers listed above.
 
-### New in v0.3.1: chapter select (debug)
+### Previous update, v0.3.1: chapter select (debug)
 
 The title screen has a **Chapters (debug)** button (debug builds only, which includes this APK). Pick a tab (Prologue, Act 1, Act 2), set how **Choice 1** and **Choice 2** went, and tap a chapter. You start there with the story set exactly as a full playthrough reached it: inventory, flags, frequency, `FRACTURE`, clock, emergency lighting. Jumping replaces your save, so **Continue** resumes from the chapter.
 
@@ -82,9 +99,9 @@ Branch differences: cutting the power switches home to red emergency light, leav
 
 ## Play it
 
-**On Android:** copy `OffFrequency-v0.3.2-debug.apk` to the phone, open it, and allow "Install unknown apps" when asked. It installs over earlier versions and keeps your save. Needs Android 7.0 or newer. It's a debug build, so it's for testing, not the Play Store.
+**On Android:** install the v0.4.0 APK as described above. This development build supports ARM64 and ARMv7 phones; it is not a Play Store release.
 
-**On your computer:** download Godot 4.7 (the standard build, not .NET), choose *Import*, pick this folder's `project.godot`, then press **F5**.
+**On your computer:** download Godot 4.6.3 (the standard build, not .NET), choose *Import*, pick this folder's `project.godot`, then press **F5**.
 
 **Controls:** tap to walk; tap anything to look at or use it. Tap an inventory item to select it, then:
 tap something in the room to use it there, tap **another item** to combine the two, or tap the **same item** again to examine it (examining Tomas's radio is how you use it). **?** tells you what to do next, then flashes everything you can interact with, even in the dark. **II** (or Android's back button) pauses and saves.
@@ -98,7 +115,9 @@ project.godot              Settings: 1280x720 landscape, GL Compatibility render
 scenes/main.tscn           Entry point (just runs scripts/main.gd)
 scripts/
   game_state.gd            Autoload: story variables, flags, inventory, frequencies, recipes, save/load
-  audio_manager.gd         Autoload: sound effects, ambience loops, the voice-acting hook
+  audio_manager.gd         Autoload: effects, ambience, streamed score, persisted audio mix
+  audio_settings.gd        Touch-friendly sound menu
+  environment_art.gd       Shared authored vector materials and scene props
   main.gd                  Camera, HUD, room changes, crossings, input blocking during scenes
   hud.gd                   Clock, objective, inventory (combine/examine), dialogue, choices,
                            document reader, glitch effect, fades, menus
@@ -117,7 +136,8 @@ scripts/
                            garage, road_down, main_street, pike_radio, sheriff_office,
                            ash_street, ash_kitchen, diner, mine_tunnel, end_card
   autotest.gd              Automated playthroughs (see Testing)
-audio/*.wav                Placeholder sounds, generated by tools/gen_audio.py
+audio/*.wav                Original effects, generated by tools/gen_audio.py
+audio/*.ogg                New score and layered ambience, tools/gen_atmosphere.py
 textures/*.png             Flashlight cone and glow, generated by tools/gen_textures.py
 export_presets.cfg         Android export preset
 ```
@@ -157,6 +177,7 @@ godot --headless --path . -- --autotest=answer        # answer the voice, then t
 godot --headless --path . -- --autotest=cut           # cut the power, then leave Tomas
 godot --headless --path . -- --autotest=answer_leave  # answer the voice, then leave Tomas
 godot --headless --path . -- --autotest=cut_take      # cut the power, then take Tomas
+godot --headless --path . -- --autotest=atmosphere    # audio independence, persistence, pause, assets
 godot --headless --path . -- --autotest=continue      # save, quit, Continue (also inside 01 and 05)
 godot --headless --path . -- --autotest=chapters      # chapter select: every chapter, every choice combination
 godot --headless --path . -- --check               # compile every room script and quit
@@ -181,13 +202,19 @@ The playthrough marks where each chapter starts (`_mark("2.4", "ash_street")` in
 ## Building the APK yourself
 
 1. Install Android Studio (for the Android SDK) and a JDK 17+.
-2. In Godot: **Editor → Editor Settings → Export → Android**, set *Java SDK Path* and *Android SDK Path*. Godot creates a debug keystore itself.
-3. **Editor → Manage Export Templates → Download** for 4.7.
+2. In Godot: **Editor → Editor Settings → Export → Android**, set *Java SDK Path* and *Android SDK Path*. The export preset uses the included development-only key in `build-support/` so later test builds can update this v0.4 installation.
+3. **Editor → Manage Export Templates → Download** for 4.6.3.
 4. **Project → Export → Android → Export Project**.
 
-For Google Play you'll need a release keystore, an `.aab` (turn on *Use Gradle Build* and install the Android build template from the Project menu), target SDK 36 (Godot 4.7's default), and, for a new personal developer account, a 14-day closed test with 12 testers.
+For a production release, use your own private release key and review the current Android and store requirements. The bundled test key is intentionally a development credential, not a production identity.
 
-> This APK is signed with a debug key. A future build signed with a different key won't install over it; uninstall first.
+Command line (after SDK configuration):
+
+```sh
+godot --headless --path . --editor --import
+godot --headless --path . --export-debug Android build/OffFrequency-v0.4.0-debug.apk
+```
+
 
 ## Voice acting
 
@@ -195,10 +222,10 @@ There are no recordings yet: lines show as subtitles, and under the 2:14 voice t
 
 ## Known limitations
 
-- Art is drawn in code and the sound effects are synthesized placeholders, meant to be swapped for real assets: sounds by replacing files in `audio/` with the same names, art by giving `Actor` and the rooms sprite textures.
+- Art remains stylized, code-drawn 2D artwork. New sound textures and music are original synthesized assets, not field recordings or recorded voice acting. The new Ogg version of a sound takes priority over its WAV fallback.
 - Tested here with automated runs and rendered screenshots, but not yet on a physical phone. The 2D lights are the most demanding thing in the game; if a low-end phone struggles in dark rooms, lower `texture_scale` on the flashlight in `room.gd`.
 - iOS export needs a Mac with Xcode and an Apple Developer account; nothing in the code is Android-only.
 
-## Next: v0.4
+## Later story expansion
 
 Act 3: patching the Tuner into the dish, three possible futures (2031, 2009, 1991), the chalkboard that writes the next date by itself, Tomas's notebook in the wall, and Choice 3.

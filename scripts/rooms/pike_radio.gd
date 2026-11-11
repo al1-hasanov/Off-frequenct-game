@@ -43,6 +43,7 @@ func ambience() -> void:
 	Audio.play_loop("scanner", -25.0)
 	Audio.play_loop("shortwave", -24.0)
 	Audio.play_loop("radio_music", -30.0)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -159,6 +160,7 @@ func _with_tomas() -> void:
 
 func draw_back() -> void:
 	Kit.wall(self, floor_y, Color("4a5048"), Color("3a403a"), Color("1f2420"))
+	EnvironmentArt.wall_props(self, str(name))
 	draw_rect(Rect2(Kit.L, floor_y, Kit.R - Kit.L, 400), Color("3a3028"))
 	for i in 20:
 		draw_line(Vector2(Kit.L + i * 120.0, floor_y), Vector2(Kit.L + i * 120.0 - 60, 760), Color(0, 0, 0, 0.15), 2.0)
@@ -181,6 +183,12 @@ func _shelves() -> void:
 			var glow := 0.6 + 0.4 * sin(t * (1.3 + k * 0.4) + row)
 			draw_rect(Rect2(x + 8, y + 30, 34, 12), Color(1.0, 0.68, 0.3, glow))
 			draw_circle(Vector2(x + 54, y + 52), 6.0, Color("1a1a1a"))
+			draw_line(Vector2(x+54,y+48),Vector2(x+54,y+52),Color("c6b890"),1.0)
+			for bar in 8:
+				draw_line(Vector2(x+7+bar*4,y+49),Vector2(x+7+bar*4,y+63),body.darkened(0.45),1.0)
+			for mark in 7:
+				draw_line(Vector2(x+10+mark*4,y+31),Vector2(x+10+mark*4,y+35),Color("6a553a"),1.0)
+			draw_rect(Rect2(x+2,y+24,62,46),body.lightened(0.15),false,1.0)
 
 
 func _rig() -> void:
@@ -212,3 +220,6 @@ func _draw_counter(ci: CanvasItem) -> void:
 	for k in 4:
 		ci.draw_rect(Rect2(626 + k * 90, 526, 50, 30), Color("3a3a3e"))
 		ci.draw_rect(Rect2(632 + k * 90, 532, 26, 8), Color(1.0, 0.7, 0.35, 0.8))
+		for i in 7:
+			ci.draw_line(Vector2(631+k*90+i*4,546),Vector2(631+k*90+i*4,552),Color("1d2423"),1.0)
+	EnvironmentArt.mug(ci,Vector2(971,541))

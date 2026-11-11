@@ -40,6 +40,7 @@ func ambience() -> void:
 	Audio.play_loop("snore", -20.0)
 	if not GameState.has("unplugged"):
 		Audio.play_loop("scanner", -15.0)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -185,6 +186,7 @@ func _home_only(st: String) -> String:
 
 func draw_back() -> void:
 	Kit.wall(self, floor_y, Color("6a6248"), Color("524c3a"), Color("2a2620"))
+	EnvironmentArt.wall_props(self, str(name))
 	Kit.floor_tiles(self, floor_y, Color("4a4a42"), Color("3a3a34"))
 	Kit.ceiling_light(self, 420.0, floor_y, true)
 	Kit.ceiling_light(self, 900.0, floor_y, true)

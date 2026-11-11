@@ -255,6 +255,7 @@ func _call_observatory() -> void:
 
 func draw_back() -> void:
 	Kit.wall(self, floor_y, Color("3a3f3a"), Color("2d322e"), TRIM)
+	EnvironmentArt.wall_props(self, str(name))
 	Kit.floor_tiles(self, floor_y, Color("26292a"), Color("2e3233"))
 	for x in [520.0, 1000.0]:
 		Kit.ceiling_light(self, x, floor_y, not GameState.emergency)

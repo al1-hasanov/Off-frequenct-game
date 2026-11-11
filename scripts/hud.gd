@@ -45,6 +45,7 @@ var choice_box: VBoxContainer
 var menu_box: VBoxContainer
 var pause_panel: PanelContainer
 var pause_menu_button: Button
+var audio_settings: AudioSettings
 var fade_rect: ColorRect
 var card_title: Label
 var card_sub: Label
@@ -92,6 +93,8 @@ func _ready() -> void:
 	_build_menus()
 	_build_doc()
 	_build_cards()
+	audio_settings = AudioSettings.new()
+	root.add_child(audio_settings)
 	GameState.changed.connect(refresh)
 	GameState.inventory_changed.connect(refresh_inventory)
 	refresh()
@@ -99,6 +102,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	Audio.set_dialogue(_dialog_open)
+	Audio.set_tuning(tuner.visible)
 	_blink += delta
 	if not GameState.clock_frozen:
 		var colon := ":" if fmod(_blink, 1.0) < 0.5 else " "
@@ -281,8 +286,8 @@ func _build_menus() -> void:
 	menu_box = VBoxContainer.new()
 	menu_box.anchor_left = 0.5
 	menu_box.anchor_right = 0.5
-	menu_box.anchor_top = 0.72
-	menu_box.anchor_bottom = 0.72
+	menu_box.anchor_top = 0.68
+	menu_box.anchor_bottom = 0.68
 	menu_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	menu_box.grow_vertical = Control.GROW_DIRECTION_BOTH
 	menu_box.add_theme_constant_override("separation", 12)
@@ -309,6 +314,11 @@ func _build_menus() -> void:
 	resume.custom_minimum_size = Vector2(440, 72)
 	resume.pressed.connect(close_pause)
 	v.add_child(resume)
+	var sound := Button.new()
+	sound.text = "Sound & atmosphere"
+	sound.custom_minimum_size = Vector2(440, 64)
+	sound.pressed.connect(func() -> void: audio_settings.open())
+	v.add_child(sound)
 	pause_menu_button = Button.new()
 	pause_menu_button.text = "Save and quit to menu"
 	pause_menu_button.custom_minimum_size = Vector2(440, 72)
@@ -654,6 +664,7 @@ func main_menu(has_save: bool) -> String:
 	if has_save:
 		items.append(["Continue", "continue"])
 	items.append(["New game", "new"])
+	items.append(["Sound & atmosphere", "audio"])
 	if OS.is_debug_build():
 		items.append(["Chapters (debug)", "chapters"])
 	if OS.get_name() != "iOS":
@@ -661,7 +672,7 @@ func main_menu(has_save: bool) -> String:
 	for it in items:
 		var b := Button.new()
 		b.text = it[0]
-		b.custom_minimum_size = Vector2(420, 74)
+		b.custom_minimum_size = Vector2(440, 60)
 		b.focus_mode = Control.FOCUS_NONE
 		var action: String = it[1]
 		b.pressed.connect(func() -> void: menu_chosen.emit(action))
@@ -886,6 +897,9 @@ func close_pause() -> void:
 
 
 func toggle_pause() -> void:
+	if audio_settings.visible:
+		audio_settings.close()
+		return
 	if pause_panel.visible:
 		close_pause()
 	else:

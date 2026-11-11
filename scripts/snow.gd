@@ -48,4 +48,6 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	for i in count:
-		draw_circle(_pos[i], _size[i], color)
+		var c := color
+		c.a *= 0.32 + _vel[i] * 0.4
+		draw_circle(_pos[i], _size[i] * (0.65 if i % 3 else 1.0), c)

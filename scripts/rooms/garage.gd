@@ -48,6 +48,7 @@ func ambience() -> void:
 		Audio.play_loop("wind", -32.0)
 	if freq == "03":
 		Audio.play_loop("plow", -30.0)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -240,6 +241,7 @@ func _drive() -> void:
 
 func draw_back() -> void:
 	Kit.wall(self, floor_y, Color("3f4446"), Color("323739"), Color("1a1d1e"))
+	EnvironmentArt.wall_props(self, str(name))
 	draw_rect(Rect2(Kit.L, floor_y, Kit.R - Kit.L, 400), Color("2c2f30"))
 	draw_rect(Rect2(300, floor_y + 20, 520, 14), Color("1f2223"))
 	Kit.door(self, Rect2(40, 340, 90, 310), Color("4a5258"), "EAST WING")

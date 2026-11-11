@@ -72,6 +72,9 @@ func _run() -> void:
 	print("AUTOTEST start: branch=", branch)
 	main.change_room("menu")
 	await _wait_room("snowfield_1980")
+	if branch == "atmosphere":
+		await _run_atmosphere()
+		return
 	if branch == "continue":
 		await _run_continue()
 		return
@@ -451,6 +454,67 @@ func _run_act2() -> void:
 	_finish()
 
 
+## Music preferences persist independently of save games and ambience.
+func _run_atmosphere() -> void:
+	Audio.set_setting("music_enabled", false)
+	Audio.play_loop("wind", -24.0, 0.0)
+	await get_tree().process_frame
+	var score: AudioStreamPlayer = Audio.get("_music")
+	_expect(not score.playing, "music OFF stops its player")
+	_expect(Audio.is_looping("wind"), "music OFF preserves environmental sounds")
+	Audio.set_setting("music_volume", 0.37)
+	Audio.save_settings()
+	var cfg := ConfigFile.new()
+	_expect(cfg.load(Audio.SETTINGS_PATH) == OK, "audio settings file is readable")
+	_expect(not bool(cfg.get_value("audio", "music_enabled", true)), "music OFF persisted")
+	_expect(is_equal_approx(float(cfg.get_value("audio", "music_volume", 0.0)), 0.37), "slider volume persisted")
+	Audio.music_enabled = true
+	Audio.load_settings()
+	_expect(not Audio.music_enabled, "saved OFF preference reloads")
+	for f in ["road_done", "a2_arrived", "met_june", "june_diag"]:
+		GameState.set_flag(f)
+	main.change_room("main_street", "from_pike")
+	await _wait_room("main_street")
+	_expect(not score.playing, "music stays OFF across room changes")
+	var env: Dictionary = Audio.get("_environment")
+	_expect(env.has("street_air") and env["street_air"].playing, "street has its own ambient bed")
+	main.change_room("pike_radio", "from_main")
+	await _wait_room("pike_radio")
+	await get_tree().create_timer(2.0).timeout
+	_expect(not env["people_murmur"].playing, "street people fade out indoors")
+	_expect(not Audio.is_looping("crowd"), "legacy street crowd stops indoors")
+	Audio.set_setting("music_enabled", true)
+	_expect(score.playing, "music can be enabled without restarting")
+	Audio.set_setting("music_volume", 0.0)
+	_expect(not score.playing, "zero music volume releases playback")
+	Audio.set_setting("music_volume", 0.55)
+	Audio.music_context("mine_tunnel")
+	_expect(not score.playing, "mine listening puzzle suppresses score")
+	Audio.music_context("pike_radio")
+	_expect(score.playing, "score returns after leaving mine")
+	for sound in ["night_score", "street_air", "people_murmur", "room_air", "diner_room", "radio_music"]:
+		var stream: AudioStream = Audio._stream(sound, true)
+		_expect(stream is AudioStreamOggVorbis and stream.loop and stream.get_length() >= 31.0, "streamed looping asset: " + sound)
+	main.hud.open_pause()
+	_expect(get_tree().paused, "pause still pauses gameplay")
+	main.hud.audio_settings.open()
+	await get_tree().process_frame
+	var panel: Control = main.hud.audio_settings.get_child(0).get_child(0)
+	var bounds := Rect2(Vector2.ZERO, main.hud.root.size)
+	_expect(bounds.encloses(panel.get_global_rect()), "audio controls fit within the viewport")
+	if shots_dir != "":
+		await _capture("audio_settings")
+	Audio.set_setting("music_enabled", false)
+	_expect(not score.playing, "music toggle works while paused")
+	main.hud.audio_settings.close()
+	_expect(get_tree().paused, "closing audio settings preserves pause")
+	main.hud.close_pause()
+	_expect(not get_tree().paused, "Resume restores gameplay")
+	Audio.set_setting("music_enabled", true)
+	Audio.save_settings()
+	_finish()
+
+
 ## Save in the lobby, wipe memory, press Continue, and check everything came back.
 func _run_continue() -> void:
 	await _tap("tomas")
@@ -555,12 +619,12 @@ func _finish() -> void:
 		_write_chapters()
 	if failures.is_empty():
 		print("AUTOTEST PASS: branch=", branch)
-		get_tree().quit(0)
+		main.quit_game(0)
 	else:
 		print("AUTOTEST FAIL: branch=%s, %d problem(s)" % [branch, failures.size()])
 		for f in failures:
 			print("  - ", f)
-		get_tree().quit(1)
+		main.quit_game(1)
 
 
 func _fail(msg: String) -> void:

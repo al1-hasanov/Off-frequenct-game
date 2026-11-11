@@ -58,6 +58,9 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	# A soft contact shadow seats each character in the room.
+	draw_set_transform(Vector2(1, 1), 0.0, Vector2(1.0, 0.22))
+	draw_circle(Vector2.ZERO, 24.0 if not seated else 32.0, Color(0.015, 0.02, 0.03, 0.3))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(facing, 1.0))
 	match kind:
 		"mara":
@@ -160,6 +163,12 @@ func _leg(hip: Vector2, ang: float, length: float, col: Color, boot: Color) -> v
 	draw_line(knee, foot, col, 13.0)
 	draw_circle(knee, 6.5, col)
 	draw_rect(Rect2(foot.x - 7.0, foot.y - 9.0, 21.0, 10.0), boot)
+	if kind != "silhouette":
+		draw_line(hip + Vector2(3, 2), knee + Vector2(3, -2), col.lightened(0.13), 1.2, true)
+		draw_line(knee + Vector2(-4, 4), knee + Vector2(5, 6), col.darkened(0.28), 1.4)
+		draw_line(Vector2(foot.x - 6, foot.y), Vector2(foot.x + 14, foot.y), boot.lightened(0.22), 2.0)
+		for i in 3:
+			draw_line(foot + Vector2(-2 + i * 3, -8), foot + Vector2(1 + i * 3, -4), boot.lightened(0.26), 1.0)
 
 
 func _arm(shoulder: Vector2, ang: float, sleeve: Color, hand: Color, tape: Color = Color(0, 0, 0, 0), torch: bool = false) -> void:
@@ -174,6 +183,10 @@ func _arm(shoulder: Vector2, ang: float, sleeve: Color, hand: Color, tape: Color
 		draw_line(tip + dir * 18.0, tip + dir * 24.0, Color("4a4d52"), 12.0)
 		draw_circle(tip + dir * 25.0, 5.0, Color("fff2c8"))
 	draw_circle(tip, 6.0, hand)
+	if kind != "silhouette":
+		draw_line(shoulder + Vector2(-3, 2), shoulder + dir * 38.0 + Vector2(-3, 0), sleeve.lightened(0.14), 1.2, true)
+		draw_line(shoulder + dir * 46.0 - Vector2(4, 0), shoulder + dir * 46.0 + Vector2(4, 0), sleeve.darkened(0.3), 2.0)
+		draw_arc(tip + Vector2(2, 0), 3.0, 0.1, 1.9, 7, hand.darkened(0.2), 1.0, true)
 
 
 func _person(c: Dictionary, toolbelt: bool) -> void:
@@ -196,6 +209,8 @@ func _person(c: Dictionary, toolbelt: bool) -> void:
 	var torso := PackedVector2Array([
 		Vector2(-19, -86 + y0), Vector2(19, -86 + y0), Vector2(16, -152 + y0), Vector2(-17, -152 + y0)])
 	draw_colored_polygon(torso, c.jacket)
+	if kind != "silhouette":
+		_coat_detail(c, y0, toolbelt)
 	draw_line(Vector2(9, -90 + y0), Vector2(8, -150 + y0), c.jacket.darkened(0.22), 2.0)
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(-12, -152 + y0), Vector2(12, -152 + y0), Vector2(6, -140 + y0), Vector2(-6, -140 + y0)]), c.jacket.lightened(0.12))
@@ -224,7 +239,10 @@ func _person(c: Dictionary, toolbelt: bool) -> void:
 	_hair_back(hc, c)
 	draw_circle(hc + Vector2(3, 1), 13.5, c.skin)
 	_hair_front(hc, c)
-	draw_circle(hc + Vector2(10, -1), 1.8, c.eye)
+	if kind == "silhouette":
+		draw_circle(hc + Vector2(10, -1), 1.8, c.eye)
+	else:
+		_face_detail(hc, c)
 	if c.get("glasses", false):
 		draw_arc(hc + Vector2(9, -1), 4.5, 0.0, TAU, 10, Color("3a3a3a"), 1.5)
 		draw_line(hc + Vector2(4, -2), hc + Vector2(-4, -3), Color("3a3a3a"), 1.2)
@@ -242,6 +260,51 @@ func _person(c: Dictionary, toolbelt: bool) -> void:
 		if gauze:
 			var dir := Vector2(sin(-swing * 0.8), cos(-swing * 0.8))
 			draw_line(sh + Vector2(5, 0) + dir * 40.0, sh + Vector2(5, 0) + dir * 56.0, Color("ece9e0"), 12.0)
+			for i in 4:
+				var wrap := sh + Vector2(5, 0) + dir * (42.0 + i * 3.5)
+				draw_line(wrap - Vector2(5, 1), wrap + Vector2(5, 1), Color("b8b4aa"), 1.0)
+
+
+func _coat_detail(c: Dictionary, y: float, tools: bool) -> void:
+	# Shaped side seam, shoulder yoke, stitched pockets and metal fastenings.
+	draw_colored_polygon(PackedVector2Array([Vector2(-19, -86+y), Vector2(-10, -89+y), Vector2(-10, -146+y), Vector2(-17, -151+y)]), c.jacket.darkened(0.22))
+	draw_line(Vector2(-12, -143+y), Vector2(13, -143+y), c.jacket.lightened(0.18), 1.3, true)
+	draw_colored_polygon(PackedVector2Array([Vector2(0,-151+y), Vector2(11,-149+y), Vector2(7,-133+y)]), c.jacket.darkened(0.32))
+	draw_line(Vector2(6,-136+y), Vector2(7,-94+y), c.jacket.lightened(0.3), 1.3)
+	for i in 4:
+		draw_circle(Vector2(7,-130+y+i*10), 1.1, Color("b0aa91"))
+	for x in [-13.0, 11.0]:
+		draw_rect(Rect2(x,-119+y,10,15),c.jacket.darkened(0.14))
+		draw_line(Vector2(x,-119+y),Vector2(x+10,-119+y),c.jacket.lightened(0.22),1.5)
+		draw_line(Vector2(x+1,-106+y),Vector2(x+9,-106+y),c.jacket.darkened(0.3),1.0)
+	if tools:
+		draw_rect(Rect2(-15,-98+y,10,16),Color("59402c"))
+		draw_line(Vector2(-10,-99+y),Vector2(-10,-87+y),Color("bac2bc"),2.0)
+		draw_rect(Rect2(-12,-100+y,4,5),Color("ab6339"))
+		draw_rect(Rect2(-9,-138+y,10,7),Color("a0ac95"))
+		draw_line(Vector2(-7,-134+y),Vector2(-1,-134+y),Color("3e4f46"),1.0)
+	if c.get("long_coat",false):
+		for i in 3:
+			draw_line(Vector2(-12+i*11,-83+y),Vector2(-15+i*14,-44+y),c.jacket.darkened(0.22),1.3)
+	if c.has("apron"):
+		draw_line(Vector2(-4,-146+y),Vector2(-2,-124+y),c.apron,3.0)
+
+
+func _face_detail(hc: Vector2, c: Dictionary) -> void:
+	# Profile nose, ear, jaw, eyebrow and an occasional quiet blink.
+	draw_colored_polygon(PackedVector2Array([hc+Vector2(13,-2),hc+Vector2(18,4),hc+Vector2(12,5)]),c.skin)
+	draw_arc(hc+Vector2(3,1),12.0,0.55,1.8,12,c.skin.darkened(0.18),1.4,true)
+	draw_circle(hc+Vector2(-4,2),3.2,c.skin.darkened(0.1))
+	draw_arc(hc+Vector2(-4,2),1.8,-1.4,1.6,7,c.skin.darkened(0.28),1.0,true)
+	draw_line(hc+Vector2(7,-5),hc+Vector2(13,-4),c.hair,1.3,true)
+	if fmod(_t + position.x * 0.013,5.7) < 0.15:
+		draw_line(hc+Vector2(8,-1),hc+Vector2(12,-1),c.eye,1.2)
+	else:
+		draw_circle(hc+Vector2(10,-1),1.7,c.eye)
+		draw_circle(hc+Vector2(10.5,-1.5),0.5,Color("e6d4bf"))
+	draw_line(hc+Vector2(10,9),hc+Vector2(15,8),c.skin.darkened(0.38),1.0,true)
+	for i in 4:
+		draw_line(hc+Vector2(-12+i*4,-9-i),hc+Vector2(-9+i*4,-11-i*.4),c.hair.lightened(0.12),1.0,true)
 
 
 func _seated_leg(hip: Vector2, col: Color, boot: Color) -> void:
@@ -318,6 +381,14 @@ func _tomas() -> void:
 	draw_circle(Vector2(26, -90 - bob), 4.0, Color("c8c39f"))
 	draw_line(Vector2(44, -100 - bob), Vector2(56, -146 - bob), Color("9aa0a6"), 2.0)
 	draw_circle(Vector2(24, -86 - bob), 5.5, skin)
+	for y in [-105.0,-93.0,-81.0,-69.0]:
+		draw_line(Vector2(-15,y-bob),Vector2(13,y-bob),parka.lightened(0.16),1.0)
+	draw_line(Vector2(5,-109-bob),Vector2(5,-64-bob),Color("c8bca3"),1.4)
+	draw_rect(Rect2(-13,-88-bob,10,14),parka.darkened(0.2))
+	for k in 6:
+		draw_line(Vector2(32+k*2,-96-bob),Vector2(32+k*2,-85-bob),Color("253024"),1.0)
+	draw_rect(Rect2(19,-98-bob,11,3),Color("e7bd6d"))
+	draw_line(hc+Vector2(7,7),hc+Vector2(12,7),skin.darkened(0.3),1.0)
 
 
 func _body() -> void:

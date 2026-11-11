@@ -57,7 +57,7 @@ func _ready() -> void:
 			for id in ROOMS:
 				var sc: GDScript = load(ROOMS[id])
 				print("check ", id, ": ", "ok" if sc != null and sc.can_instantiate() else "FAILED")
-			get_tree().quit()
+			await quit_game()
 			return
 		if arg.begins_with("--autotest="):
 			test = arg.get_slice("=", 1)
@@ -79,8 +79,10 @@ func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_WM_GO_BACK_REQUEST:
 			# Android back button: pause in game, quit from the title screen.
-			if room_id == "menu":
-				get_tree().quit()
+			if hud.audio_settings.visible:
+				hud.audio_settings.close()
+			elif room_id == "menu":
+				quit_game()
 			elif room != null and room.shows_hud:
 				hud.toggle_pause()
 		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST:
@@ -90,6 +92,13 @@ func _notification(what: int) -> void:
 
 func is_busy() -> bool:
 	return busy_count > 0
+
+
+func quit_game(exit_code: int = 0) -> void:
+	Audio.shutdown()
+	# Let the audio thread dispose streaming decoders before the engine exits.
+	await get_tree().create_timer(0.15, true, false, true).timeout
+	get_tree().quit(exit_code)
 
 
 ## Runs an interaction coroutine while blocking room input.
@@ -116,6 +125,8 @@ func cross(freq: String, id: String, entry: String = "") -> void:
 
 
 func _go(id: String, entry: String) -> void:
+	Audio.stop_all(0.4)
+	Audio.music_context(id)
 	entering.emit(id, entry)
 	busy_count += 1
 	if room != null:

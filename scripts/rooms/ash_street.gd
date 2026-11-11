@@ -55,6 +55,7 @@ func ambience() -> void:
 	Audio.stop_loop("crowd", 0.6)
 	Audio.stop_loop("dish_motor", 0.6)
 	Audio.play_loop("wind", -16.0 if freq == "14" else -20.0)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -200,7 +201,7 @@ func draw_back() -> void:
 
 
 func _neighbor(r: Rect2) -> void:
-	draw_rect(r, Color("4a4448"))
+	EnvironmentArt.brick(self, r, Color("4a4448"), true)
 	draw_colored_polygon(PackedVector2Array([r.position + Vector2(-20, 0), r.position + Vector2(r.size.x * 0.5, -90),
 		Vector2(r.end.x + 20, r.position.y)]), Color("2a2428"))
 	for k in 2:
@@ -216,8 +217,10 @@ func _house() -> void:
 		draw_rect(r, Color(0.8, 0.84, 0.9, 0.15), false, 2.0)
 		return
 	var wall := Color("6a5a4a") if s != "14" else Color("4a4440")
-	draw_rect(r, wall)
+	EnvironmentArt.brick(self, r, wall, true)
 	draw_colored_polygon(PackedVector2Array([Vector2(460, 330), Vector2(670, 220), Vector2(880, 330)]), Color("3a2a24"))
+	draw_line(Vector2(460,330),Vector2(670,220),Color("a3b0af"),4.0)
+	draw_line(Vector2(670,220),Vector2(880,330),Color("a3b0af"),4.0)
 	# Upstairs windows: in other stations, a different pattern of lights.
 	var pattern := [true, true]
 	if s != "H" and s != "14" and s != "":

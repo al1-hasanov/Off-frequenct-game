@@ -64,6 +64,7 @@ func ambience() -> void:
 		Audio.play_loop("snore", -14.0)
 	else:
 		Audio.stop_loop("snore", 0.4)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -257,6 +258,7 @@ func _drawer() -> void:
 
 func draw_back() -> void:
 	Kit.wall(self, floor_y, Color("4a3f36"), Color("3a312b"), Color("1d1916"))
+	EnvironmentArt.wall_props(self, str(name))
 	_carpet()
 	Kit.door(self, Rect2(40, 340, 90, 310), Color("5a4a3c"))
 	_photo_art()

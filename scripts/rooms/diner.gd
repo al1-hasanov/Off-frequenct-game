@@ -62,6 +62,7 @@ func ambience() -> void:
 	Audio.play_loop("radio_music", -24.0)
 	if freq == "12":
 		Audio.play_loop("engine", -38.0)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -287,6 +288,7 @@ func _back_in_1983() -> void:
 func draw_back() -> void:
 	var y1980 := freq == "12"
 	Kit.wall(self, floor_y, Color("7a5a48") if y1980 else Color("6a4e44"), Color("5a4036"), Color("2a1e1a"))
+	EnvironmentArt.wall_props(self, str(name))
 	# Checkerboard floor.
 	for i in 30:
 		for j in 3:
@@ -315,6 +317,10 @@ func _booths() -> void:
 		draw_rect(Rect2(x + 30, 570, 86, 10), Color("c8c0b0"))
 		draw_line(Vector2(x + 73, 580), Vector2(x + 73, 650), Color("6a6a6a"), 5.0)
 		draw_rect(Rect2(x + 50, 556, 16, 14), Color("e8e4dc"))
+		for i in 5:
+			draw_line(Vector2(x+4,530+i*20),Vector2(x+22,530+i*20),Color("a34a40"),1.0)
+		draw_rect(Rect2(x+81,549,8,20),Color("8d382d"))
+		draw_rect(Rect2(x+82,545,6,5),Color("dad3bf"))
 
 
 func _menu(y1980: bool) -> void:

@@ -55,6 +55,7 @@ func _process(delta: float) -> void:
 func ambience() -> void:
 	Audio.stop_all(0.4)
 	Audio.play_loop("wind", -30.0)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -181,6 +182,7 @@ func on_hotspot(id: String) -> void:
 
 func draw_back() -> void:
 	Kit.wall(self, floor_y, Color("5a5450"), Color("4a4440"), Color("2a2622"))
+	EnvironmentArt.wall_props(self, str(name))
 	draw_rect(Rect2(Kit.L, floor_y, Kit.R - Kit.L, 400), Color("3a3430"))
 	for i in 16:
 		draw_line(Vector2(Kit.L + i * 150.0, floor_y), Vector2(Kit.L + i * 150.0, 760), Color(0, 0, 0, 0.15), 2.0)

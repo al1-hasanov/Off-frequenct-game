@@ -36,6 +36,7 @@ func is_dark() -> bool:
 func ambience() -> void:
 	Audio.stop_all(0.6)
 	Audio.play_loop("drip", -18.0)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:

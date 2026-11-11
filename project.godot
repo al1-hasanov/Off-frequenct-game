@@ -1,16 +1,16 @@
 ; Engine configuration file.
-; Off Frequency — Godot 4.7 project. Open this folder in Godot 4.7+.
+; Off Frequency — Godot 4.6 project. Open this folder in Godot 4.6+.
 
 config_version=5
 
 [application]
 
 config/name="Off Frequency"
-config/description="A 2D sci-fi point-and-click mystery. v0.3: the prologue, Act 1 and Act 2, with step-by-step hints."
-config/version="0.3.2"
+config/description="A 2D sci-fi point-and-click mystery. v0.4: detailed 2D scenes, layered ambience and an optional quiet mystery score."
+config/version="0.4.0"
 run/main_scene="res://scenes/main.tscn"
 config/quit_on_go_back=false
-config/features=PackedStringArray("4.7", "GL Compatibility")
+config/features=PackedStringArray("4.6", "GL Compatibility")
 boot_splash/bg_color=Color(0.02, 0.03, 0.05, 1)
 boot_splash/show_image=false
 config/icon="res://icon.svg"

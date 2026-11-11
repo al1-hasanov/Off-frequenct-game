@@ -11,6 +11,22 @@ extends Node
 
 const SFX_PLAYERS := 10
 const DUCK_DB := -8.0
+const SETTINGS_PATH := "user://audio_settings.cfg"
+
+signal settings_changed
+var music_enabled := true
+var music_volume := 0.55
+var ambience_volume := 0.8
+var effects_volume := 0.85
+var master_volume := 0.9
+var _music: AudioStreamPlayer
+var _environment := {}
+var _score_quiet := false
+var _dialogue := false
+var _tuning := false
+var _mix_db := 0.0
+var _settings_dirty := false
+var _save_delay := 0.0
 
 var _streams := {}
 var _loops := {}
@@ -18,13 +34,12 @@ var _pool: Array[AudioStreamPlayer] = []
 var _next := 0
 var _voice: AudioStreamPlayer
 var _voice_fade: Tween
-var _duck: Tween
 var _ducked := false
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	for bus in ["Ambience", "SFX", "Voice"]:
+	for bus in ["Ambience", "SFX", "Voice", "Music", "Environment"]:
 		if AudioServer.get_bus_index(bus) == -1:
 			AudioServer.add_bus()
 			var i := AudioServer.bus_count - 1
@@ -39,6 +54,139 @@ func _ready() -> void:
 	_voice.bus = "Voice"
 	_voice.finished.connect(_unduck)
 	add_child(_voice)
+	AudioServer.set_bus_send(AudioServer.get_bus_index("Environment"), "Ambience")
+	_music = AudioStreamPlayer.new()
+	_music.bus = "Music"
+	_music.stream = _stream("night_score", true)
+	_music.volume_db = -10.0
+	add_child(_music)
+	load_settings()
+	_apply_settings()
+	_sync_music()
+
+
+func _process(delta: float) -> void:
+	# Audio is always processed, including the pause menu. Ease under dialogue/tuning.
+	var target := -10.0 if _dialogue or _tuning or _ducked else 0.0
+	_mix_db = move_toward(_mix_db, target, delta * 18.0)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), linear_to_db(maxf(music_volume, 0.0001)) + _mix_db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Ambience"), linear_to_db(maxf(ambience_volume, 0.0001)) + _mix_db * 0.4)
+	if _settings_dirty:
+		_save_delay -= delta
+		if _save_delay <= 0.0:
+			save_settings()
+
+
+func load_settings() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SETTINGS_PATH) != OK:
+		return
+	music_enabled = bool(cfg.get_value("audio", "music_enabled", true))
+	for key in ["music_volume", "ambience_volume", "effects_volume", "master_volume"]:
+		set(key, clampf(float(cfg.get_value("audio", key, get(key))), 0.0, 1.0))
+
+
+func save_settings() -> void:
+	var cfg := ConfigFile.new()
+	for key in ["music_enabled", "music_volume", "ambience_volume", "effects_volume", "master_volume"]:
+		cfg.set_value("audio", key, get(key))
+	if cfg.save(SETTINGS_PATH) != OK:
+		push_warning("Could not save audio preferences.")
+	_settings_dirty = false
+
+
+func set_setting(key: String, value: Variant) -> void:
+	if key == "music_enabled":
+		music_enabled = bool(value)
+	elif key in ["music_volume", "ambience_volume", "effects_volume", "master_volume"]:
+		set(key, clampf(float(value), 0.0, 1.0))
+	else:
+		return
+	_apply_settings()
+	_sync_music()
+	_settings_dirty = true
+	_save_delay = 0.4
+	settings_changed.emit()
+
+
+func _apply_settings() -> void:
+	for entry in [["Master", master_volume], ["Ambience", ambience_volume], ["SFX", effects_volume]]:
+		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(entry[0]), linear_to_db(maxf(float(entry[1]), 0.0001)))
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Music"), not music_enabled or music_volume <= 0.0)
+
+
+func _sync_music() -> void:
+	if _music == null:
+		return
+	if music_enabled and music_volume > 0.0 and not _score_quiet:
+		if not _music.playing:
+			_music.play()
+	else:
+		_music.stop()
+
+
+func set_dialogue(active: bool) -> void:
+	_dialogue = active
+
+
+func set_tuning(active: bool) -> void:
+	_tuning = active
+
+
+func music_context(id: String) -> void:
+	# The mine's intentional silence and listening puzzle keep their original mix.
+	_score_quiet = id == "mine_tunnel"
+	_sync_music()
+
+
+func set_environment(id: String, frequency: String) -> void:
+	var desired := {}
+	match id:
+		"main_street": desired = {"street_air": -18.0, "people_murmur": -25.0}
+		"ash_street": desired = {"street_air": -30.0}
+		"diner": desired = {"diner_room": -25.0, "people_murmur": -34.0}
+		"pike_radio": desired = {"room_air": -30.0, "street_air": -36.0}
+		"corridor", "receiver_room", "control_room", "lobby", "east_corridor", "sollen_office", "garage", "sheriff_office":
+			desired = {"room_air": -31.0}
+	if frequency in ["00", "14", "61"]:
+		desired.clear()
+	for sound in _environment:
+		if not desired.has(sound):
+			_fade(_environment[sound], -60.0, 0.7, true)
+	for sound in desired:
+		var p: AudioStreamPlayer = _environment.get(sound)
+		if p == null:
+			p = AudioStreamPlayer.new()
+			p.bus = "Environment"
+			p.stream = _stream(sound, true)
+			add_child(p)
+			_environment[sound] = p
+		if not p.playing:
+			p.volume_db = -60.0
+			p.play()
+		_fade(p, float(desired[sound]), 1.4, false)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		if _settings_dirty:
+			save_settings()
+
+
+func shutdown() -> void:
+	# Release active Vorbis decoders before the audio server tears down.
+	if _settings_dirty:
+		save_settings()
+	set_process(false)
+	for child in get_children():
+		if child is AudioStreamPlayer:
+			child.stop()
+			child.stream = null
+	_streams.clear()
+
+
+func _exit_tree() -> void:
+	shutdown()
 
 
 # --- voice -----------------------------------------------------------------------
@@ -96,22 +244,16 @@ func _unduck() -> void:
 
 
 func _set_duck(on: bool) -> void:
-	if on == _ducked:
-		return
 	_ducked = on
-	if _duck != null and _duck.is_valid():
-		_duck.kill()
-	var bus := AudioServer.get_bus_index("Ambience")
-	_duck = create_tween()
-	_duck.tween_method(func(v: float) -> void: AudioServer.set_bus_volume_db(bus, v),
-		AudioServer.get_bus_volume_db(bus), DUCK_DB if on else 0.0, 0.15 if on else 0.6)
 
 
 func _stream(sound: String, loop: bool) -> AudioStream:
 	var key := sound + ("#loop" if loop else "")
 	if _streams.has(key):
 		return _streams[key]
-	var path := "res://audio/%s.wav" % sound
+	var path := "res://audio/%s.ogg" % sound
+	if not ResourceLoader.exists(path):
+		path = "res://audio/%s.wav" % sound
 	if not ResourceLoader.exists(path):
 		push_warning("Missing sound: " + path)
 		return null
@@ -122,6 +264,10 @@ func _stream(sound: String, loop: bool) -> AudioStream:
 		w.loop_begin = 0
 		w.loop_end = int(w.get_length() * w.mix_rate)
 		s = w
+	elif loop and s is AudioStreamOggVorbis:
+		var ogg: AudioStreamOggVorbis = s.duplicate()
+		ogg.loop = true
+		s = ogg
 	_streams[key] = s
 	return s
 
@@ -194,6 +340,8 @@ func is_looping(sound: String) -> bool:
 func stop_all(fade: float = 0.5) -> void:
 	for sound in _loops:
 		stop_loop(sound, fade)
+	for p in _environment.values():
+		_fade(p, -60.0, fade, true)
 
 
 func _fade(p: AudioStreamPlayer, db: float, dur: float, stop_after: bool) -> void:

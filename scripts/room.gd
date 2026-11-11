@@ -89,6 +89,8 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	draw_back()
+	if is_station() or str(name) in ["pike_radio", "diner", "garage", "basement", "ash_kitchen", "sheriff_office"]:
+		EnvironmentArt.motes(self, t, floor_y)
 
 
 # --- overridables -------------------------------------------------------------

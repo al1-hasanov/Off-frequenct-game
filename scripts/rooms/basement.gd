@@ -36,6 +36,7 @@ func is_dark() -> bool:
 func ambience() -> void:
 	super()
 	Audio.play_loop("drone", -30.0)
+	Audio.set_environment(str(name), freq)
 
 
 func on_arrive() -> void:
@@ -176,6 +177,7 @@ func _knock() -> void:
 
 func draw_back() -> void:
 	Kit.wall(self, floor_y, Color("3a3a36"), Color("2e2e2b"), Color("1b1b19"))
+	EnvironmentArt.wall_props(self, str(name))
 	draw_rect(Rect2(Kit.L, floor_y, Kit.R - Kit.L, 400), Color("2a2926"))
 	for i in 12:
 		draw_line(Vector2(Kit.L + i * 190.0, 30), Vector2(Kit.L + i * 190.0 + 40, floor_y - 130), Color(0, 0, 0, 0.08), 2.0)
