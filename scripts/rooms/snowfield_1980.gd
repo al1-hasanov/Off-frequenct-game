@@ -1,13 +1,20 @@
 extends Room
 ## Prologue P1 — the snowfield, October 14, 1980.
 ## Mara turns her back for three seconds to lock the gate, and Tomas is gone.
+##
+## Act 2.6 — the same night from the treeline, in frequency 12. Mara is the
+## figure at the trees, and makes Choice 2: take Tomas, or leave him.
 
 var tomas: Actor
 var figure: Actor
 var snow: Snowfall
+var mara80: Actor
 
 
 func setup() -> void:
+	if freq == "12":
+		_setup_12()
+		return
 	place_name = "Halvard Observatory · October 14, 1980"
 	base_tint = Color(0.82, 0.87, 1.0)
 	walk_min = 150.0
@@ -33,10 +40,14 @@ func setup() -> void:
 
 
 func enter(_entry: String) -> void:
-	GameState.set_clock("2:12")
+	if freq == "H":
+		GameState.set_clock("2:12")
 
 
 func on_arrive() -> void:
+	if freq == "12":
+		await _arrive_12()
+		return
 	Audio.stop_all(0.3)
 	Audio.play_loop("wind", -10.0)
 	if tomas.visible:
@@ -50,6 +61,9 @@ func on_arrive() -> void:
 
 
 func on_hotspot(id: String) -> void:
+	if freq == "12":
+		await _hotspot_12(id)
+		return
 	match id:
 		"tomas":
 			if not GameState.has("p1_talked"):
@@ -153,3 +167,90 @@ func _fence() -> void:
 	draw_rect(Rect2(360, 492, 80, 156), post, false, 4.0)
 	draw_rect(Rect2(392, 558, 17, 15), Color("a9a48e"))
 	draw_arc(Vector2(400.5, 558), 6.0, PI, TAU, 10, Color("a9a48e"), 3.0)
+
+
+# --- Act 2.6: frequency 12 ------------------------------------------------------
+
+func _setup_12() -> void:
+	place_name = "Halvard Observatory · October 14, 1980"
+	base_tint = Color(0.82, 0.87, 1.0)
+	walk_min = 860.0
+	walk_max = 1230.0
+	tomas = add_actor("tomas", 1010.0, 1)
+	mara80 = add_actor("mara_1980", -120.0, 1)
+	make_player(1210.0, -1)
+	player.step_sound = "step_snow"
+	snow = Snowfall.new()
+	snow.area = Rect2(Kit.L, -30, Kit.R - Kit.L, 790)
+	snow.count = 230
+	snow.wind = 42.0
+	add_child(snow)
+	add_hotspot("tomas", Rect2(962, 470, 100, 190), "Tomas", 1120.0, -1, func() -> bool: return tomas.visible)
+	add_hotspot("truck", Rect2(10, 480, 235, 170), "The truck", NAN)
+	add_hotspot("observatory", Rect2(880, 230, 330, 240), "The observatory", NAN)
+
+
+func _arrive_12() -> void:
+	Audio.stop_all(0.3)
+	Audio.play_loop("wind", -10.0)
+	Audio.play_loop("static", -30.0)
+	if GameState.has("choice2"):
+		return
+	await wait(1.0)
+	await say("MARA (1980)", "Tomas! Two minutes, I said!")
+	await mara("That's me. Behind the building. Calling him.")
+	await mara("And I'm standing at the trees. I'm the one at the trees.")
+	await say("TOMAS", "Mara?")
+	tomas.face(1)
+	await say("TOMAS", "You look old.")
+	await mara("Hi, Tomas.")
+	await say("TOMAS", "It told me to come to the trees. It said you'd be here.")
+	objective()
+
+
+func _hotspot_12(id: String) -> void:
+	match id:
+		"tomas":
+			await _choice2()
+		"truck":
+			await mara("My truck. The heater's running. In a minute I'll be standing there screaming his name.")
+		"observatory":
+			await mara("The dish. It's turning toward the trees. Toward us.")
+
+
+func _choice2() -> void:
+	if GameState.has("choice2"):
+		return
+	await say("TOMAS", "Is it you? From the radio?")
+	var pick: int = await hud.choose(["Take him with you", "Send him back to his sister"])
+	GameState.set_flag("choice2")
+	if pick == 0:
+		GameState.set_story("TOMAS", "taken")
+		await mara("Come with me. Right now. Don't look back.")
+		await say("TOMAS", "Where are we going?")
+		await mara("Somewhere you don't disappear.")
+		Audio.stop_loop("static", 0.4)
+		tomas.walk_to(1300.0)
+		await player.walk_to(1290.0)
+		await wait(0.6)
+		await say("MARA (1980)", "Tomas? TOMAS!")
+		await narrate("Behind them, a girl's footprints run halfway across the snow and stop. His are gone.")
+	else:
+		GameState.set_story("TOMAS", "left")
+		await mara("Go to your sister. Get in the truck.")
+		await mara("And turn that radio off.")
+		await say("TOMAS", "...Okay.")
+		Audio.stop_loop("static", 0.6)
+		mara80.walk_to(620.0)
+		await tomas.walk_to(680.0)
+		await narrate("The other Mara grabs him so hard his headphones fall into the snow.")
+		await say("MARA (1980)", "Don't you ever. Don't you ever do that.")
+		tomas.face(1)
+		await wait(0.8)
+		await narrate("Over her shoulder, Tomas looks back at the trees. The woman there is gone.")
+		player.walk_to(1300.0)
+		await wait(0.8)
+		await narrate("In frequency 12, Tomas Lind never vanishes.")
+	await hud.fade_out(1.2)
+	await narrate("Down the access road to Ma's truck. Down the mountain. In by the diner's back door.")
+	main.change_room("diner", "return")

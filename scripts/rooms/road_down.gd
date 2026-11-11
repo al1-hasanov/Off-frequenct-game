@@ -56,6 +56,7 @@ func on_arrive() -> void:
 	await narrate("The engine's dead. The headlights are dead. Under the bridge it's the darkest dark she has ever seen.")
 	await mara("I can feel it. Like the floor's tilting. I'm sliding.")
 	await mara("Tomas's radio. Find the hum. Find home.")
+	await mara("There's no number for home on his dial. It's in the gap between six and seven, where the dial says nothing.")
 	var st := ""
 	while st != "H":
 		st = await tuner_session(_home_refusal, 2.0)
@@ -82,7 +83,8 @@ func on_arrive() -> void:
 	await wait(2.0)
 	Audio.stop_all(2.0)
 	await hud.fade_out(2.0)
-	main.change_room("end_card")
+	await hud.card("ACT 2", "The overlap", 2.6)
+	main.change_room("main_street", "arrive")
 
 
 func _home_refusal(st: String) -> String:

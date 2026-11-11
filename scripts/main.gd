@@ -18,6 +18,13 @@ const ROOMS := {
 	"basement": "res://scripts/rooms/basement.gd",
 	"garage": "res://scripts/rooms/garage.gd",
 	"road_down": "res://scripts/rooms/road_down.gd",
+	"main_street": "res://scripts/rooms/main_street.gd",
+	"pike_radio": "res://scripts/rooms/pike_radio.gd",
+	"sheriff_office": "res://scripts/rooms/sheriff_office.gd",
+	"ash_street": "res://scripts/rooms/ash_street.gd",
+	"ash_kitchen": "res://scripts/rooms/ash_kitchen.gd",
+	"diner": "res://scripts/rooms/diner.gd",
+	"mine_tunnel": "res://scripts/rooms/mine_tunnel.gd",
 	"end_card": "res://scripts/rooms/end_card.gd",
 }
 
@@ -121,6 +128,7 @@ func _go(id: String, entry: String) -> void:
 	next.enter(entry)
 	if next.is_story_room:
 		GameState.room = id
+		next.objective()  # never carry the last room's objective into this one
 	GameState.place = next.place_name
 	hud.set_gameplay_visible(next.shows_hud)
 	hud.refresh()
@@ -149,3 +157,14 @@ func continue_game() -> void:
 func flash_hotspots() -> void:
 	if room != null:
 		room.flash()
+
+
+## The ? button: says exactly what to do next, then lights up everything tappable.
+func show_hint() -> void:
+	if room == null:
+		return
+	var text := Story.hint(room_id, room.freq)
+	run(func() -> void:
+		if text != "":
+			await hud.say("HINT", text)
+		room.flash())

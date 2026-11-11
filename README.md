@@ -1,13 +1,30 @@
-# Off Frequency — v0.2
+# Off Frequency — v0.3
 
 A 2D sci-fi point-and-click mystery for Android (iOS later), built in **Godot 4.7** with GDScript.
-The full story is in the *Off Frequency — Story Bible* doc; this build covers the prologue and all of Act 1.
+The full story is in the *Off Frequency — Story Bible* doc; this build covers the prologue, Act 1 and Act 2.
 
 ![Preview](docs/preview.png)
 
-## What's in v0.2
+## What's in v0.3
 
-About 35–40 minutes of play, both branches of Choice 1, from the 1980 snowfield to the underpass on the road down:
+About 70–80 minutes of play. Both branches of Choice 1 and both of Choice 2, from the 1980 snowfield to the mine under the mountain.
+
+### New in v0.3: Act 2, "The overlap"
+
+| Part | Scene | What happens |
+| --- | --- | --- |
+| **Act 2.1** | Main Street | The hub. Every light in town on at 2 AM, people outside in pajamas, Mr. Lund beside his wife and also at their kitchen window. |
+| **Act 2.4a** | Ash Street | Mom's house is lit. Under the broken streetlight, the Tuner shows each station's version of the house behind it, but none is dark: the dial stops at 09. |
+| **Act 2.2** | Pike Radio & Repair | June Pike finds the cracked crystal. The only match is in the sheriff's base radio. |
+| **Act 2.3** | Sheriff's office, frequency 05 | Through the dark alley to 05, where it's already Oct 17: Cal asleep beside his board for Mara's murder. Doormat under the filing cabinet, pull the plug, take the crystal. June fits it: the dial reaches 99 (bands of ten: −10 / +10). |
+| **Act 2.4** | Ash Street 14, the kitchen | Tune to 14: the house is dark and for sale. Eighty-One, by match light; ask your questions in any order. Then a third Mara at the back door, the match goes out, and the player is someone else. Nothing says so. |
+| **Act 2.5** | The Lantern diner | Ma. Ask for pie to send her to the front, unscrew the pantry bulb, shut the door, tune to 12. |
+| **Act 2.6** | 1980, frequency 12 | A younger Ma ("Did you cut your hair?"), her truck keys, the snowfield seen from the treeline. **Choice 2:** take Tomas, or send him back to his sister. Sets `TOMAS`. |
+| **Act 2.7** | The mine tunnel | The dish is turning by itself; June calls on the radio. The flashlight dies in the cold, and in total darkness you keep the drifting needle on home while Mara walks. Halfway, every sound stops. |
+
+Everything Act 2 adds works with the **?** hint button from the start.
+
+### The prologue and Act 1 (from v0.2)
 
 | Part | Scene | What happens |
 | --- | --- | --- |
@@ -23,6 +40,13 @@ About 35–40 minutes of play, both branches of Choice 1, from the 1980 snowfiel
 | **Act 1.7** | Garage, frequency 03 | Empty tank, a pine across the road. Red tape on the wrist, flashlight off, tune to 03: road plowed, tank full. |
 | **Act 1.7** | The road down | Halvard's windows breathing, the underpass, the engine dies in total darkness. Find home on the dial. |
 
+### New in v0.2.1: hints
+
+- **The ? button now tells you exactly what to do next**, wherever you are, on either branch: which room to go to, what to tap, and which item to use on what. Then it lights up everything you can interact with, as before.
+- Objectives are more specific at the steps that were easy to miss: the vending-machine fuse, the four things to check on the body, the junction box, the clock batteries and the caged lamp.
+- Small hotspots (the watch, the fuse holder, the note) also catch taps that land just outside them.
+- The Tuner panel says how to use it, and Mara tells you where home is on the dial at the underpass.
+
 ### The rules the player learns
 
 - **Darkness is a door.** In the dark you slip into another version of the building; any light holds you where you are. Mara carries a flashlight so she can walk dark rooms safely.
@@ -33,14 +57,14 @@ Branch differences: cutting the power switches home to red emergency light, leav
 
 ## Play it
 
-**On Android:** copy `OffFrequency-v0.2-debug.apk` to the phone, open it, and allow "Install unknown apps" when asked. It installs over v0.1. Needs Android 7.0 or newer. It's a debug build, so it's for testing, not the Play Store.
+**On Android:** copy `OffFrequency-v0.3-debug.apk` to the phone, open it, and allow "Install unknown apps" when asked. It installs over earlier versions and keeps your save. Needs Android 7.0 or newer. It's a debug build, so it's for testing, not the Play Store.
 
 **On your computer:** download Godot 4.7 (the standard build, not .NET), choose *Import*, pick this folder's `project.godot`, then press **F5**.
 
 **Controls:** tap to walk; tap anything to look at or use it. Tap an inventory item to select it, then:
-tap something in the room to use it there, tap **another item** to combine the two, or tap the **same item** again to examine it (examining Tomas's radio is how you use it). **?** flashes everything you can interact with, even in the dark. **II** (or Android's back button) pauses and saves.
+tap something in the room to use it there, tap **another item** to combine the two, or tap the **same item** again to examine it (examining Tomas's radio is how you use it). **?** tells you what to do next, then flashes everything you can interact with, even in the dark. **II** (or Android's back button) pauses and saves.
 
-**The Tuner:** drag along the dial (or nudge with ◀ ▶). When a station locks, the green lamp lights and *Step into the dark* goes through.
+**The Tuner:** drag along the dial (or nudge with ◀ ▶). When a station locks, the green lamp lights and *Step into the dark* goes through. After June's repair, **−10 / +10** switch between bands (00–09, 10–19 ... 90–99). While a station is locked, the scene behind the panel shows a glimpse of that frequency.
 
 ## Project layout
 
@@ -53,16 +77,18 @@ scripts/
   main.gd                  Camera, HUD, room changes, crossings, input blocking during scenes
   hud.gd                   Clock, objective, inventory (combine/examine), dialogue, choices,
                            document reader, glitch effect, fades, menus
-  tuner_ui.gd              Tomas's radio: the dial, station sounds, lock lamp
-  story.gd                 Works out the Act 1 objective line from the flags
+  tuner_ui.gd              Tomas's radio: the dial, bands, station sounds, lock lamp, hold mode
+  story.gd                 Works out the objective and the ? button's hint from the flags
   room.gd                  Base class for every screen: hotspots, walking, frequency, darkness,
                            flashlight, glow layer, hint layer
   station_room.gd          Shared look and ambience for the observatory interior
-  actor.gd                 Mara, Tomas, Sollen asleep, the body, the silhouette (drawn from shapes)
+  actor.gd                 Every character, drawn from shapes: Mara, Tomas, Sollen, June, Ruth,
+                           Cal, Eighty-One, townspeople, the body, the silhouette
   kit.gd, snow.gd          Drawing helpers (including the snowcat) and falling snow
   rooms/*.gd               One file per room: menu, snowfield_1980, corridor, receiver_room,
                            control_room, lobby, east_corridor, sollen_office, basement,
-                           garage, road_down, end_card
+                           garage, road_down, main_street, pike_radio, sheriff_office,
+                           ash_street, ash_kitchen, diner, mine_tunnel, end_card
   autotest.gd              Automated playthroughs (see Testing)
 audio/*.wav                Placeholder sounds, generated by tools/gen_audio.py
 textures/*.png             Flashlight cone and glow, generated by tools/gen_textures.py
@@ -90,20 +116,22 @@ func on_hotspot(id: String) -> void:
 - **Hotspots**: `add_hotspot(id, rect, label, walk_x, face, condition)`. The smallest hotspot under a tap wins.
 - **Items**: `use_item(hotspot, item)` for using an item on something, `GameState.RECIPES` for combining two items, `examine_item(item)` to override what examining does in a room.
 - **Choices and documents**: `await hud.choose([...])`, `await hud.read_doc(title, pages)`.
-- **The Tuner**: `var station := await tuner_session(refuse)`, where `refuse(station)` returns `""` to let Mara through or a line she says instead.
+- **The Tuner**: `var station := await tuner_session(refuse, start, band)`, where `refuse(station)` returns `""` to let Mara through or a line she says instead. While a station is locked, the room's `tuning` holds it, so `draw_back()` can show that frequency's version (Ash Street does this).
+- **People behind counters and desks**: `add_layer(1, fn)` draws a prop in front of other characters but behind Mara.
 - **Adding a room**: create `scripts/rooms/my_room.gd` extending `Room` (or `StationRoom`), then register it in `ROOMS` in `scripts/main.gd`.
 - **Saving** happens automatically on every room change (including the frequency) and when the app is paused.
 
 ## Testing
 
-The automated playthrough taps through the real game and checks the story state after each beat (150 checks across three runs):
+The automated playthrough taps through the real game and checks the story state after each beat (213 checks across three runs, and every step must have a hint):
 
 ```
-godot --headless --path . -- --autotest=answer     # Choice 1: answer the voice, all of Act 1
-godot --headless --path . -- --autotest=cut        # Choice 1: cut the power, all of Act 1
-godot --headless --path . -- --autotest=continue   # save, quit, Continue (also inside frequency 01)
+godot --headless --path . -- --autotest=answer     # answer the voice, then take Tomas: Acts 1 and 2
+godot --headless --path . -- --autotest=cut        # cut the power, then leave Tomas: Acts 1 and 2
+godot --headless --path . -- --autotest=continue   # save, quit, Continue (also inside 01 and 05)
 godot --headless --path . -- --check               # compile every room script and quit
 godot --path . -- --autotest=tuner --shots=/tmp/t   # opens the Tuner in the dark garage and screenshots it
+godot --path . -- --autotest=rooms --shots=/tmp/r   # screenshots every Act 2 room
 ```
 
 Each exits with code 0 on pass, 1 on failure, so they can run in GitLab CI. Add `--shots=/some/folder` (and drop `--headless`) to also save screenshots of key moments, the Tuner and the documents.
@@ -129,6 +157,6 @@ There are no recordings yet: lines show as subtitles, and the 2:14 voice falls b
 - Tested here with automated runs and rendered screenshots, but not yet on a physical phone. The 2D lights are the most demanding thing in the game; if a low-end phone struggles in dark rooms, lower `texture_scale` on the flashlight in `room.gd`.
 - iOS export needs a Mac with Xcode and an Apple Developer account; nothing in the code is Android-only.
 
-## Next: v0.3
+## Next: v0.4
 
-Act 2: Ash Street and the house with the lights off, Eighty-One face to face, and Choice 2.
+Act 3: patching the Tuner into the dish, three possible futures (2031, 2009, 1991), the chalkboard that writes the next date by itself, Tomas's notebook in the wall, and Choice 3.

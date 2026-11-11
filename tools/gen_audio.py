@@ -617,6 +617,203 @@ def thunk():
     latch = [0.0] * secs(0.05) + apply(highpass(noise(n - secs(0.05)), 2000), env_exp(n - secs(0.05), 0.01, 0.0005))
     return mix(low, gain(body, 0.8), gain(latch, 0.5))
 
+
+# ---------------------------------------------------------------- v0.3 (Act 2)
+def scanner():
+    """A police scanner: squelch bursts of garbled talk between hiss."""
+    n = secs(5.5)
+    out = [0.0] * n
+    hiss = gain(highpass(noise(n), 1200), 0.08)
+    t = 0.2
+    while t < 5.0:
+        length = rng.uniform(0.6, 1.4)
+        v = voice(length, rng.randrange(1000))
+        p = secs(t)
+        for k, sm in enumerate(v):
+            if p + k < n:
+                out[p + k] += sm * 0.8
+        t += length + rng.uniform(0.4, 0.9)
+    return make_loop(radio(mix(out, hiss)), 5.0, 0.4)
+
+
+def kettle():
+    n = secs(3.4)
+    out = []
+    ph = 0.0
+    for i in range(n):
+        t = i / SR
+        f = 2100 + 60 * math.sin(TAU * 5.5 * t) + 30 * math.sin(TAU * 0.7 * t)
+        ph += f / SR
+        out.append(math.sin(TAU * ph) * (0.8 + 0.2 * math.sin(TAU * 9 * t)))
+    breathy = gain(bandpass(noise(n), 2100, 6), 0.4)
+    return make_loop(radio(mix(gain(out, 0.5), breathy)), 3.0, 0.4)
+
+
+def bell():
+    """Church bells, slow, far away."""
+    n = secs(6.4)
+    out = [0.0] * n
+    for k, start in enumerate([0.0, 1.5, 3.0, 4.5]):
+        p = secs(start)
+        f0 = [392.0, 330.0, 392.0, 294.0][k]
+        for h, (mult, amp) in enumerate([(1.0, 1.0), (2.0, 0.5), (2.76, 0.35), (5.4, 0.2)]):
+            for i in range(secs(2.5)):
+                if p + i < n:
+                    out[p + i] += amp * math.sin(TAU * f0 * mult * i / SR) * math.exp(-i / (SR * (1.2 - h * 0.2)))
+    return make_loop(radio(lowpass(out, 3000)), 6.0, 0.4)
+
+
+def bark():
+    """One dog bark: a short barked tone with a noisy edge."""
+    n = secs(0.32)
+    out = []
+    ph = 0.0
+    for i in range(n):
+        t = i / SR
+        f = 520 * (1 - t * 1.6)
+        ph += max(90.0, f) / SR
+        out.append((2 * (ph % 1.0) - 1) * math.exp(-t * 9) * min(1, t / 0.01))
+    edge = apply(bandpass(noise(n), 1400, 2), env_exp(n, 0.05))
+    return lowpass(mix(out, gain(edge, 0.5)), 3200)
+
+
+def barking():
+    """A dog barking far off, as a station loop."""
+    n = secs(4.6)
+    out = [0.0] * n
+    for start in [0.3, 0.7, 2.2, 2.55, 2.9, 3.9]:
+        b = bark()
+        p = secs(start)
+        for k, sm in enumerate(b):
+            if p + k < n:
+                out[p + k] += sm
+    return make_loop(radio(mix(out, gain(noise(n), 0.02))), 4.2, 0.3)
+
+
+def crowd():
+    """A whole street of people murmuring."""
+    n = secs(5.6)
+    out = [0.0] * n
+    for k in range(9):
+        v = voice(5.4, 300 + k)
+        off = rng.randrange(0, secs(0.2))
+        g = rng.uniform(0.3, 0.7)
+        for i, sm in enumerate(v):
+            if off + i < n:
+                out[off + i] += sm * g
+    return make_loop(lowpass(mix(out, gain(noise(n), 0.03)), 2200), 5.0, 0.5)
+
+
+def typewriter():
+    n = secs(4.4)
+    out = [0.0] * n
+    t = 0.1
+    while t < 4.1:
+        p = secs(t)
+        a = rng.uniform(0.5, 1.0)
+        for k in range(400):
+            if p + k < n:
+                out[p + k] += a * rng.uniform(-1, 1) * math.exp(-k / 40.0)
+        t += rng.choice([0.09, 0.12, 0.14, 0.2, 0.45])
+    return make_loop(radio(highpass(out, 600)), 4.0, 0.3)
+
+
+def match_strike():
+    n = secs(1.3)
+    scratch_ = apply(bandpass(noise(n), 3000, 1.5), [math.exp(-i / (SR * 0.06)) for i in range(n)])
+    flare = apply(lowpass(noise(n), 1400), [min(1, max(0, (i / SR - 0.05) / 0.08)) * math.exp(-max(0, i / SR - 0.13) / 0.35) for i in range(n)])
+    return mix(scratch_, gain(flare, 0.6))
+
+
+def shopbell():
+    """The bell over a shop door."""
+    n = secs(1.6)
+    out = [0.0] * n
+    for start, f0 in [(0.0, 1760.0), (0.07, 2093.0), (0.16, 1760.0)]:
+        p = secs(start)
+        for i in range(n - p):
+            out[p + i] += math.sin(TAU * f0 * i / SR) * math.exp(-i / (SR * 0.35)) * 0.5
+            out[p + i] += math.sin(TAU * f0 * 2.7 * i / SR) * math.exp(-i / (SR * 0.12)) * 0.2
+    return out
+
+
+def scrape():
+    """A steel filing cabinet dragged on a bare floor."""
+    n = secs(1.1)
+    grind = bandpass(noise(n), 700, 3)
+    out = []
+    for i in range(n):
+        t = i / SR
+        out.append(grind[i] * (0.6 + 0.4 * math.sin(TAU * 23 * t)) * math.sin(math.pi * t / 1.1))
+    return out
+
+
+def hush():
+    """The same cabinet sliding on a doormat: almost nothing."""
+    n = secs(1.0)
+    return apply(lowpass(noise(n), 500), [0.25 * math.sin(math.pi * i / n) for i in range(n)])
+
+
+def plug():
+    n = secs(0.25)
+    pop = apply(noise(n), env_exp(n, 0.01))
+    thud = apply(sine(n, 120), env_exp(n, 0.05))
+    return mix(gain(highpass(pop, 1500), 0.6), thud)
+
+
+def boards():
+    """Old planks levered off with a creak and a crack."""
+    n = secs(1.5)
+    out = []
+    ph = 0.0
+    for i in range(n):
+        t = i / SR
+        f = 180 + 120 * math.sin(TAU * 1.3 * t) + rng.uniform(-30, 30)
+        ph += f / SR
+        out.append((2 * (ph % 1.0) - 1) * 0.4 * min(1, t / 0.1) * max(0, 1 - t / 1.0))
+    creak = bandpass(out, 600, 2)
+    crack_ = apply(highpass(noise(n), 800), [math.exp(-max(0, i / SR - 1.0) / 0.03) if i / SR >= 1.0 else 0.0 for i in range(n)])
+    return mix(creak, gain(crack_, 0.9))
+
+
+def dish_motor():
+    """The dish turning on its own: a deep groan with a ratchet."""
+    n = secs(4.4)
+    out = []
+    ph = 0.0
+    for i in range(n):
+        t = i / SR
+        f = 55 + 8 * math.sin(TAU * 0.25 * t)
+        ph += f / SR
+        out.append(math.sin(TAU * ph) + 0.3 * math.sin(TAU * ph * 2.02))
+    ratchet = apply(bandpass(noise(n), 900, 4), [0.4 if (i // secs(0.18)) % 2 == 0 else 0.05 for i in range(n)])
+    return make_loop(lowpass(mix(gain(out, 0.6), gain(ratchet, 0.3)), 1500), 4.0, 0.4)
+
+
+def drip():
+    """Water dripping in a tunnel, with a long echo."""
+    n = secs(5.6)
+    out = [0.0] * n
+    for start in [0.4, 1.9, 2.6, 4.1]:
+        p = secs(start)
+        for i in range(secs(0.9)):
+            if p + i < n:
+                t = i / SR
+                out[p + i] += math.sin(TAU * (1200 - 500 * t) * t) * math.exp(-t * 14)
+        for echo in [0.21, 0.43]:
+            q = p + secs(echo)
+            for i in range(secs(0.4)):
+                if q + i < n:
+                    t = i / SR
+                    out[q + i] += 0.3 * math.sin(TAU * (1200 - 500 * t) * t) * math.exp(-t * 14)
+    return make_loop(mix(lowpass(out, 3000), gain(lowpass(noise(n), 200), 0.05)), 5.0, 0.4)
+
+
+def silence_hit():
+    """The moment every sound is sucked out: a short inhale of air."""
+    n = secs(0.6)
+    return apply(highpass(noise(n), 2500), [(i / n) ** 3 * (1 - (i / n) ** 8) for i in range(n)])
+
 if __name__ == "__main__":
     write("hum", hum(), 0.6, edges=False)
     write("static", static_loop(), 0.7, edges=False)
@@ -655,3 +852,20 @@ if __name__ == "__main__":
     write("keys", keys(), 0.7)
     write("squeak", squeak(), 0.6)
     write("thunk", thunk(), 0.9)
+    # v0.3
+    write("scanner", scanner(), 0.7, edges=False)
+    write("kettle", kettle(), 0.5, edges=False)
+    write("bell", bell(), 0.6, edges=False)
+    write("bark", bark(), 0.8)
+    write("barking", barking(), 0.6, edges=False)
+    write("crowd", crowd(), 0.6, edges=False)
+    write("typewriter", typewriter(), 0.6, edges=False)
+    write("match", match_strike(), 0.7)
+    write("shopbell", shopbell(), 0.6)
+    write("scrape", scrape(), 0.8)
+    write("hush", hush(), 0.4)
+    write("plug", plug(), 0.7)
+    write("boards", boards(), 0.85)
+    write("dish_motor", dish_motor(), 0.6, edges=False)
+    write("drip", drip(), 0.5, edges=False)
+    write("silence_hit", silence_hit(), 0.4)

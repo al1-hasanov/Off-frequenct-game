@@ -24,7 +24,7 @@ const SHOT_LINES := [
 	"My daughter died", "Sollen's office is locked", "stopped existing",
 	"The lights are on", "Ow. Hot", "Did the fuse", "Properly dark", "hum's right again",
 	"green crust", "still warm", "other us", "HOME = 00", "Station 12", "use it",
-	"lights off", "which one is me", "Plowed. Somebody", "Halvard spreads", "darkest dark", "Hold on, Mom",
+	"in your pockets twice", "lights off", "which one is me", "Every light in town", "gutted with love", "Lights. Cal's lights", "Lorraine", "Not a sound", "Dark. Empty. For sale", "Eighty-One. That's how many", "Everyone's early", "Where was I", "who's feeding Biscuit", "Did you cut your hair", "You look old", "Keep him in the light", "never vanishes", "The dish is calling", "Rails. Timbers", "dish is turning", "Plowed. Somebody", "Halvard spreads", "darkest dark", "Hold on, Mom",
 ]
 
 
@@ -58,6 +58,9 @@ func _run() -> void:
 	if branch == "tuner":
 		await _run_tuner()
 		return
+	if branch == "rooms":
+		await _run_rooms()
+		return
 
 	print("  -- P1 snowfield")
 	await _tap("truck")
@@ -67,6 +70,7 @@ func _run() -> void:
 	_expect(GameState.has("p1_talked"), "talked to Tomas")
 	await _tap("padlock")
 	await _wait_room("corridor")
+	await _press_hint()
 	_expect(GameState.clock_text == "1:40", "clock reads 1:40 after the cold open")
 
 	print("  -- P2 night shift")
@@ -269,10 +273,140 @@ func _run() -> void:
 	_expect(main.room_id == "garage", "no key in the 03 snowcat")
 	GameState.test_tune = ["00", "", "H"]
 	await _use("keys", "snowcat")
-	await _wait_room("end_card", 200.0)
+	await _wait_room("main_street", 200.0)
 	_expect(GameState.has("road_done"), "drove down and found home in the underpass")
-	_expect(GameState.frequency == "H", "ends at home")
-	_expect(int(GameState.story["FRACTURE"]) == 4, "FRACTURE = 4")
+	_expect(GameState.frequency == "H", "Act 1 ends at home")
+	_expect(int(GameState.story["FRACTURE"]) == 4, "FRACTURE = 4 after Act 1")
+	await _run_act2()
+
+
+## Act 2: Main Street, June, the sheriff's office in 05, Ash Street and
+## Eighty-One, the diner, 1980 and Choice 2, the mine tunnel.
+func _run_act2() -> void:
+	print("  -- Act 2.1 Main Street")
+	await _tap("townsman")
+	await _tap("couple")
+	await _tap("alley")
+	_expect(main.room_id == "main_street", "no reason to go into the alley yet")
+
+	print("  -- Act 2.4a Ash Street, before the repair")
+	await _tap("ash_street")
+	await _wait_room("ash_street")
+	await _tap("front_door")
+	GameState.test_tune = ["03", ""]
+	await _tap("streetlight")
+	_expect(GameState.has("ash_tried") and main.room.freq == "H", "every house lit on 00–09; the dial stops at 09")
+	await _tap("main_street")
+	await _wait_room("main_street")
+
+	print("  -- Act 2.2 Pike Radio")
+	await _tap("pike_door")
+	await _wait_room("pike_radio")
+	await _tap("june")
+	_expect(GameState.has("june_diag"), "June finds the cracked crystal")
+	await _tap("door")
+	await _wait_room("main_street")
+
+	print("  -- Act 2.3 the sheriff's office in 05")
+	GameState.test_tune = ["H", "04", "05"]
+	await _tap("alley")
+	await _wait_room("sheriff_office")
+	_expect(GameState.frequency == "05" and int(GameState.story["FRACTURE"]) == 5, "crossed to 05, FRACTURE = 5")
+	await _tap("board")
+	_expect(GameState.has("read_board"), "read Cal's case board")
+	await _tap("radio")
+	_expect(GameState.has("radio_seen") and not GameState.has_item("crystal"), "the radio is live: can't open it")
+	await _tap("cabinet")
+	_expect(GameState.has("cabinet_tried") and not GameState.has("cabinet_moved"), "the cabinet scrapes and Cal stirs")
+	await _tap("side_door")
+	_expect(main.room_id == "sheriff_office", "won't leave without the crystal")
+	await _tap("doormat")
+	await _use("doormat", "cabinet")
+	_expect(GameState.has("cabinet_moved"), "cabinet slid silently on the doormat")
+	await _tap("plug")
+	_expect(GameState.has("unplugged"), "pulled the radio's plug")
+	await _tap("radio")
+	_expect(GameState.has_item("crystal"), "took the crystal")
+	GameState.test_tune = ["05", "H"]
+	await _tap("side_door")
+	await _wait_room("main_street")
+	_expect(GameState.frequency == "H" and int(GameState.story["FRACTURE"]) == 6, "home through the alley, FRACTURE = 6")
+	await _tap("pike_door")
+	await _wait_room("pike_radio")
+	await _use("crystal", "june")
+	_expect(GameState.has("tuner_repaired") and not GameState.has_item("crystal"), "June fits the crystal: dial reaches 99")
+	await _tap("door")
+	await _wait_room("main_street")
+
+	print("  -- Act 2.4 Ash Street, Eighty-One and the switch")
+	await _tap("ash_street")
+	await _wait_room("ash_street")
+	GameState.test_tune = ["H", "61", "14"]
+	await _tap("streetlight")
+	await _wait_freq("14")
+	_expect(int(GameState.story["FRACTURE"]) == 7, "the house with the lights off is 14, FRACTURE = 7")
+	GameState.test_choices = [0, 0, 0]
+	await _tap("front_door")
+	await _wait_room("ash_kitchen")
+	await _idle()
+	_expect(GameState.has("met_81") and GameState.has("swapped"), "met Eighty-One; the switch happened")
+	_expect(GameState.has_item("blue_tape") and not GameState.has_item("red_tape"), "the tape in Mara's pocket is blue now")
+	_expect(main.room.player.wrist_tape.is_equal_approx(Color("2f63c9")), "the tape on her wrist is blue")
+	await _tap("hall")
+	await _wait_room("ash_street")
+	await _tap("front_door")
+	_expect(main.room_id == "ash_street", "won't go back into the dark house")
+	GameState.test_tune = ["H"]
+	await _tap("streetlight")
+	await _wait_freq("H")
+	_expect(int(GameState.story["FRACTURE"]) == 8, "home from 14, FRACTURE = 8")
+	await _tap("main_street")
+	await _wait_room("main_street")
+
+	print("  -- Act 2.5 the Lantern")
+	await _tap("diner_door")
+	await _wait_room("diner")
+	await _tap("pantry")
+	_expect(not GameState.has("in_12"), "Ma won't let anyone into her pantry")
+	GameState.test_choices = [0]
+	await _tap("ruth")
+	_expect(GameState.has("talked_ma") and GameState.has("pie_sent"), "asked Ma for pie: she goes to the front")
+	GameState.test_tune = ["H", "12"]
+	await _tap("pantry")
+	await _wait_freq("12")
+	_expect(int(GameState.story["FRACTURE"]) == 9, "1980 through the pantry, FRACTURE = 9")
+	await _tap("back_door")
+	_expect(main.room_id == "diner", "keys first")
+	await _tap("keys")
+	_expect(GameState.has_item("truck_keys"), "took Ma's truck keys, 1980")
+	await _tap("back_door")
+	await _wait_room("snowfield_1980")
+
+	print("  -- Act 2.6 Choice 2: ", "take Tomas" if branch == "answer" else "leave Tomas")
+	GameState.test_choices = [0 if branch == "answer" else 1]
+	GameState.test_tune = ["12", "H"]
+	await _tap("tomas")
+	if branch == "answer":
+		await _wait_room("pike_radio", 120.0)
+		_expect(GameState.story.get("TOMAS") == "taken", "TOMAS = taken")
+		_expect(main.room.tomas.visible, "Tomas is safe at June's")
+		await _tap("tomas")
+		await _tap("door")
+		await _wait_room("main_street")
+	else:
+		await _wait_freq("H", 120.0)
+		_expect(GameState.story.get("TOMAS") == "left", "TOMAS = left")
+		_expect(main.room_id == "diner", "back in the 1983 pantry")
+		await _tap("front_door")
+		await _wait_room("main_street")
+	_expect(GameState.has("dish_turning"), "the dish is turning; June calls")
+	_expect(int(GameState.story["FRACTURE"]) == 10, "FRACTURE = 10")
+
+	print("  -- Act 2.7 the mine tunnel")
+	await _tap("tunnel")
+	await _wait_room("end_card", 200.0)
+	_expect(GameState.has("tunnel_done") and GameState.has("act2_done"), "through the mine and up into the basement")
+	_expect(GameState.has_item("flashlight_cold") and not GameState.has_light(), "the flashlight died in the cold")
 	await _idle()
 	_expect(int(GameState.meta.get("slices_completed", 0)) >= 1, "meta progress saved")
 	_finish()
@@ -307,12 +441,51 @@ func _run_continue() -> void:
 	await _wait_room("east_corridor")
 	_expect(GameState.frequency == "01" and main.room.freq == "01", "Continue restores frequency 01")
 	_expect(not main.room.is_dark(), "the 01 east wing comes back lit")
+
+	print("  -- Continue inside frequency 05")
+	for f in ["road_done", "june_diag", "in_05"]:
+		GameState.set_flag(f)
+	GameState.frequency = "05"
+	GameState.room = "sheriff_office"
+	GameState.save_game()
+	GameState.new_game()
+	main.continue_game()
+	await _wait_room("sheriff_office")
+	_expect(GameState.frequency == "05" and main.room.freq == "05", "Continue restores frequency 05")
+	_finish()
+
+
+## Quick visual pass over every Act 2 room (use with --shots).
+func _run_rooms() -> void:
+	for f in ["road_done", "a2_arrived", "met_june", "june_diag", "in_05", "ash_seen", "diner_seen", "wrist_tape"]:
+		GameState.set_flag(f)
+	for it in ["blue_tape", "keys", "flashlight", "tuner"]:
+		GameState.add_item(it)
+	var visits := [
+		["main_street", "H", "from_pike"], ["pike_radio", "H", "from_main"], ["sheriff_office", "05", "from_alley"],
+		["ash_street", "H", "from_main"], ["ash_street", "14", "from_house"], ["diner", "H", "from_main"],
+		["diner", "12", "from_main"], ["snowfield_1980", "12", "from_truck"],
+	]
+	for v in visits:
+		if v[0] == "snowfield_1980":
+			GameState.set_flag("choice2")
+		GameState.frequency = v[1]
+		main.change_room(v[0], v[2])
+		await _wait_freq(v[1])
+		await get_tree().create_timer(0.3).timeout
+	GameState.set_flag("met_81")
+	GameState.set_flag("swapped")
+	GameState.frequency = "14"
+	main.change_room("ash_kitchen", "from_street")
+	await _wait_room("ash_kitchen")
 	_finish()
 
 
 ## Quick visual check of the Tuner in the dark garage (use with --shots).
 func _run_tuner() -> void:
-	for f in ["called_observatory", "crossed_once", "back_home", "knock_done", "garage_open", "garage_key",
+	for f in ["read_note", "cabinet_empty", "fuse_installed", "chart_checked", "heard_transmission", "choice1",
+			"body_done", "phone_dead", "junction_open", "phone_fixed", "office_h_seen", "heard_cassette",
+			"called_observatory", "crossed_once", "back_home", "knock_done", "garage_open", "garage_key",
 			"tank_checked", "road_seen", "garage_checked", "wrist_tape"]:
 		GameState.set_flag(f)
 	for it in ["red_tape", "keys", "flashlight", "tuner"]:
@@ -320,6 +493,7 @@ func _run_tuner() -> void:
 	GameState.frequency = "H"
 	main.change_room("garage", "from_corridor")
 	await _wait_room("garage")
+	await _press_hint()
 	main.room.light_off = true
 	main.room.tuner_glow = true
 	main.hud.tuner.open(2.6)
@@ -445,7 +619,28 @@ func _examine(item: String) -> void:
 	await _idle()
 
 
+func _press_hint() -> void:
+	await _idle()
+	print("  > press ?")
+	main.show_hint()
+	await _idle()
+	_expect(main.room._flash > 0.0, "the ? button gives a hint and lights up the hotspots")
+
+
+## Every playable moment must have a hint for the ? button.
+func _check_hint() -> void:
+	if main.room == null or not main.room.shows_hud:
+		return
+	var h := Story.hint(main.room_id, main.room.freq)
+	if h == "":
+		_fail("no hint in '%s' (%s)" % [main.room_id, main.room.freq])
+	else:
+		print("    [hint] ", h)
+
+
 func _tap(id: String) -> void:
+	await _idle()
+	_check_hint()
 	await _idle()
 	var h: Dictionary = main.room.get_hotspot(id)
 	if h.is_empty() or not main.room.hotspot_enabled(h):

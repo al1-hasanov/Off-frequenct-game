@@ -94,7 +94,7 @@ func on_hotspot(id: String) -> void:
 				GameState.set_flag("read_note")
 				await mara("Of course it did.")
 				if not GameState.has("fuse_installed"):
-					GameState.set_objective("Replace the fuse in receiver 2.")
+					GameState.set_objective("Replace the fuse in receiver 2. Spares are in the Receiver Room cabinet.")
 		"vending":
 			await _vending()
 		"east_wing":
@@ -181,7 +181,7 @@ func _vending() -> void:
 	if GameState.has("fuse_taken"):
 		await mara("Dark. Sorry, pal.")
 	elif not GameState.has("cabinet_empty"):
-		await mara("Nobody's bought anything from this thing since August. It just glows.")
+		await mara("Nobody's bought anything from this thing since August. It just glows, day and night, on its own little fuse.")
 		GameState.set_flag("vending_seen")
 	else:
 		await mara("Wait. The display light runs on a 5-amp glass fuse. Same as the receiver.")

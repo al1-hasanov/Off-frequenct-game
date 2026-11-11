@@ -25,8 +25,8 @@ func setup() -> void:
 
 func enter(entry: String) -> void:
 	entered_from = entry
-	player.position.x = 250.0
-	player.face(1)
+	player.position.x = 250.0 if entry != "from_tunnel" else 860.0
+	player.face(1 if entry != "from_tunnel" else -1)
 
 
 func is_dark() -> bool:
@@ -40,11 +40,27 @@ func ambience() -> void:
 
 func on_arrive() -> void:
 	ambience()
+	if entered_from == "from_tunnel":
+		await _from_tunnel()
+		return
 	if not GameState.has("basement_seen"):
 		GameState.set_flag("basement_seen")
 		await wait(0.3)
 		await mara("The basement light's been out since summer too. Of course.")
 	objective()
+
+
+## Act 2 ends: up the utility shaft behind the boiler, back at Tomas's box.
+func _from_tunnel() -> void:
+	Audio.play_loop("dish_motor", -22.0)
+	await wait(0.8)
+	await mara("The utility shaft. The basement. Behind the boiler.")
+	await mara("Back where I started. Tomas's box. The dust where his notebook used to be.")
+	await mara("And over my head, through three floors of concrete, the dish is turning.")
+	GameState.set_flag("act2_done")
+	Audio.stop_all(2.0)
+	await hud.fade_out(2.0)
+	main.change_room("end_card")
 
 
 func on_hotspot(id: String) -> void:

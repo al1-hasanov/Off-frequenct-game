@@ -24,6 +24,7 @@ const C_VOICE := Color("9fd3e6")
 const C_FROZEN := Color("e06b5f")
 const C_HER := Color("d9b3c7")
 const C_TAPE := Color("d8c79a")
+const C_HINT := Color("8fd6a0")
 
 var main: Node
 var root: Control
@@ -76,6 +77,9 @@ func _ready() -> void:
 	_build_top_bar()
 	tuner = TunerUI.new()
 	root.add_child(tuner)
+	tuner.tuned.connect(func(st: String) -> void:
+		if main != null and main.room != null:
+			main.room.tuning = st)
 	_build_dialog()
 	_build_choices()
 	_build_menus()
@@ -189,10 +193,10 @@ func _build_top_bar() -> void:
 	inv_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	right.add_child(inv_box)
 	hint_button = _icon_button("?")
-	hint_button.tooltip_text = "Show everything I can interact with"
+	hint_button.tooltip_text = "Hint: what to do next"
 	hint_button.pressed.connect(func() -> void:
 		if main != null and not main.is_busy():
-			main.flash_hotspots())
+			main.show_hint())
 	right.add_child(hint_button)
 	menu_button = _icon_button("II")
 	menu_button.tooltip_text = "Pause"
@@ -495,6 +499,8 @@ func say(speaker: String, text: String) -> void:
 		sc = C_VOICE
 	elif speaker == "HER":
 		sc = C_HER
+	elif speaker == "HINT":
+		sc = C_HINT
 	elif tape:
 		sc = C_TAPE
 	speaker_label.add_theme_color_override("font_color", sc)
@@ -505,6 +511,8 @@ func say(speaker: String, text: String) -> void:
 		text_label.text = "[shake rate=14.0 level=4 connected=1][color=#9fd3e6]%s[/color][/shake]" % safe
 	elif speaker == "HER":
 		text_label.text = "[color=#e8d3dd]%s[/color]" % safe
+	elif speaker == "HINT":
+		text_label.text = "[color=#d8f0de]%s[/color]" % safe
 	elif tape:
 		text_label.text = "[color=#e6dcc0]%s[/color]" % safe
 	else:
@@ -664,8 +672,8 @@ func main_menu(has_save: bool) -> String:
 ## Opens Tomas's radio and waits until Mara steps through a station the room
 ## accepts. `refuse(station)` returns "" to accept, or a line Mara says instead.
 ## Returns the station, or "" if she switched the radio off.
-func tune(refuse: Callable, start: float = 0.0) -> String:
-	tuner.open(start)
+func tune(refuse: Callable, start: float = 0.0, start_band: int = 0) -> String:
+	tuner.open(start, start_band)
 	var result := ""
 	while true:
 		var st: String = await tuner.pick()
@@ -810,11 +818,26 @@ class ItemSlot extends Button:
 			draw_rect(r.grow(-3.0), Color(0.91, 0.65, 0.29, 0.22))
 			draw_rect(r.grow(-3.0), Color(0.91, 0.65, 0.29), false, 3.0)
 		match item_id:
-			"red_tape":
-				draw_circle(c, 23.0, Color("b8322c"))
-				draw_arc(c, 23.0, 0.0, TAU, 32, Color("dc5b4f"), 2.0)
+			"red_tape", "blue_tape":
+				var tc := Color("b8322c") if item_id == "red_tape" else Color("2f63c9")
+				draw_circle(c, 23.0, tc)
+				draw_arc(c, 23.0, 0.0, TAU, 32, tc.lightened(0.25), 2.0)
 				draw_circle(c, 10.0, Color("15181d"))
-				draw_line(c + Vector2(18, 12), c + Vector2(30, 26), Color("b8322c"), 6.0)
+				draw_line(c + Vector2(18, 12), c + Vector2(30, 26), tc, 6.0)
+			"doormat":
+				draw_rect(Rect2(c.x - 28, c.y - 16, 56, 32), Color("5a4430"))
+				draw_rect(Rect2(c.x - 24, c.y - 12, 48, 24), Color("6e5438"), false, 2.0)
+				Kit.text(self, Vector2(c.x - 24, c.y + 5), "WELC", 11, Color("c9b48a"), HORIZONTAL_ALIGNMENT_CENTER, 48)
+			"crystal":
+				draw_rect(Rect2(c.x - 12, c.y - 16, 24, 26), Color("9aa3a8"))
+				draw_rect(Rect2(c.x - 12, c.y - 16, 24, 26), Color("cfd6da"), false, 2.0)
+				draw_line(Vector2(c.x - 6, c.y + 10), Vector2(c.x - 6, c.y + 22), Color("c9a332"), 2.0)
+				draw_line(Vector2(c.x + 6, c.y + 10), Vector2(c.x + 6, c.y + 22), Color("c9a332"), 2.0)
+			"truck_keys":
+				draw_arc(c + Vector2(-10, -8), 9.0, 0.0, TAU, 16, Color("b9b6aa"), 3.0)
+				draw_line(c + Vector2(-2, -2), c + Vector2(18, 16), Color("c9a332"), 5.0)
+				draw_line(c + Vector2(12, 10), c + Vector2(8, 16), Color("c9a332"), 3.0)
+				draw_circle(c + Vector2(-16, 14), 7.0, Color("e8e0d0"))
 			"fuse":
 				draw_rect(Rect2(c.x - 19, c.y - 7, 38, 14), Color(0.75, 0.86, 0.92, 0.45))
 				draw_rect(Rect2(c.x - 27, c.y - 9, 9, 18), Color("b9b6aa"))
@@ -843,7 +866,7 @@ class ItemSlot extends Button:
 				for i in range(1, 9, 2):
 					draw_line(pts[i] + Vector2(0, -6), pts[i] + Vector2(0, 6), Color("8a2f2a"), 4.0)
 				draw_line(pts[8], pts[8] + Vector2(4, 22), Color("3e5a46"), 10.0)
-			"flashlight_dead", "flashlight":
+			"flashlight_dead", "flashlight", "flashlight_cold":
 				var on := item_id == "flashlight"
 				if on:
 					draw_colored_polygon(PackedVector2Array([c + Vector2(14, -6), c + Vector2(34, -18), c + Vector2(34, 18), c + Vector2(14, 6)]), Color(1.0, 0.92, 0.6, 0.35))

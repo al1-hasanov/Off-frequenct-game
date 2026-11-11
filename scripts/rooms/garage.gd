@@ -192,6 +192,7 @@ func tune() -> void:
 		await mara("If there's going to be more than one of me, I want to know which one is me.")
 		await narrate("A band of red tape, tight around her left wrist.")
 	await mara("Tomas said it only works in the dark. Light off.")
+	await mara("Somewhere out there, the road's clear. Listen for a plow.")
 	var st: String = await tuner_session(_garage_refusal, 1.4)
 	if st == "03":
 		await mara("A plow. Okay. Okay. Step into the dark...")
@@ -215,7 +216,7 @@ func _garage_refusal(st: String) -> String:
 		"04":
 			return "Music a beat behind. Something about that one's wrong."
 		"05":
-			return "Sirens. Not that one."
+			return "A police scanner. Not that one."
 		"06":
 			return "Wind through an open door. Whose door? No."
 		"07":

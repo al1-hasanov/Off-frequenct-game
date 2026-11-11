@@ -1,6 +1,6 @@
 extends Room
-## End of the v0.2 build (the prologue and Act 1): what Mara chose, how many
-## times she crossed, then back to the menu.
+## End of the v0.3 build (the prologue, Act 1 and Act 2): what Mara chose,
+## how many times she crossed, then back to the menu.
 
 
 func setup() -> void:
@@ -29,14 +29,17 @@ func draw_back() -> void:
 	var white := Color("e7e3d6")
 	var dim := Color("9aa3a0")
 	var answered: Variant = GameState.story.get("ANSWERED")
-	var choice := "You answered the voice." if answered == true else "You cut the power."
+	var tomas: Variant = GameState.story.get("TOMAS")
+	var c1 := "You answered the voice." if answered == true else "You cut the power."
+	var c2 := "You took Tomas with you." if tomas == "taken" else "You left Tomas in 1980, with his sister."
 	var fracture := int(GameState.story.get("FRACTURE", 0))
-	Kit.text(self, Vector2(0, 140), "OFF FREQUENCY", 60, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(self, Vector2(0, 190), "End of Act 1  ·  v0.2", 30, Color("e8a54b"), HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(self, Vector2(0, 262), "Choice 1: " + choice, 28, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(self, Vector2(0, 302), "You crossed %d times. There's red tape on your wrist." % fracture, 26, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(self, Vector2(0, 340), "ANSWERED = %s   ·   FRACTURE = %d" % ["yes" if answered == true else "no", fracture],
-		20, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(self, Vector2(0, 410), "Next, in v0.3: Act 2. Ash Street, the house with the lights off,", 24, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(self, Vector2(0, 442), "and the woman who sounds exactly like you.", 24, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(self, Vector2(0, 500), "Thanks for playing.", 24, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(self, Vector2(0, 130), "OFF FREQUENCY", 60, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(self, Vector2(0, 180), "End of Act 2  ·  v0.3", 30, Color("e8a54b"), HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(self, Vector2(0, 248), "Choice 1: " + c1, 28, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(self, Vector2(0, 288), "Choice 2: " + c2, 28, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(self, Vector2(0, 328), "You crossed %d times." % fracture, 26, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(self, Vector2(0, 364), "ANSWERED = %s   ·   TOMAS = %s   ·   FRACTURE = %d" % [
+		"yes" if answered == true else "no", str(tomas), fracture], 20, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(self, Vector2(0, 432), "Next, in v0.4: Act 3. The dish, three possible futures,", 24, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(self, Vector2(0, 464), "and a chalkboard that writes the next date by itself.", 24, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(self, Vector2(0, 520), "Thanks for playing.", 24, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)

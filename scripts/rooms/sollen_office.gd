@@ -177,6 +177,7 @@ func _photo() -> void:
 func _lamp() -> void:
 	if freq == "01":
 		await mara("If I switch that off, he'll wake up. He can't sleep in the dark. Never could.")
+		await mara("I'll just shut his door on it when I go.")
 	elif GameState.has("office_lamp"):
 		await mara("Leave it on.")
 	elif GameState.emergency:

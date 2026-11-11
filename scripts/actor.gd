@@ -1,7 +1,8 @@
 class_name Actor
 extends Node2D
-## A character drawn from flat shapes: Mara, Tomas, Sollen asleep, the body,
-## or a silhouette. The origin is between the feet, on the floor.
+## A character drawn from flat shapes: Mara, Tomas, Sollen, June, Ruth, Cal,
+## Eighty-One, townspeople, the body, or a silhouette. The origin is between
+## the feet, on the floor.
 
 var kind := "mara"
 var facing := 1
@@ -12,6 +13,8 @@ var headphones := false
 var wrist_tape := Color(0, 0, 0, 0)
 ## Mara holds the flashlight out in front of her.
 var holding_light := false
+## Sitting on a chair (the chair itself is the room's to draw).
+var seated := false
 var step_sound := "step"
 var _phase := 0.0
 var _t := 0.0
@@ -69,6 +72,22 @@ func _draw() -> void:
 			_body()
 		"sollen_asleep":
 			_sollen_asleep()
+		"june":
+			_person(_june(), false)
+		"ruth":
+			_person(_ruth(false), false)
+		"ruth_1980":
+			_person(_ruth(true), false)
+		"eighty_one":
+			_person(_eighty_one(), false)
+		"cal_asleep":
+			_cal_asleep()
+		"townsman":
+			_person(_townsman(Color("4a3a2e"), Color("8aa0c8")), false)
+		"husband":
+			_person(_townsman(Color("2e3a4a"), Color("c8b48a")), false)
+		"townswoman":
+			_person(_townswoman(), false)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -82,6 +101,50 @@ func _colors(year_1980: bool) -> Dictionary:
 		"jacket": Color("2f4c70") if year_1980 else Color("5d5a3b"),
 		"sleeve": Color("2a4566") if year_1980 else Color("55523a"),
 		"belt": Color("4b3524"),
+	}
+
+
+func _june() -> Dictionary:
+	return {
+		"skin": Color("e0b8a0"), "hair": Color("c9c6c0"), "eye": Color("1d1512"),
+		"pants": Color("3a3440"), "boots": Color("2a221c"), "jacket": Color("7a6a2e"),
+		"sleeve": Color("6e5f28"), "belt": Color("4b3524"),
+		"style": "bun", "glasses": true, "skirt": Color("3a3440"),
+	}
+
+
+func _ruth(young: bool) -> Dictionary:
+	return {
+		"skin": Color("dcab8e"), "hair": Color("4a3428") if young else Color("7d6a5e"), "eye": Color("1d1512"),
+		"pants": Color("d9c7b0"), "boots": Color("1d1d22"), "jacket": Color("8fb0c4"),
+		"sleeve": Color("86a6ba"), "belt": Color("4b3524"),
+		"style": "bob", "skirt": Color("8fb0c4"), "apron": Color("efece4"),
+	}
+
+
+func _eighty_one() -> Dictionary:
+	return {
+		"skin": Color("d2a084"), "hair": Color("3b2a22"), "hair2": Color("8a8580"), "eye": Color("1d1512"),
+		"pants": Color("23262e"), "boots": Color("17181c"), "jacket": Color("2c2e33"),
+		"sleeve": Color("26282d"), "belt": Color("4b3524"),
+		"style": "long", "gauze": true, "long_coat": true,
+	}
+
+
+func _townsman(coat: Color, pj: Color) -> Dictionary:
+	return {
+		"skin": Color("d9a98a"), "hair": Color("4a3e36"), "eye": Color("1d1512"),
+		"pants": pj, "boots": Color("5a4a40"), "jacket": coat, "sleeve": coat.darkened(0.08),
+		"belt": coat, "style": "short", "stripes": pj.darkened(0.3), "long_coat": true, "mustache": true,
+	}
+
+
+func _townswoman() -> Dictionary:
+	return {
+		"skin": Color("e0b29a"), "hair": Color("6a4a3a"), "eye": Color("1d1512"),
+		"pants": Color("d8c8d8"), "boots": Color("6a5a5a"), "jacket": Color("5a3a4a"),
+		"sleeve": Color("52354a"), "belt": Color("5a3a4a"),
+		"style": "bob", "skirt": Color("d8c8d8"), "long_coat": true,
 	}
 
 
@@ -116,36 +179,118 @@ func _arm(shoulder: Vector2, ang: float, sleeve: Color, hand: Color, tape: Color
 func _person(c: Dictionary, toolbelt: bool) -> void:
 	var swing := sin(_phase) * 0.42
 	var bob := absf(sin(_phase)) * 3.0 if walking else sin(_t * 1.8) * 0.8
-	var hip := Vector2(0.0, -88.0)
-	var sh := Vector2(0.0, -146.0 - bob)
-	_leg(hip + Vector2(-3, 0), -swing, 88.0, c.pants.darkened(0.25), c.boots)
+	# Seated: the upper body drops by `drop` and the legs bend at the knee.
+	var drop := 38.0 if seated else 0.0
+	var hip := Vector2(0.0, -88.0 + drop)
+	var sh := Vector2(0.0, -146.0 - bob + drop)
+	var y0 := drop - bob
+	var skirt: Color = c.get("skirt", Color(0, 0, 0, 0))
+	if seated:
+		_seated_leg(hip + Vector2(-3, 0), c.pants.darkened(0.25), c.boots)
+	else:
+		_leg(hip + Vector2(-3, 0), -swing, 88.0, c.pants.darkened(0.25), c.boots)
 	_arm(sh + Vector2(-5, 0), swing * 0.8, c.sleeve.darkened(0.25), c.skin.darkened(0.2))
+	if c.get("long_coat", false) and not seated:
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-21, -40 + y0), Vector2(21, -40 + y0), Vector2(19, -90 + y0), Vector2(-20, -90 + y0)]), c.jacket.darkened(0.1))
 	var torso := PackedVector2Array([
-		Vector2(-19, -86 - bob), Vector2(19, -86 - bob), Vector2(16, -152 - bob), Vector2(-17, -152 - bob)])
+		Vector2(-19, -86 + y0), Vector2(19, -86 + y0), Vector2(16, -152 + y0), Vector2(-17, -152 + y0)])
 	draw_colored_polygon(torso, c.jacket)
-	draw_line(Vector2(9, -90 - bob), Vector2(8, -150 - bob), c.jacket.darkened(0.22), 2.0)
+	draw_line(Vector2(9, -90 + y0), Vector2(8, -150 + y0), c.jacket.darkened(0.22), 2.0)
 	draw_colored_polygon(PackedVector2Array([
-		Vector2(-12, -152 - bob), Vector2(12, -152 - bob), Vector2(6, -140 - bob), Vector2(-6, -140 - bob)]), c.jacket.lightened(0.12))
+		Vector2(-12, -152 + y0), Vector2(12, -152 + y0), Vector2(6, -140 + y0), Vector2(-6, -140 + y0)]), c.jacket.lightened(0.12))
+	if c.has("apron"):
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-4, -126 + y0), Vector2(18, -126 + y0), Vector2(20, -88 + y0), Vector2(-6, -88 + y0)]), c.apron)
 	if toolbelt:
-		draw_rect(Rect2(-20, -99 - bob, 40, 8), c.belt)
-		draw_rect(Rect2(6, -99 - bob, 11, 15), c.belt.darkened(0.15))
-	_leg(hip + Vector2(3, 0), swing, 88.0, c.pants, c.boots)
-	draw_rect(Rect2(-5, -163 - bob, 10, 13), c.skin)
-	var hc := Vector2(2, -175 - bob)
-	draw_circle(hc + Vector2(-3, -2), 15.5, c.hair)
+		draw_rect(Rect2(-20, -99 + y0, 40, 8), c.belt)
+		draw_rect(Rect2(6, -99 + y0, 11, 15), c.belt.darkened(0.15))
+	if seated:
+		_seated_leg(hip + Vector2(3, 0), c.pants, c.boots)
+	else:
+		_leg(hip + Vector2(3, 0), swing, 88.0, c.pants, c.boots)
+	if skirt.a > 0.0 and not seated:
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-19, -88 + y0), Vector2(19, -88 + y0), Vector2(25, -38 + y0), Vector2(-24, -38 + y0)]), skirt)
+		if c.has("apron"):
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(-4, -88 + y0), Vector2(20, -88 + y0), Vector2(22, -46 + y0), Vector2(-6, -46 + y0)]), c.apron)
+	if c.has("stripes") and not seated:
+		for k in 4:
+			var yy := -30.0 - k * 14.0
+			draw_line(Vector2(-12, yy), Vector2(14, yy), c.stripes, 3.0)
+	draw_rect(Rect2(-5, -163 + y0, 10, 13), c.skin)
+	var hc := Vector2(2, -175 + y0)
+	_hair_back(hc, c)
 	draw_circle(hc + Vector2(3, 1), 13.5, c.skin)
-	draw_colored_polygon(PackedVector2Array([
-		hc + Vector2(-15, -5), hc + Vector2(-3, -16), hc + Vector2(13, -11), hc + Vector2(14, -5), hc + Vector2(-4, -8)]), c.hair)
-	draw_colored_polygon(PackedVector2Array([
-		hc + Vector2(-14, -3), hc + Vector2(-27, 9), hc + Vector2(-23, 17), hc + Vector2(-11, 5)]), c.hair)
+	_hair_front(hc, c)
 	draw_circle(hc + Vector2(10, -1), 1.8, c.eye)
+	if c.get("glasses", false):
+		draw_arc(hc + Vector2(9, -1), 4.5, 0.0, TAU, 10, Color("3a3a3a"), 1.5)
+		draw_line(hc + Vector2(4, -2), hc + Vector2(-4, -3), Color("3a3a3a"), 1.2)
+	if c.get("mustache", false):
+		draw_line(hc + Vector2(8, 7), hc + Vector2(15, 7), c.hair, 2.5)
 	if headphones:
 		draw_arc(hc + Vector2(-2, 0), 17.0, PI * 1.08, PI * 1.92, 14, Color("23262b"), 4.0)
 		draw_rect(Rect2(hc.x - 11, hc.y - 3, 9, 13), Color("2c3036"))
+	var gauze: bool = c.get("gauze", false)
+	var front_hand: Color = Color("ece9e0") if gauze else c.skin
 	if holding_light:
 		_arm(sh + Vector2(5, 0), 1.4 + sin(_t * 1.6) * 0.03, c.sleeve, c.skin, wrist_tape, true)
 	else:
-		_arm(sh + Vector2(5, 0), -swing * 0.8, c.sleeve, c.skin, wrist_tape)
+		_arm(sh + Vector2(5, 0), -swing * 0.8, c.sleeve, front_hand, wrist_tape)
+		if gauze:
+			var dir := Vector2(sin(-swing * 0.8), cos(-swing * 0.8))
+			draw_line(sh + Vector2(5, 0) + dir * 40.0, sh + Vector2(5, 0) + dir * 56.0, Color("ece9e0"), 12.0)
+
+
+func _seated_leg(hip: Vector2, col: Color, boot: Color) -> void:
+	var knee := hip + Vector2(40.0, 0.0)
+	var foot := Vector2(knee.x + 4.0, 0.0)
+	draw_line(hip, knee, col, 15.0)
+	draw_line(knee, foot, col, 13.0)
+	draw_circle(knee, 7.0, col)
+	draw_rect(Rect2(foot.x - 7.0, foot.y - 9.0, 21.0, 10.0), boot)
+
+
+func _hair_back(hc: Vector2, c: Dictionary) -> void:
+	var style: String = c.get("style", "mara")
+	match style:
+		"bun":
+			draw_circle(hc + Vector2(-3, -2), 15.0, c.hair)
+			draw_circle(hc + Vector2(-12, -12), 8.0, c.hair)
+		"bob":
+			draw_circle(hc + Vector2(-2, 0), 16.5, c.hair)
+			draw_rect(Rect2(hc.x - 17, hc.y - 2, 22, 18), c.hair)
+		"long":
+			draw_circle(hc + Vector2(-3, -1), 16.0, c.hair)
+			draw_colored_polygon(PackedVector2Array([
+				hc + Vector2(-17, -2), hc + Vector2(4, -2), hc + Vector2(2, 34), hc + Vector2(-19, 30)]), c.hair)
+			if c.has("hair2"):
+				draw_line(hc + Vector2(-10, -12), hc + Vector2(-14, 26), c.hair2, 3.0)
+		"short":
+			draw_circle(hc + Vector2(-2, -2), 14.5, c.hair)
+		_:
+			draw_circle(hc + Vector2(-3, -2), 15.5, c.hair)
+
+
+func _hair_front(hc: Vector2, c: Dictionary) -> void:
+	var style: String = c.get("style", "mara")
+	match style:
+		"bun", "short":
+			draw_colored_polygon(PackedVector2Array([
+				hc + Vector2(-14, -5), hc + Vector2(-3, -15), hc + Vector2(12, -11), hc + Vector2(13, -7), hc + Vector2(-4, -9)]), c.hair)
+		"bob", "long":
+			draw_colored_polygon(PackedVector2Array([
+				hc + Vector2(-15, -5), hc + Vector2(-3, -16), hc + Vector2(13, -11), hc + Vector2(15, -2), hc + Vector2(4, -8)]), c.hair)
+			if c.has("hair2"):
+				draw_line(hc + Vector2(-2, -14), hc + Vector2(8, -10), c.hair2, 3.0)
+		_:
+			draw_colored_polygon(PackedVector2Array([
+				hc + Vector2(-15, -5), hc + Vector2(-3, -16), hc + Vector2(13, -11), hc + Vector2(14, -5), hc + Vector2(-4, -8)]), c.hair)
+			draw_colored_polygon(PackedVector2Array([
+				hc + Vector2(-14, -3), hc + Vector2(-27, 9), hc + Vector2(-23, 17), hc + Vector2(-11, 5)]), c.hair)
+
 
 
 func _tomas() -> void:
@@ -232,3 +377,26 @@ func _sollen_asleep() -> void:
 	# One arm hanging off the couch.
 	draw_line(Vector2(-70, -26), Vector2(-62, 4), cardigan.darkened(0.15), 10.0)
 	draw_circle(Vector2(-62, 6), 5.5, skin)
+
+
+func _cal_asleep() -> void:
+	# Deputy Cal, slumped forward in his chair, head on his folded arms on the desk.
+	# The desk top is the room's, about 96 px above the floor, in front of him.
+	var breath := sin(_t * 1.0) * 1.4
+	var shirt := Color("b49a6a")
+	var pants := Color("4a3a2a")
+	var skin := Color("d9a98a")
+	var hair := Color("3a2a1e")
+	_seated_leg(Vector2(-24, -50), pants.darkened(0.2), Color("17181c"))
+	_seated_leg(Vector2(-18, -50), pants, Color("17181c"))
+	# His back rises above the desk top; arms folded on it, head on his arms.
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-36, -48), Vector2(-4, -48), Vector2(34, -104 - breath), Vector2(-2, -130 - breath)]), shirt)
+	draw_rect(Rect2(-12, -110 - breath, 8, 8), Color("c9a332"))
+	draw_line(Vector2(10, -112 - breath), Vector2(60, -108), shirt.darkened(0.1), 12.0)
+	draw_line(Vector2(18, -118 - breath), Vector2(64, -114), shirt, 12.0)
+	draw_circle(Vector2(64, -111), 6.0, skin)
+	var hc := Vector2(42, -124 - breath * 0.6)
+	draw_circle(hc, 14.0, hair)
+	draw_circle(hc + Vector2(6, 4), 10.0, skin)
+	draw_line(hc + Vector2(8, 10), hc + Vector2(15, 10), hair, 2.5)

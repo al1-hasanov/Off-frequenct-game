@@ -149,7 +149,7 @@ func _junction() -> void:
 		Audio.sfx("click", -6.0)
 		await mara("One pair's been cut. Clean, like somebody used snips.")
 		await mara("I could splice it if I had something to hold it together.")
-		GameState.set_objective("Splice the cut phone wire.")
+		GameState.set_objective("Splice the cut wire: tap your red tape, then the junction box.")
 
 
 func _phone() -> void:
@@ -165,7 +165,7 @@ func _phone() -> void:
 		if not GameState.has("phone_dead"):
 			GameState.set_flag("phone_dead")
 			await mara("Dead. The line's dead.")
-			GameState.set_objective("Find out why the phone is dead.")
+			GameState.set_objective("The phone's dead. Check the junction box on the lobby wall.")
 		return
 	var options: Array[String] = []
 	var calls: Array[String] = []

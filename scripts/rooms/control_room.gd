@@ -58,7 +58,7 @@ func on_arrive() -> void:
 		await mara("No. No, no, no.")
 		await wait(0.3)
 		await mara("That's... that's me.")
-		GameState.set_objective("Look at her. Look closely.")
+		GameState.set_objective("Look at her closely: her wrist, her watch, her pocket. And the transmitter.")
 
 
 func on_hotspot(id: String) -> void:

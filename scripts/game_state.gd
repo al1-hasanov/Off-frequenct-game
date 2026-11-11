@@ -12,7 +12,7 @@ extends Node
 signal changed
 signal inventory_changed
 
-const VERSION := "0.2.0"
+const VERSION := "0.3.0"
 
 const ITEMS := {
 	"red_tape": {
@@ -43,9 +43,29 @@ const ITEMS := {
 		"name": "Clock batteries",
 		"desc": "Two D cells from the wall clock. It won't be needing them.",
 	},
+	"flashlight_cold": {
+		"name": "Flashlight (dead)",
+		"desc": "The clock batteries gave out in the cold of the mine. Dead again.",
+	},
 	"flashlight": {
 		"name": "Flashlight",
 		"desc": "Heavy, steel, and working. Light keeps me where I am. Tomas said that.",
+	},
+	"blue_tape": {
+		"name": "Blue tape",
+		"desc": "A roll of blue electrical tape. I never leave home without it.",
+	},
+	"doormat": {
+		"name": "Doormat",
+		"desc": "The sheriff's office doormat. Rubber underneath. It says WELCOME, mostly.",
+	},
+	"crystal": {
+		"name": "Quartz crystal",
+		"desc": "A crystal in a little metal can, out of Cal's base radio. The same kind as the cracked one in Tomas's radio.",
+	},
+	"truck_keys": {
+		"name": "Truck keys",
+		"desc": "Mom's truck keys, off the hook in the diner. In 1980. The rabbit's foot still has fur on it.",
 	},
 	"tuner": {
 		"name": "Tomas's radio",
@@ -67,6 +87,9 @@ const FREQS := {
 	"H": {"tint": Color(1.0, 1.0, 1.0), "hum": 1.0},
 	"01": {"tint": Color(1.0, 0.92, 0.78), "hum": 1.14},
 	"03": {"tint": Color(0.78, 0.86, 1.0), "hum": 0.84},
+	"05": {"tint": Color(0.95, 1.0, 0.86), "hum": 1.22},
+	"12": {"tint": Color(1.0, 0.86, 0.72), "hum": 0.76},
+	"14": {"tint": Color(0.84, 0.82, 0.95), "hum": 1.3},
 }
 
 var story := {}

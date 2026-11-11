@@ -15,6 +15,9 @@ extends Node2D
 ##   is_dark()               true when the room is pitch black (flashlight or crossing territory)
 
 const DARK := Color(0.035, 0.04, 0.06)
+## Hotspots smaller than this (in px²) also catch taps up to TAP_SLACK px away.
+const SMALL_HOTSPOT := 12000.0
+const TAP_SLACK := 30.0
 const CONE := preload("res://textures/cone.png")
 const GLOW := preload("res://textures/glow.png")
 
@@ -37,6 +40,9 @@ var freq := "H"
 var light_off := false
 ## The Tuner is open: its dial lights her up a little.
 var tuner_glow := false
+## The station the Tuner is locked on right now ("" if none): rooms can show a
+## glimpse of that frequency behind the panel.
+var tuning := ""
 var t := 0.0
 var fore: Node2D
 var glow: Node2D
@@ -152,11 +158,11 @@ func tune_refusal() -> String:
 
 ## Opens the Tuner with the flashlight off. `refuse` returns "" to accept a
 ## station, or the line Mara says instead. Returns "" if she switched it off.
-func tuner_session(refuse: Callable, start: float = 0.0) -> String:
+func tuner_session(refuse: Callable, start: float = 0.0, band: int = 0) -> String:
 	light_off = true
 	tuner_glow = true
 	Audio.sfx("click", -6.0)
-	var st: String = await hud.tune(refuse, start)
+	var st: String = await hud.tune(refuse, start, band)
 	tuner_glow = false
 	if st == "":
 		light_off = false
@@ -253,9 +259,22 @@ func add_actor(kind: String, x: float, facing: int = 1) -> Actor:
 
 func make_player(x: float, facing: int = 1, kind: String = "mara") -> Actor:
 	player = add_actor(kind, x, facing)
-	if kind == "mara" and GameState.has("wrist_tape"):
+	player.z_index = 2
+	if kind == "mara" and GameState.has("swapped"):
+		player.wrist_tape = Color("2f63c9")
+	elif kind == "mara" and GameState.has("wrist_tape"):
 		player.wrist_tape = Color("b8322c")
 	return player
+
+
+## A drawing at its own depth: z 1 sits in front of other people (z 0) but
+## behind Mara (z 2). Counters and desks that someone stands behind use it.
+func add_layer(z: int, fn: Callable) -> Node2D:
+	var n := PropLayer.new()
+	n.fn = fn
+	n.z_index = z
+	add_child(n)
+	return n
 
 
 ## walk_x: where Mara walks before acting (NAN = she stays put).
@@ -278,6 +297,7 @@ func get_hotspot(id: String) -> Dictionary:
 
 
 ## The smallest enabled hotspot under the point, so small details win over big ones.
+## Small hotspots (a watch, a fuse holder) also catch taps that land just outside them.
 func hotspot_at(p: Vector2) -> Dictionary:
 	var best := {}
 	var best_area := INF
@@ -286,6 +306,17 @@ func hotspot_at(p: Vector2) -> Dictionary:
 		if r.has_point(p) and hotspot_enabled(h) and r.get_area() < best_area:
 			best = h
 			best_area = r.get_area()
+	if not best.is_empty():
+		return best
+	var best_d := TAP_SLACK
+	for h in hotspots:
+		var r: Rect2 = h.rect
+		if r.get_area() > SMALL_HOTSPOT or not hotspot_enabled(h):
+			continue
+		var d := p.distance_to(Vector2(clampf(p.x, r.position.x, r.end.x), clampf(p.y, r.position.y, r.end.y)))
+		if d <= best_d:
+			best = h
+			best_d = d
 	return best
 
 
@@ -380,6 +411,16 @@ func _draw_flash(ci: CanvasItem) -> void:
 		var tag := Rect2(r.position + Vector2(5, 5), Vector2(w + 14, 26))
 		ci.draw_rect(tag, Color(0.04, 0.05, 0.07, 0.85 * a))
 		Kit.text(ci, tag.position + Vector2(7, 19), h.label, 17, Color(1.0, 0.85, 0.6, a))
+
+
+class PropLayer extends Node2D:
+	var fn: Callable
+
+	func _process(_delta: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		fn.call(self)
 
 
 class ForeLayer extends Node2D:
