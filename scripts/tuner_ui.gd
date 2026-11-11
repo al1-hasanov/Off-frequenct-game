@@ -37,7 +37,7 @@ const POOL := [
 	["barking", "A dog barking, far off."],
 	["rain", "Rain on a tin roof."],
 	["radio_music", "Music. Tonight's song, slowed right down."],
-	["crowd", "A crowd murmuring. A whole street of people, outside."],
+	["crowd", "A street full of people at night. Boots in the snow, doors, a car going by."],
 	["typewriter", "A typewriter. Somebody working late."],
 	["siren", "Sirens. Somewhere, something's burning."],
 	["ring", "A phone ringing in an empty room."],

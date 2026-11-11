@@ -12,7 +12,7 @@ extends Node
 signal changed
 signal inventory_changed
 
-const VERSION := "0.3.1"
+const VERSION := "0.3.2"
 
 const ITEMS := {
 	"red_tape": {

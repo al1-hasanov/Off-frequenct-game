@@ -528,7 +528,7 @@ func say(speaker: String, text: String) -> void:
 	if GameState.test_mode:
 		print("    %s: %s" % [speaker if speaker != "" else "(narration)", text])
 	if not Audio.play_voice(speaker, text) and voice:
-		# No recording yet: fall back to the garbled radio murmur.
+		# No recording yet: the squelch opens on a fading carrier under the words.
 		Audio.sfx("voice" if text.length() > 24 else "voice_short", -3.0)
 	if GameState.test_mode and not GameState.test_show_ui:
 		text_label.visible_ratio = 1.0

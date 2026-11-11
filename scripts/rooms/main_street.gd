@@ -63,7 +63,7 @@ func ambience() -> void:
 	Audio.stop_loop("hum", 0.6)
 	Audio.stop_loop("drone", 0.6)
 	Audio.play_loop("wind", -22.0)
-	Audio.play_loop("crowd", -30.0)
+	Audio.play_loop("crowd", -19.0)  # the town outside: steps, doors, a shovel, a car
 	if GameState.has("dish_turning"):
 		Audio.play_loop("dish_motor", -26.0)
 

@@ -7,7 +7,7 @@ extends Node
 ## Voice acting hook: if res://voice/<key>.ogg exists, where key is the first
 ## 16 hex digits of md5("SPEAKER|exact line text"), hud.say() plays it. There
 ## are no recordings yet; lines without one fall back to subtitles only (and
-## the garbled radio murmur for the 2:14 voice).
+## a burst of radio carrier for the 2:14 voice).
 
 const SFX_PLAYERS := 10
 const DUCK_DB := -8.0

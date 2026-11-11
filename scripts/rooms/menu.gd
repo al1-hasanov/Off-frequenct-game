@@ -55,4 +55,4 @@ func draw_fore(ci: CanvasItem) -> void:
 	if glitch:
 		Kit.text(ci, Vector2(0, 228) + off * 1.6, "OFF FREQUENCY", 104, Color(0.62, 0.83, 0.9, 0.45), HORIZONTAL_ALIGNMENT_CENTER, 1280)
 	Kit.text(ci, Vector2(0, 228) + off, "OFF FREQUENCY", 104, Color("e7e3d6"), HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(ci, Vector2(0, 276), "v0.3.1 · the prologue, Act 1 and Act 2", 24, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	Kit.text(ci, Vector2(0, 276), "v0.3.2 · the prologue, Act 1 and Act 2", 24, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, 1280)

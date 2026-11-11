@@ -39,7 +39,7 @@ func ambience() -> void:
 	Audio.stop_all(0.4)
 	Audio.play_loop("snore", -20.0)
 	if not GameState.has("unplugged"):
-		Audio.play_loop("scanner", -18.0)
+		Audio.play_loop("scanner", -15.0)
 
 
 func on_arrive() -> void:

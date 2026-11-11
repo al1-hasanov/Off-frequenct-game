@@ -6,7 +6,7 @@ class_name ChapterStates
 const STATES := {
 	"P2": {
 		"any": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": null,
 				"TOMAS": null,
@@ -31,7 +31,7 @@ const STATES := {
 	},
 	"P3": {
 		"any": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": null,
 				"TOMAS": null,
@@ -66,7 +66,7 @@ const STATES := {
 	},
 	"1.2": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"TOMAS": null,
@@ -102,7 +102,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"TOMAS": null,
@@ -140,7 +140,7 @@ const STATES := {
 	},
 	"1.3": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -183,7 +183,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -228,7 +228,7 @@ const STATES := {
 	},
 	"1.4": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -277,7 +277,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -330,7 +330,7 @@ const STATES := {
 	},
 	"1.5": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -390,7 +390,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -454,7 +454,7 @@ const STATES := {
 	},
 	"1.6": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -527,7 +527,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -603,7 +603,7 @@ const STATES := {
 	},
 	"1.7": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -684,7 +684,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -768,7 +768,7 @@ const STATES := {
 	},
 	"1.8": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -857,7 +857,7 @@ const STATES := {
 			"frequency": "03"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -949,7 +949,7 @@ const STATES := {
 	},
 	"2.1": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -1039,7 +1039,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -1132,7 +1132,7 @@ const STATES := {
 	},
 	"2.2": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -1225,7 +1225,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -1321,7 +1321,7 @@ const STATES := {
 	},
 	"2.3": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -1416,7 +1416,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -1514,7 +1514,7 @@ const STATES := {
 	},
 	"2.4": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -1618,7 +1618,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -1725,7 +1725,7 @@ const STATES := {
 	},
 	"2.5": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -1832,7 +1832,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -1942,7 +1942,7 @@ const STATES := {
 	},
 	"2.6": {
 		"answer": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -2054,7 +2054,7 @@ const STATES := {
 			"frequency": "12"
 		},
 		"cut": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -2169,7 +2169,7 @@ const STATES := {
 	},
 	"2.7": {
 		"answer_take": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -2285,7 +2285,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"answer_leave": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": true,
 				"EIGHTY": null,
@@ -2401,7 +2401,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut_take": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,
@@ -2518,7 +2518,7 @@ const STATES := {
 			"frequency": "H"
 		},
 		"cut_leave": {
-			"version": "0.3.1",
+			"version": "0.3.2",
 			"story": {
 				"ANSWERED": false,
 				"EIGHTY": null,

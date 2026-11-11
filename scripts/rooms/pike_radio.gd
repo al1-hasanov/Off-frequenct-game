@@ -40,7 +40,8 @@ func ambience() -> void:
 	Audio.stop_loop("hum", 0.6)
 	Audio.stop_loop("wind", 0.6)
 	Audio.stop_loop("crowd", 0.6)
-	Audio.play_loop("scanner", -28.0)
+	Audio.play_loop("scanner", -25.0)
+	Audio.play_loop("shortwave", -24.0)
 	Audio.play_loop("radio_music", -30.0)
 
 

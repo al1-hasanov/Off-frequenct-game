@@ -619,8 +619,8 @@ def thunk():
 
 
 # ---------------------------------------------------------------- v0.3 (Act 2)
-def scanner():
-    """A police scanner: squelch bursts of garbled talk between hiss."""
+def _scanner_v03():
+    """v0.3's scanner (garbled talk). Replaced in v0.3.1; see __main__."""
     n = secs(5.5)
     out = [0.0] * n
     hiss = gain(highpass(noise(n), 1200), 0.08)
@@ -690,8 +690,8 @@ def barking():
     return make_loop(radio(mix(out, gain(noise(n), 0.02))), 4.2, 0.3)
 
 
-def crowd():
-    """A whole street of people murmuring."""
+def _crowd_v03():
+    """v0.3's street (a murmur). Replaced in v0.3.1; see __main__."""
     n = secs(5.6)
     out = [0.0] * n
     for k in range(9):
@@ -814,6 +814,299 @@ def silence_hit():
     n = secs(0.6)
     return apply(highpass(noise(n), 2500), [(i / n) ** 3 * (1 - (i / n) ** 8) for i in range(n)])
 
+
+# ---------------------------------------------------------------- v0.3.1
+# No fake speech anywhere: the street is people doing things (steps, doors,
+# a shovel, a cough, a car, a whistle), and radios are radio (squelch,
+# carriers, Morse, tuning whistles). Each of these sounds draws from its own
+# seeded random generator, so it never shifts the shared sequence the older
+# sounds use.
+
+class seeded:
+    """`with seeded(n):` swaps the shared generator for a private one."""
+
+    def __init__(self, seed):
+        self.seed = seed
+
+    def __enter__(self):
+        global rng
+        self.saved = rng
+        rng = random.Random(self.seed)
+
+    def __exit__(self, *exc):
+        global rng
+        rng = self.saved
+
+
+def place(out, sig, t, g=1.0):
+    p = secs(t)
+    for k, sm in enumerate(sig):
+        if 0 <= p + k < len(out):
+            out[p + k] += sm * g
+
+
+def far(x, cutoff):
+    """Distance: the highs go first."""
+    return lowpass(lowpass(x, cutoff), cutoff * 1.4)
+
+
+def comb(x, delay, fb, damp):
+    out = list(x)
+    lp = 0.0
+    for i in range(delay, len(out)):
+        lp = out[i - delay] * (1 - damp) + lp * damp
+        out[i] += lp * fb
+    return out
+
+
+def allpass(x, delay, g=0.5):
+    out = [0.0] * len(x)
+    for i in range(len(x)):
+        d = out[i - delay] if i >= delay else 0.0
+        xd = x[i - delay] if i >= delay else 0.0
+        out[i] = -g * x[i] + xd + g * d
+    return out
+
+
+def street_verb(x, wet=0.25):
+    """Small Schroeder reverb: sound bouncing between house fronts in the snow."""
+    combs = [comb(x, d, 0.72, 0.45) for d in (617, 683, 739, 811)]
+    w = [sum(c[i] for c in combs) * 0.25 for i in range(len(x))]
+    w = allpass(allpass(w, 241), 83)
+    return [a * (1 - wet) + b * wet for a, b in zip(x, w)]
+
+
+def cough():
+    """One person coughing into a scarf: two breathy bursts with a little voice."""
+    n = secs(0.6)
+    out = [0.0] * n
+    for start, amp, dur in [(0.0, 1.0, 0.17), (0.24, 0.6, 0.13)]:
+        m = secs(dur + 0.08)
+        env = [min(1.0, i / secs(0.006)) * math.exp(-i / (SR * dur * 0.3)) for i in range(m)]
+        air = apply(noise(m), env)
+        air = mix(bandpass(air, 550, 2.5), gain(bandpass(air, 1250, 3.5), 0.7), gain(bandpass(air, 2400, 5), 0.35))
+        buzz = []
+        ph = 0.0
+        for i in range(m):
+            ph += (150 - 40 * i / m) / SR
+            buzz.append((2 * (ph % 1.0) - 1) * env[i] * 0.25)
+        place(out, mix(air, lowpass(buzz, 900)), start, amp)
+    return lowpass(out, 3500)
+
+
+def stomp():
+    """Boots knocked together to shake off the snow."""
+    n = secs(0.25)
+    return lowpass(mix(apply(noise(n), env_exp(n, 0.025, 0.001)), gain(apply(sine(n, 95), env_exp(n, 0.05)), 0.8)), 700)
+
+
+def shovel_stroke():
+    """A snow shovel pushed along a sidewalk, then the snow thrown off it."""
+    n = secs(1.15)
+    grit = bandpass(noise(n), 1700, 1.2)
+    mod = lowpass([rng.uniform(0.2, 1.0) for _ in range(n)], 45)
+    push = []
+    for i in range(n):
+        t = i / SR
+        e = min(1.0, t / 0.08) * (1.0 if t < 0.62 else max(0.0, 1 - (t - 0.62) / 0.05))
+        push.append(grit[i] * mod[i] * e)
+    toss = [0.0] * secs(0.78) + apply(lowpass(noise(secs(0.37)), 900), [math.sin(math.pi * i / secs(0.37)) * 0.6 for i in range(secs(0.37))])
+    return mix(push, toss)
+
+
+def passing_car(length=5.5):
+    """A car crawling past on packed snow: tyres and a low engine, swelling and fading."""
+    n = secs(length)
+    tyres = noise(n)
+    tyres = bandpass_tv(tyres, lambda i: 300 + 900 * math.sin(math.pi * i / n) ** 2, 0.8)
+    out = []
+    ph = 0.0
+    for i in range(n):
+        t = i / SR
+        x = i / n
+        swell = math.sin(math.pi * x) ** 2.2
+        f = 38 + 6 * (1 - x)  # a touch of Doppler
+        ph += f / SR
+        eng = math.sin(TAU * ph) + 0.6 * math.sin(TAU * 2 * ph) + 0.35 * math.sin(TAU * 3 * ph + 0.4)
+        out.append((tyres[i] * 0.9 + eng * 0.22 * (0.8 + 0.2 * math.sin(TAU * 11 * t))) * swell)
+    return lowpass(out, 1800)
+
+
+def whistle():
+    """Somebody whistling a few notes to themselves, out in the cold."""
+    notes = [(784, 0.32), (880, 0.22), (988, 0.5), (880, 0.24), (784, 0.24), (659, 0.7)]
+    n = secs(sum(d for _, d in notes) + 0.3)
+    track = []
+    for f, d in notes:
+        track += [f] * secs(d)
+    track += [track[-1]] * (n - len(track))
+    track = lowpass(track, 18)  # glide between notes
+    out = []
+    ph = 0.0
+    for i in range(n):
+        t = i / SR
+        ph += track[i] * (1 + 0.012 * math.sin(TAU * 5.2 * t)) / SR
+        e = min(1.0, t / 0.05) * min(1.0, (n - i) / secs(0.25))
+        out.append(math.sin(TAU * ph) * e)
+    breath = apply(bandpass(noise(n), 1600, 2), [0.18] * n)
+    return mix(out, breath)
+
+
+def street():
+    """Main Street at 2:14 AM: the whole town outside, not talking."""
+    length = 16.0
+    n = secs(length + 1.0)
+    out = [0.0] * n
+    # Walkers crunching past at different distances.
+    for start, steps, pace, g, cut in [(0.4, 9, 0.52, 0.55, 2600), (3.1, 12, 0.47, 0.35, 1500),
+                                       (7.6, 8, 0.56, 0.7, 3600), (10.8, 10, 0.5, 0.3, 1300),
+                                       (13.2, 6, 0.6, 0.45, 2200)]:
+        for k in range(steps):
+            near = math.sin(math.pi * (k + 0.5) / steps)
+            place(out, far(step_snow(), cut), start + k * pace + rng.uniform(-0.03, 0.03), g * (0.4 + 0.6 * near))
+    place(out, far(cough(), 2200), 2.3, 0.55)
+    place(out, far(cough(), 1500), 11.9, 0.35)
+    for k in range(3):
+        place(out, far(shovel_stroke(), 2000), 4.6 + k * 1.5, 0.32)
+    place(out, far(door(), 1400), 1.6, 0.5)
+    place(out, far(door(), 1100), 14.4, 0.4)
+    place(out, far(thunk(), 900), 9.3, 0.55)          # a car door
+    place(out, far(keys(), 3000), 8.6, 0.18)
+    for k, t in enumerate([6.2, 6.5, 6.8]):
+        place(out, stomp(), t, 0.45 - k * 0.05)
+    place(out, far(passing_car(), 1600), 8.9, 0.42)
+    place(out, far(whistle(), 2600), 12.1, 0.08)
+    for t in [5.3, 5.7]:
+        place(out, far(bark(), 900), t, 0.22)          # a dog, blocks away
+    bed = gain(lowpass(noise(n), 160), 0.6)            # the low air of a town at night
+    out = street_verb(mix(out, bed), 0.28)
+    return make_loop(highpass(out, 40), length, 1.0)
+
+
+def squelch_tail():
+    n = secs(0.16)
+    return apply(highpass(noise(n), 900), [min(1.0, i / secs(0.004)) * math.exp(-i / (SR * 0.05)) for i in range(n)])
+
+
+def roger_beep():
+    n = secs(0.14)
+    tone = [math.sin(TAU * (1200 if i < secs(0.07) else 1600) * i / SR) for i in range(n)]
+    return fade_edges(gain(tone, 0.5), 4)
+
+
+def flutter(n, rate, lo, hi):
+    """A smooth random envelope: a new target `rate` times a second, eased between."""
+    step = max(1, secs(1.0 / rate))
+    pts = [rng.uniform(lo, hi) for _ in range(n // step + 2)]
+    out = []
+    for i in range(n):
+        k, f = divmod(i, step)
+        e = 0.5 - 0.5 * math.cos(math.pi * f / step)
+        out.append(pts[k] * (1 - e) + pts[k + 1] * e)
+    return out
+
+
+def keyed_carrier(length, wobble):
+    """A weak keyed transmitter with nobody speaking: hiss that flutters and fades."""
+    n = secs(length)
+    fade = flutter(n, wobble, 0.08, 1.0)
+    fast = flutter(n, 14.0, 0.55, 1.0)  # picket-fencing from a moving car
+    hiss = lowpass(highpass(noise(n), 500), 3200)
+    hum_ = [0.18 * math.sin(TAU * 120 * i / SR) for i in range(n)]
+    env = [min(1.0, i / secs(0.01)) for i in range(n)]
+    return [(hiss[i] * fade[i] * fast[i] * 0.8 + hum_[i]) * env[i] for i in range(n)]
+
+
+def data_burst(length=0.45):
+    """A digital ID burst: two tones flipping fast."""
+    n = secs(length)
+    out = []
+    ph = 0.0
+    bits = [rng.random() < 0.5 for _ in range(int(length / 0.012) + 2)]
+    for i in range(n):
+        f = 1200 if bits[int(i / secs(0.012))] else 1800
+        ph += f / SR
+        out.append(math.sin(TAU * ph) * 0.4)
+    return fade_edges(out, 6)
+
+
+def scanner():
+    """A police scanner: squelch opening on weak carriers, roger beeps, a data burst. No talk."""
+    length = 10.0
+    n = secs(length + 0.5)
+    out = [0.0] * n
+    floor = gain(lowpass(highpass(noise(n), 1500), 5000), 0.015)
+    t = 0.3
+    k = 0
+    while t < length - 0.8:
+        d = rng.uniform(0.5, 1.3)
+        place(out, gain(keyed_carrier(d, rng.uniform(5, 10)), 0.55), t)
+        place(out, squelch_tail(), t + d, 0.9)
+        if k % 2 == 0:
+            place(out, roger_beep(), t + d - 0.16, 0.5)
+        if k == 1:
+            place(out, data_burst(), t + 0.05, 0.6)
+        t += d + rng.uniform(0.7, 1.5)
+        k += 1
+    return make_loop(radio(mix(out, floor)), length, 0.4)
+
+
+def transmission(length):
+    """Under the 2:14 voice's words: the squelch opens on a fading, warbling carrier."""
+    n = secs(length)
+    out = [0.0] * n
+    place(out, apply(noise(secs(0.05)), env_exp(secs(0.05), 0.012, 0.0005)), 0.0, 0.9)
+    body_len = max(0.2, length - 0.22)
+    body = keyed_carrier(body_len, 3.5)
+    whistle_ = []
+    ph = 0.0
+    for i in range(secs(body_len)):
+        tt = i / SR
+        ph += (940 + 70 * math.sin(TAU * 0.6 * tt) + 25 * math.sin(TAU * 3.1 * tt)) / SR
+        whistle_.append(math.sin(TAU * ph) * 0.12 * min(1.0, tt / 0.15))
+    place(out, mix(body, whistle_), 0.04)
+    place(out, squelch_tail(), length - 0.18, 1.0)
+    return radio(out)
+
+
+def morse(text, unit):
+    code = {"C": "-.-.", "Q": "--.-", "M": "--", "A": ".-", "R": ".-.", "D": "-..", "E": "."}
+    seq = []
+    for w, word in enumerate(text.split()):
+        for li, ch in enumerate(word):
+            for si, sym in enumerate(code[ch]):
+                seq.append((True, 1 if sym == "." else 3))
+                seq.append((False, 1))
+            seq[-1] = (False, 3)
+        seq[-1] = (False, 7)
+    out = []
+    for on, units in seq:
+        m = secs(units * unit)
+        if on:
+            out += [math.sin(TAU * 680 * i / SR) * min(1.0, i / 60, (m - i) / 60) for i in range(m)]
+        else:
+            out += [0.0] * m
+    return out
+
+
+def shortwave():
+    """June's shop: every band crowded. Morse, tuning whistles, fading static."""
+    length = 9.0
+    n = secs(length + 0.6)
+    out = [0.0] * n
+    place(out, gain(morse("CQ CQ DE MARA", 0.065), 0.35), 0.3)
+    sweep = []
+    ph = 0.0
+    for i in range(secs(1.6)):
+        tt = i / SR
+        ph += (2400 - 1500 * (tt / 1.6) ** 0.7) / SR
+        sweep.append(math.sin(TAU * ph) * math.sin(math.pi * tt / 1.6) * 0.25)
+    place(out, sweep, 6.4)
+    place(out, gain(keyed_carrier(1.3, 5.0), 0.4), 4.9)
+    fade = lowpass([rng.uniform(0.2, 1.0) for _ in range(n)], 2.0)
+    static = [s * f for s, f in zip(lowpass(highpass(noise(n), 400), 4200), fade)]
+    return make_loop(radio(mix(out, gain(static, 0.22))), length, 0.6)
+
 if __name__ == "__main__":
     write("hum", hum(), 0.6, edges=False)
     write("static", static_loop(), 0.7, edges=False)
@@ -833,8 +1126,14 @@ if __name__ == "__main__":
     write("powerup", powerup(), 0.7)
     write("radio_music", radio_music(), 0.7, edges=False)
     write("drone", drone(), 0.7, edges=False)
-    write("voice", voice(3.4, 7), 0.85)
-    write("voice_short", voice(0.9, 11), 0.85)
+    # v0.3.1: the murmur is gone. It's still generated (and thrown away) so
+    # the shared random sequence, and every sound after it, stays the same.
+    voice(3.4, 7)
+    voice(0.9, 11)
+    with seeded(2141):
+        write("voice", transmission(3.4), 0.8)
+    with seeded(2142):
+        write("voice_short", transmission(0.9), 0.8)
     write("sting", sting(), 0.8)
     write("breath", breath(), 0.6)
     write("hangup", hangup(), 0.8)
@@ -853,12 +1152,16 @@ if __name__ == "__main__":
     write("squeak", squeak(), 0.6)
     write("thunk", thunk(), 0.9)
     # v0.3
-    write("scanner", scanner(), 0.7, edges=False)
+    _scanner_v03()
+    with seeded(2143):
+        write("scanner", scanner(), 0.7, edges=False)
     write("kettle", kettle(), 0.5, edges=False)
     write("bell", bell(), 0.6, edges=False)
     write("bark", bark(), 0.8)
     write("barking", barking(), 0.6, edges=False)
-    write("crowd", crowd(), 0.6, edges=False)
+    _crowd_v03()
+    with seeded(2144):
+        write("crowd", street(), 0.8, edges=False)
     write("typewriter", typewriter(), 0.6, edges=False)
     write("match", match_strike(), 0.7)
     write("shopbell", shopbell(), 0.6)
@@ -869,3 +1172,6 @@ if __name__ == "__main__":
     write("dish_motor", dish_motor(), 0.6, edges=False)
     write("drip", drip(), 0.5, edges=False)
     write("silence_hit", silence_hit(), 0.4)
+    # v0.3.1
+    with seeded(2145):
+        write("shortwave", shortwave(), 0.6, edges=False)

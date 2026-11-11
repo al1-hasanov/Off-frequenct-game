@@ -1,4 +1,4 @@
-# Off Frequency — v0.3.1
+# Off Frequency — v0.3.2
 
 A 2D sci-fi point-and-click mystery for Android (iOS later), built in **Godot 4.7** with GDScript.
 The full story is in the *Off Frequency — Story Bible* doc; this build covers the prologue, Act 1 and Act 2.
@@ -8,6 +8,12 @@ The full story is in the *Off Frequency — Story Bible* doc; this build covers 
 ## What's in v0.3
 
 About 70–80 minutes of play. Both branches of Choice 1 and both of Choice 2, from the 1980 snowfield to the mine under the mountain.
+
+### New in v0.3.2: no more fake voices
+
+- **Main Street** now sounds like a street full of people at 2 AM instead of a murmur: boots crunching past at different distances, doors, a snow shovel, someone stamping off snow, a cough, keys, a car door, a car crawling by on packed snow, a dog blocks away, somebody whistling. Louder than before, with a little echo off the house fronts.
+- **Radios are radio**, with no speech-like sound anywhere. The police scanner (Pike Radio, the sheriff's office, station 05) opens its squelch on weak, fluttering carriers, with roger beeps and a data burst. June's shop adds a shortwave loop: Morse code, a tuning whistle, fading static. Under the 2:14 voice's lines, the squelch opens on a fading, warbling carrier.
+- Every other sound is byte-for-byte unchanged.
 
 ### New in v0.3.1: chapter select (debug)
 
@@ -76,7 +82,7 @@ Branch differences: cutting the power switches home to red emergency light, leav
 
 ## Play it
 
-**On Android:** copy `OffFrequency-v0.3.1-debug.apk` to the phone, open it, and allow "Install unknown apps" when asked. It installs over earlier versions and keeps your save. Needs Android 7.0 or newer. It's a debug build, so it's for testing, not the Play Store.
+**On Android:** copy `OffFrequency-v0.3.2-debug.apk` to the phone, open it, and allow "Install unknown apps" when asked. It installs over earlier versions and keeps your save. Needs Android 7.0 or newer. It's a debug build, so it's for testing, not the Play Store.
 
 **On your computer:** download Godot 4.7 (the standard build, not .NET), choose *Import*, pick this folder's `project.godot`, then press **F5**.
 
@@ -185,7 +191,7 @@ For Google Play you'll need a release keystore, an `.aab` (turn on *Use Gradle B
 
 ## Voice acting
 
-There are no recordings yet: lines show as subtitles, and the 2:14 voice falls back to a garbled radio murmur. The hook for real actors is in place. If `voice/<key>.ogg` exists, where key is the first 16 hex digits of md5(`SPEAKER|exact line text`), `hud.say()` plays it and ducks the ambience under it. Nothing in the room scripts needs to change.
+There are no recordings yet: lines show as subtitles, and under the 2:14 voice the squelch opens on a fading radio carrier (no fake speech). The hook for real actors is in place. If `voice/<key>.ogg` exists, where key is the first 16 hex digits of md5(`SPEAKER|exact line text`), `hud.say()` plays it and ducks the ambience under it. Nothing in the room scripts needs to change.
 
 ## Known limitations
 
