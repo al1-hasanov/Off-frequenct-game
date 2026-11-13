@@ -6,14 +6,15 @@ config_version=5
 [application]
 
 config/name="Off Frequency"
-config/description="A 2D sci-fi point-and-click mystery. v0.4: detailed 2D scenes, layered ambience and an optional quiet mystery score."
-config/version="0.4.0"
+config/description="A 2D sci-fi point-and-click mystery. v0.6.2: Act 3, the futures, with what Dad was listening to: Einstein's constant, dark energy, time travel and parallel worlds, hinted at in 1983, 2031, 2009 and 1991."
+config/version="0.6.2"
 run/main_scene="res://scenes/main.tscn"
 config/quit_on_go_back=false
 config/features=PackedStringArray("4.6", "GL Compatibility")
 boot_splash/bg_color=Color(0.02, 0.03, 0.05, 1)
 boot_splash/show_image=false
 config/icon="res://icon.svg"
+run/max_fps=60
 
 [autoload]
 

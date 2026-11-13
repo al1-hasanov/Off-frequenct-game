@@ -1,26 +1,57 @@
-# Off Frequency — v0.4.0: After Hours
+# Off Frequency — v0.6.2: The Futures
 
 A 2D sci-fi point-and-click mystery for Android (iOS later), built in **Godot 4.6.3** with GDScript.
-The full story is in the *Off Frequency — Story Bible* doc; this build covers the prologue, Act 1 and Act 2.
+The full story is in the *Off Frequency — Story Bible* doc; this build covers the prologue and Acts 1 to 3.
 
 ![Preview](docs/preview.png)
 
-## New in v0.4.0
+## New in v0.6.2: what Dad was listening to
 
-- More detailed 2D characters: profile faces, blinking, hair strands, stitched coats, pockets, boot laces, clothing folds, radio grilles and contact shadows.
-- More detailed rooms and streets: brickwork, siding, snow caps, drainpipes, shop glass, awnings, gutter grates, worn floors, plaster, vents, exposed plumbing, framed notices, tools and coiled cables. Windows have subtle glass/frost detail; trees have layered branches and the snowcat has extra bodywork.
-- Six new stereo Vorbis tracks: a 64-second gentle mystery score; distant street traffic; indistinct nonverbal people ambience; indoor room tone; diner ambience; and an original late-night radio melody.
-- **Sound & atmosphere** in the title and pause menus: background music ON/OFF plus overall, music, environment and effect volumes. Preferences save automatically and are independent of story saves.
-- Score and ambience ease under dialogue and the Tuner. The mine's listening puzzle suppresses the score, and its intentional silence is preserved.
-- Room changes fade old ambience out, so a shop's radio or street crowd does not follow you into unrelated rooms.
+Dark energy is now the science under the story. Dad's Air Force study, code name LAMBDA, was measuring the energy of empty space twenty years before anyone called it dark energy, and every year Mara visits hints at it with something that existed then: his *Gravitation* and LAMBDA notes on Sollen's shelf (Einstein's Λ, the Einstein–Rosen bridge, Everett's branches, Gödel's loop), a Λ that won't rub off the control-room chalkboard, Λ.L. on his diagram, Einstein's equation on the 2031 museum wall with a timeline from 1917 to DESI in 2025, the Big Rip on Tomas's door in 2009, and the 1988 wormhole time-machine paper in his 1991 workshop. Four new notebook theories (twelve in all). The ? button points to each optional clue while it's unread. Red's turnings now show each sound's name in its rings, and the ? button knows which turning you're at. See [UPDATE_v0.6.2.md](UPDATE_v0.6.2.md).
+
+## Previous update, v0.6.1: true to scale
+
+Act 3's places are drawn to the people's scale (about 110 px to the metre): full-size cars, doors taller than the people going through them, buildings whose storeys run up out of the picture, and the dish standing well back across the summit. Main Street in 1991 is rebuilt at full scale, with his sedan and their minivan parked at the kerb in front of you; the shop's desks and benches are at real heights. See [UPDATE_v0.6.1.md](UPDATE_v0.6.1.md).
+
+## New in v0.6.0
+
+**Act 3 is playable**, about 40 minutes after the mine tunnel: Dad's 2.14 chain, three futures through the dish's feed cabin, Tomas's notebook and the experiment, Red's chapter in the dark, and Eighty-One. Two new choices (LETGO and EIGHTY), and it ends on three knocks at the front door.
+
+Every year the story visits looks like that year:
+
+- **1983 (tonight):** the summit outside, the 26-metre dish swung to the horizon, the ladder to the feed cabin, a late-'70s sedan snowed in; the control room's patch bay, chart recorder, dish drive and a chalkboard that writes the next year by itself.
+- **2031:** the Halvard Signal Visitor Center on an autumn afternoon: a glass-and-timber entrance, solar panels, an electric car charging, a driverless shuttle, wind turbines, the dish painted white behind a fence; inside, a museum of the night (the recordings wall, Sollen's desk, Dad's photograph, the plaque) and a screen that says NO SIGNAL.
+- **2009:** a roofless ruin full of snow, THEY CAME OUT OF THE DARK, the stone wing lit in every window behind the lamp line, two abandoned 2000s cars, the dish rusted fast, Tomas's hut, a white wall on the ridge that comes nearer; the basement 26 years on, seen only by lamplight.
+- **1991:** Main Street half erased like a torn photograph, with PIKE & LIND RADIO, HALVARD VIDEO, a payphone, a 1991 sedan and a woodgrain minivan; the shop's back room with CRT televisions, a beige PC, VHS tapes, a hot plate, the ham rig and eighty strips of tape on the wall.
+- **People at their ages:** Cal at 83, June at 78, Tomas at 21, 24 and 40, Lise expecting, the Lunds in their late eighties, 2031's visitors; older faces carry their years (lines, jowls, age spots).
+
+See [UPDATE_v0.6.0.md](UPDATE_v0.6.0.md) for everything new, chapter by chapter.
 
 ### Install this test build
 
-Open `OffFrequency-v0.4.0-debug.apk` on an Android 7.0+ ARM phone. It appears as **Off Frequency 0.4** and installs alongside the previous game. The original APK's signing key was not supplied, so this build uses `com.alihasanov.offfrequency.ambience` and its own development key. Your old installation and its save stay available. **The two installations have separate saves.** Use **Chapters (debug)** to jump to your preferred chapter in this build.
+Open `OffFrequency-v0.6.2-debug.apk`. It is **Off Frequency 0.5** (`com.alihasanov.offfrequency.v05`, version code 14), signed with the same key as the v0.5.x test APKs, so it **updates them in place**. A save from v0.5.x that reached the end of Act 2 continues into Act 3 from **Chapters (debug)** → Act 3 → 3.1.
 
-To disable the new score: **Sound & atmosphere → Background music → OFF → Done**. The setting survives closing and reopening the app. Radio sounds remain part of the environment volume.
+Your v0.4 install is still separate, because it was signed with the key on your own computer. To update that one in place, export from this project on your computer (see *Building the APK yourself*): the preset targets `com.alihasanov.offfrequency.ambience`, version code 14, signed with your local `build-support/` key.
 
-See [UPDATE_v0.4.0.md](UPDATE_v0.4.0.md) for testing and build details.
+### Previous update, v0.5.2: every station is its own world
+
+- Tuning changes the world, not just the house: each station's Halvard has its own season, hour, weather and fate, on Ash Street, Main Street, the garage's road doors and the Lantern's window.
+- Ash Street's windows fixed; Mara in 1980 redrawn; a sharper opening film.
+- Much less work for the phone: each room's still picture and each character are kept as one image (Ash Street went from about 1,663 draw calls a frame to 66).
+
+### Previous update, v0.5.1: a new opening
+
+- The opening from your script: the Lantern at 12:24 AM, the drive up the mountain, the clearing (holding the light on Tomas's radio, their song in the shared headphones, the goodbye, the lock that sticks), the aftermath as a short film with **Skip**, and October 14, 1983 at the locker. Their song plays in two versions in step: the radio's speaker and the headphones.
+- Nothing on the walls overlaps (checked by `--autotest=layout`). The still parts of every room are drawn once; 60 fps cap; **Settings → Display** (battery saver, smooth edges, frame counter).
+
+### Previous update, v0.5.0: The Long Night
+
+- **The story pass.** The goodbye Mara and Tomas always said (`SIGNOFF`) comes back all night. Choice 1 has teeth: answering makes Mara prove who she is on an open band, and cutting the power leaves her own boot prints and a twist of burn gauze in the lobby. **Mara's notebook** (top bar) keeps what she's seen apart from what she thinks (connect two notes to form a theory). There's a response to the switch (story `SWITCH`), Tomas has a goal (rescuing "the lady on 2.14"), and Eighty-One has a cost (she took a Tomas home once; he lasted eleven days). Halvard has people to protect, and every sound clue has a caption. The rules are fairer: `FRACTURE` only rises on a repeated crossing or a slip in the mine; `CROSSINGS` counts everything.
+- **Art and sound.** Characters drawn as people on a posed skeleton, with their own builds, faces and hairstyles; a rebuilt town and observatory; the snowcat, Mara's pickup and the county plow; a three-minute dark ambient score; new vehicle sounds.
+
+### Previous update, v0.4.0: After Hours
+
+More detailed rooms and characters, layered ambience, the **Sound & atmosphere** menu (music on/off and four volumes, saved separately from the story), ambience that eases under dialogue and the Tuner, and fades between rooms.
 
 ## Story content inherited from v0.3
 
@@ -38,8 +69,9 @@ The title screen has a **Chapters (debug)** button (debug builds only, which inc
 
 | | Starts in | | | Starts in |
 | --- | --- | --- | --- | --- |
-| P1 The snowfield, 1980 | snowfield (new game) | | 2.1 Main Street | Main Street, arriving |
-| P2 Night shift | main corridor, 1:40 | | 2.2 Pike Radio | June's shop |
+| P1 The Lantern, 1980 | the diner (new game) | | 2.1 Main Street | Main Street, arriving |
+| P1b The clearing | the snowfield, after two | | 2.2 Pike Radio | June's shop |
+| P2 Night shift | main corridor: the locker, then 1:40 | | | |
 | P3 2:14 AM | receiver room, fuse in hand | | 2.3 Cal's crystal | Main Street, after June's diagnosis |
 | 1.2 The body | control room | | 2.4 Eighty-One | Ash Street, radio repaired |
 | 1.3 The phone | lobby | | 2.5 The Lantern | the diner |
@@ -70,7 +102,7 @@ Everything Act 2 adds works with the **?** hint button from the start.
 
 | Part | Scene | What happens |
 | --- | --- | --- |
-| Prologue P1 | Snowfield, Oct 14, 1980 | Tomas: "It's talking back." Lock the gate, turn back: he's gone. |
+| Prologue P1 | The Lantern, the road up, the clearing, Oct 14, 1980 | Henrik calls Mara back; Tomas comes too. Hold the light on his radio, share his headphones, lock the gate: he's gone. Then the aftermath, to 1983. |
 | Prologue P2 | Main corridor, 1:40 AM | Sollen's note, Mara's locker (red tape), the fuse puzzle (spares cabinet → vending machine). |
 | Prologue P3 | Receiver room, 2:13 → 2:14 | The transmission, the knock, every clock stops. |
 | Act 1.1 | Receiver room | **Choice 1:** answer the voice, or cut the power. Sets `ANSWERED`. |
@@ -93,13 +125,13 @@ Everything Act 2 adds works with the **?** hint button from the start.
 
 - **Darkness is a door.** In the dark you slip into another version of the building; any light holds you where you are. Mara carries a flashlight so she can walk dark rooms safely.
 - **Frequencies look and sound different.** Each one has its own colour cast and its building hum sits at its own pitch. Home has no mark on the Tuner's dial: it sits between 06 and 07.
-- Every crossing adds 1 to `FRACTURE` (4 by the end of Act 1).
+- Every crossing is counted in `CROSSINGS` (4 by the end of Act 1). Since v0.5, `FRACTURE` only rises when Mara crosses back over her own tracks or slips in the mine tunnel.
 
 Branch differences: cutting the power switches home to red emergency light, leaves footprints in the lobby, makes Sollen's desk lamp dead (flashlight only), and changes what the woman at the basement door says.
 
 ## Play it
 
-**On Android:** install the v0.4.0 APK as described above. This development build supports ARM64 and ARMv7 phones; it is not a Play Store release.
+**On Android:** install the v0.5.2 APK as described above. This development build supports ARM64 and ARMv7 phones; it is not a Play Store release.
 
 **On your computer:** download Godot 4.6.3 (the standard build, not .NET), choose *Import*, pick this folder's `project.godot`, then press **F5**.
 
@@ -116,7 +148,10 @@ scenes/main.tscn           Entry point (just runs scripts/main.gd)
 scripts/
   game_state.gd            Autoload: story variables, flags, inventory, frequencies, recipes, save/load
   audio_manager.gd         Autoload: effects, ambience, streamed score, persisted audio mix
-  audio_settings.gd        Touch-friendly sound menu
+  audio_settings.gd        Settings: sound on the left, display on the right
+  display_settings.gd      Battery saver, smooth edges, the frame counter (user://display_settings.cfg)
+  radio_fix.gd             The opening's close-up: hold the light on the back of Tomas's radio
+  intro_art.gd             The opening's shared art: the clearing, the service road, footprints
   environment_art.gd       Shared authored vector materials and scene props
   main.gd                  Camera, HUD, room changes, crossings, input blocking during scenes
   hud.gd                   Clock, objective, inventory (combine/examine), dialogue, choices,
@@ -128,16 +163,32 @@ scripts/
   room.gd                  Base class for every screen: hotspots, walking, frequency, darkness,
                            flashlight, glow layer, hint layer
   station_room.gd          Shared look and ambience for the observatory interior
-  actor.gd                 Every character, drawn from shapes: Mara, Tomas, Sollen, June, Ruth,
-                           Cal, Eighty-One, townspeople, the body, the silhouette
-  kit.gd, snow.gd          Drawing helpers (including the snowcat) and falling snow
-  rooms/*.gd               One file per room: menu, snowfield_1980, corridor, receiver_room,
+  actor.gd                 Every character in a room: walks, sits, idles, and the special poses
+                           (the body, Sollen and Cal asleep); poses a skeleton for Figure
+  figure.gd                Draws a person over that skeleton: body, face, hair, clothes, props
+  looks.gd                 Who looks like what: build, face, hairstyle and clothes per character
+  notebook.gd              Mara's notebook: what she's seen and heard, and the theories
+  townscape.gd             Façades, windows, cornices, snow ledges, streetlamps, the church
+  vehicles.gd              Sollen's snowcat, Mara's 1980 pickup, the county plow, the cruiser and sedan
+  era_vehicles.gd          Cars of other years: 1991 sedan and woodgrain minivan, abandoned 2000s
+                           SUV and sedan, a 2031 electric crossover, its charger, the shuttle
+  act3.gd                  Act 3: which future the dish hears, trips through the feed cabin, the
+                           Silence, the chalkboard's years, playing as Red, the wrist close-up
+  env.gd                   Each station's world (season, hour, weather) and the futures (F2031...)
+  kit.gd, snow.gd          Drawing helpers and falling snow
+  rooms/*.gd               One file per room: menu, intro_diner, intro_road, snowfield_1980,
+                           intro_after (the opening's film), corridor, receiver_room,
                            control_room, lobby, east_corridor, sollen_office, basement,
                            garage, road_down, main_street, pike_radio, sheriff_office,
-                           ash_street, ash_kitchen, diner, mine_tunnel, end_card
+                           ash_street, ash_kitchen, diner, mine_tunnel, end_card;
+                           Act 3: dish (1983, 2031, 2009), visitor_center (2031),
+                           basement_2009, main_street_1991, shop_1991, red_dark, pike_dark (44);
+                           lineup..lineup6 (debug: characters at every age, cars of every year)
   autotest.gd              Automated playthroughs (see Testing)
-audio/*.wav                Original effects, generated by tools/gen_audio.py
-audio/*.ogg                New score and layered ambience, tools/gen_atmosphere.py
+audio/*.wav                Original effects, generated by tools/gen_audio.py; vehicle sounds
+                           (engine, tracks, starter, truck_idle, plow...) by tools/gen_vehicles.py
+audio/*.ogg                The dark ambient score and layered ambience, tools/gen_atmosphere.py;
+                           their song (song_clear, song_radio), tools/gen_song.py
 textures/*.png             Flashlight cone and glow, generated by tools/gen_textures.py
 export_presets.cfg         Android export preset
 ```
@@ -157,8 +208,8 @@ func on_hotspot(id: String) -> void:
             main.change_room("receiver_room", "from_corridor")   # always the last line, never awaited
 ```
 
-- **Story variables** live in `GameState.story`: `ANSWERED`, `TOMAS`, `EIGHTY`, `FINALE`, `FRACTURE` (matching the story bible). Smaller facts are flags: `GameState.set_flag("read_note")`, `GameState.has("read_note")`.
-- **Frequencies**: every room has a `freq` ("H" for home, "01", "03"...) and draws its own version. `main.cross("01", "east_corridor", "first")` plays the glitch, adds 1 to `FRACTURE` and loads that room on that frequency. `GameState.FREQS` holds each frequency's tint and hum pitch.
+- **Story variables** live in `GameState.story`: `ANSWERED`, `TOMAS`, `EIGHTY`, `FINALE`, `FRACTURE`, plus `CROSSINGS`, `SIGNOFF` and `SWITCH` since v0.5 (matching the story bible). Smaller facts are flags: `GameState.set_flag("read_note")`, `GameState.has("read_note")`.
+- **Frequencies**: every room has a `freq` ("H" for home, "01", "03"...) and draws its own version. `main.cross("01", "east_corridor", "first")` plays the glitch, counts the crossing in `CROSSINGS` (and in `FRACTURE` if Mara has made that exact crossing before) and loads that room on that frequency. `GameState.FREQS` holds each frequency's tint and hum pitch.
 - **Darkness**: a room returns `true` from `is_dark()` and the world drops to near-black. With the flashlight, Mara gets a real 2D light cone (`PointLight2D`). `add_lamp()` puts other lights in a room; anything drawn in `draw_glow()` is never darkened.
 - **Hotspots**: `add_hotspot(id, rect, label, walk_x, face, condition)`. The smallest hotspot under a tap wins.
 - **Items**: `use_item(hotspot, item)` for using an item on something, `GameState.RECIPES` for combining two items, `examine_item(item)` to override what examining does in a room.
@@ -170,19 +221,26 @@ func on_hotspot(id: String) -> void:
 
 ## Testing
 
-The automated playthrough taps through the real game and checks the story state after each beat (556 checks across six runs, and every step must have a hint):
+The automated playthrough taps through the real game and checks the story state after each beat (931 checks across eight runs, and every step must have a hint):
 
 ```
-godot --headless --path . -- --autotest=answer        # answer the voice, then take Tomas: Acts 1 and 2
+godot --headless --path . -- --autotest=answer        # answer the voice, take Tomas: to the end of Act 3
 godot --headless --path . -- --autotest=cut           # cut the power, then leave Tomas
 godot --headless --path . -- --autotest=answer_leave  # answer the voice, then leave Tomas
 godot --headless --path . -- --autotest=cut_take      # cut the power, then take Tomas
 godot --headless --path . -- --autotest=atmosphere    # audio independence, persistence, pause, assets
 godot --headless --path . -- --autotest=continue      # save, quit, Continue (also inside 01 and 05)
 godot --headless --path . -- --autotest=chapters      # chapter select: every chapter, every choice combination
+godot --headless --path . -- --autotest=layout        # no wall decoration sits on anything you can tap
+godot --headless --path . -- --autotest=perf          # drawing time per frame in every room (frame cap off)
+godot --headless --path . -- --autotest=act3_cut      # just Act 3, from chapter 3.1 (act3_answer, act3_cut_take...)
+godot --path . -- --autotest=eras --shots=/tmp/e      # every Act 3 place in its year, screenshotted
+godot --path . -- --autotest=opening --shots=/tmp/o   # just the opening, 1980 to 1983, with screenshots
 godot --headless --path . -- --check               # compile every room script and quit
 godot --path . -- --autotest=tuner --shots=/tmp/t   # opens the Tuner in the dark garage and screenshots it
 godot --path . -- --autotest=rooms --shots=/tmp/r   # screenshots every Act 2 room
+godot --path . -- --autotest=lineup --shots=/tmp/l  # every character and pose, and the vehicles, side by side
+godot --path . -- --autotest=vehicles --shots=/tmp/v  # the snowcat in the garage and on the road down
 ```
 
 Each exits with code 0 on pass, 1 on failure, so they can run in GitLab CI.
@@ -202,7 +260,7 @@ The playthrough marks where each chapter starts (`_mark("2.4", "ash_street")` in
 ## Building the APK yourself
 
 1. Install Android Studio (for the Android SDK) and a JDK 17+.
-2. In Godot: **Editor → Editor Settings → Export → Android**, set *Java SDK Path* and *Android SDK Path*. The export preset uses the included development-only key in `build-support/` so later test builds can update this v0.4 installation.
+2. In Godot: **Editor → Editor Settings → Export → Android**, set *Java SDK Path* and *Android SDK Path*. The export preset signs with the development key at `build-support/offfrequency-debug.keystore` (alias `androiddebugkey`, password `android`), which `.gitignore` keeps out of the repository. Keep your local copy: the builds you sign with it update each other in place.
 3. **Editor → Manage Export Templates → Download** for 4.6.3.
 4. **Project → Export → Android → Export Project**.
 
@@ -212,7 +270,7 @@ Command line (after SDK configuration):
 
 ```sh
 godot --headless --path . --editor --import
-godot --headless --path . --export-debug Android build/OffFrequency-v0.4.0-debug.apk
+godot --headless --path . --export-debug Android build/OffFrequency-v0.5.2-debug.apk
 ```
 
 
@@ -223,9 +281,9 @@ There are no recordings yet: lines show as subtitles, and under the 2:14 voice t
 ## Known limitations
 
 - Art remains stylized, code-drawn 2D artwork. New sound textures and music are original synthesized assets, not field recordings or recorded voice acting. The new Ogg version of a sound takes priority over its WAV fallback.
-- Tested here with automated runs and rendered screenshots, but not yet on a physical phone. The 2D lights are the most demanding thing in the game; if a low-end phone struggles in dark rooms, lower `texture_scale` on the flashlight in `room.gd`.
+- Tested here with automated runs and rendered screenshots, but not yet on a physical phone. If a phone still struggles, try *Settings → Display → Battery saver*; the frame counter shows the frame rate and the slowest frame. The 2D lights are the most demanding thing on the GPU side: if dark rooms are slow, lower `texture_scale` on the flashlight in `room.gd`.
 - iOS export needs a Mac with Xcode and an Apple Developer account; nothing in the code is Android-only.
 
 ## Later story expansion
 
-Act 3: patching the Tuner into the dish, three possible futures (2031, 2009, 1991), the chalkboard that writes the next date by itself, Tomas's notebook in the wall, and Choice 3.
+Act 4 opens on the three knocks at the front door, with the transmit key in Mara's pocket and whatever she chose in 1991 and with Eighty-One (see the story bible's *Threads for Act 4*).

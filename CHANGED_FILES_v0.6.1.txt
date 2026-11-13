@@ -1,0 +1,27 @@
+Off Frequency v0.6.1: files changed since the v0.6.0 source
+Paths are relative to the project root. Overlay the changed-files zip on the v0.6.0 source,
+then delete the files listed under Removed. Godot regenerates .godot on import.
+
+Added (2)
+  UPDATE_v0.6.1.md
+  docs/VALIDATION_v0.6.1.md
+
+Changed (16)
+  README.md
+  docs/preview.png
+  docs/screenshots/45_dish_1983.png
+  docs/screenshots/46_dish_2031.png
+  docs/screenshots/47_visitor_center_2031.png
+  docs/screenshots/48_dish_2009.png
+  docs/screenshots/49_main_street_1991.png
+  docs/screenshots/50_shop_1991.png
+  export_presets.cfg
+  project.godot
+  scripts/game_state.gd
+  scripts/rooms/dish.gd
+  scripts/rooms/main_street_1991.gd
+  scripts/rooms/shop_1991.gd
+  scripts/rooms/visitor_center.gd
+  scripts/story.gd
+
+Removed (0): delete these

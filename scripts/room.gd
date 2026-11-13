@@ -7,6 +7,7 @@ extends Node2D
 ##   enter(entry)            place the player depending on where she came from
 ##   on_arrive()             a coroutine that runs after the fade-in
 ##   draw_back()             draw the room behind the characters
+##   draw_anim(ci)           what moves in the room (see animated_back)
 ##   draw_fore(ci)           draw anything in front of the characters
 ##   draw_glow(ci)           draw light sources: never darkened, drawn over the room
 ##   on_hotspot(id)          what happens when a hotspot is tapped
@@ -34,6 +35,8 @@ var is_story_room := true
 var place_name := ""
 var entered_from := ""
 var base_tint := Color(0.86, 0.9, 1.0)
+## Out of doors: the light (and, while tuning, the season) is the shown station's.
+var outdoors := false
 ## Which version of this room: "H" (home), "01", "03"...
 var freq := "H"
 ## Mara switches her flashlight off to use the Tuner.
@@ -48,14 +51,44 @@ var fore: Node2D
 var glow: Node2D
 var hint: Node2D
 var light: CanvasModulate
+## Most of a room never moves, so draw_back() is drawn once and kept, and only
+## redrawn when something changes: the story (GameState), the station being
+## tuned, the flashlight, or the room's own static_key(). What does move (a
+## clock's second hand, blinking lamps, smoke) is drawn every frame by
+## draw_anim() on a layer just above it. A room whose whole picture moves (the
+## road down, the mine) leaves animated_back on and redraws every frame.
+var animated_back := true
+var anim: Node2D
+## What draw_back() draws on: the room itself, or the painter that renders a
+## kept picture into its texture. Room drawing code always draws through cv.
+var cv: CanvasItem
+var _static_key := "-"
+var _last_tuning := "-"
+## A kept picture is rendered once into a texture the size of the screen and
+## shown as a single quad. A phone pays for every shape it is sent, every
+## frame; this way the thousands of shapes in a street cost one.
+var _cache_vp: SubViewport
+var _cache_sprite: Sprite2D
+var _painter: Node2D
+var _fitted := ""
+var _flash_drawn := false
 var _beam: PointLight2D
 var _aura: PointLight2D
 var _flash := 0.0
 
 
+func _init() -> void:
+	cv = self
+
+
 func _ready() -> void:
 	light = CanvasModulate.new()
 	add_child(light)
+	anim = AnimLayer.new()
+	anim.room = self
+	add_child(anim)
+	GameState.changed.connect(refresh_static)
+	GameState.inventory_changed.connect(refresh_static)
 	fore = ForeLayer.new()
 	fore.room = self
 	fore.z_index = 10
@@ -78,19 +111,125 @@ func _process(delta: float) -> void:
 	t += delta
 	if _flash > 0.0:
 		_flash -= delta
+	if tuning != _last_tuning:
+		_last_tuning = tuning
+		on_tuning()
 	if light != null:
 		light.color = current_tint()
 	_update_flashlight()
-	queue_redraw()
+	if animated_back:
+		if _cache_sprite != null and _cache_sprite.visible:
+			_cache_sprite.visible = false
+		queue_redraw()
+	else:
+		if _cache_vp == null:
+			_make_cache()
+		elif _fit_sig() != _fitted:
+			# The window changed (rotation, battery saver, smooth edges): resize.
+			fit_cache()
+		elif not _cache_sprite.visible:
+			_cache_sprite.visible = true
+			_static_key = "-"
+			queue_redraw()  # the room's own canvas goes blank; the kept picture shows instead
+		var k := "%s|%s|%s|%s|%s" % [tuning, light_off, tuner_glow, GameState.emergency, static_key()]
+		if k != _static_key:
+			_static_key = k
+			refresh_static()
+	anim.queue_redraw()
 	fore.queue_redraw()
 	glow.queue_redraw()
-	hint.queue_redraw()
+	# The ? highlights only need drawing while they're showing (and once more to clear).
+	if _flash > 0.0 or _flash_drawn:
+		hint.queue_redraw()
+		_flash_drawn = _flash > 0.0
 
 
 func _draw() -> void:
+	if _cache_vp != null and not animated_back:
+		return
+	cv = self
+	Env.current = env()
 	draw_back()
-	if is_station() or str(name) in ["pike_radio", "diner", "garage", "basement", "ash_kitchen", "sheriff_office"]:
-		EnvironmentArt.motes(self, t, floor_y)
+
+
+## Redraws the kept parts of the room: its draw_back() and its prop layers.
+func refresh_static() -> void:
+	if _cache_vp != null and not animated_back:
+		_painter.queue_redraw()
+		_cache_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	else:
+		queue_redraw()
+	for c in get_children():
+		if c is PropLayer:
+			c.queue_redraw()
+
+
+func _make_cache() -> void:
+	_cache_vp = SubViewport.new()
+	_cache_vp.disable_3d = true
+	_cache_vp.transparent_bg = false
+	_cache_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	add_child(_cache_vp)
+	_painter = Painter.new()
+	_painter.room = self
+	_cache_vp.add_child(_painter)
+	_cache_sprite = Sprite2D.new()
+	_cache_sprite.centered = false
+	_cache_sprite.texture = _cache_vp.get_texture()
+	add_child(_cache_sprite)
+	move_child(_cache_sprite, 0)
+	get_viewport().size_changed.connect(fit_cache)
+	fit_cache()
+	queue_redraw()
+
+
+## Sizes the kept picture to what's on screen, at the screen's own resolution.
+## Called again when the window changes (and by the display settings).
+func fit_cache() -> void:
+	if _cache_vp == null:
+		return
+	_fitted = _fit_sig()
+	var vp := get_viewport()
+	var s := maxf(0.25, vp.get_final_transform().get_scale().y)
+	var shown_rect := vp.get_canvas_transform().affine_inverse() * Rect2(Vector2.ZERO, vp.get_visible_rect().size)
+	var world := Rect2(shown_rect.position.floor(), shown_rect.size.ceil() + Vector2(1, 1))
+	var px := Vector2i(ceili(world.size.x * s), ceili(world.size.y * s))
+	px = px.clamp(Vector2i(16, 16), Vector2i(8192, 8192))
+	_cache_vp.size = px
+	_cache_vp.oversampling_override = s
+	_cache_vp.msaa_2d = vp.msaa_2d
+	_cache_vp.canvas_transform = Transform2D(0.0, Vector2(s, s), 0.0, -world.position * s)
+	_cache_sprite.position = world.position
+	_cache_sprite.scale = world.size / Vector2(px)
+	_static_key = "-"
+
+
+## What the kept picture's size depends on.
+func _fit_sig() -> String:
+	var vp := get_viewport()
+	return "%s|%s|%d" % [vp.get_final_transform().get_scale(), vp.get_visible_rect().size, vp.msaa_2d]
+
+
+## The station whose world is on screen: the room's own, or the one the Tuner
+## is locked on.
+func shown() -> String:
+	return tuning if tuning != "" else freq
+
+
+## The world outside for the station on screen (see Env).
+func env() -> Env:
+	return Env.of(shown())
+
+
+## Called when the Tuner locks onto a station, or lets go ("").
+func on_tuning() -> void:
+	pass
+
+
+## Room state (beyond the story and the Tuner) that draw_back() depends on.
+## When it changes, the kept picture is redrawn.
+func static_key() -> String:
+	return ""
 
 
 # --- overridables -------------------------------------------------------------
@@ -112,11 +251,22 @@ func ambience() -> void:
 	pass
 
 
+## True to keep the background score out of this room (the opening, 1980,
+## where the only music is on Tomas's radio).
+func score_quiet() -> bool:
+	return false
+
+
 func draw_back() -> void:
 	pass
 
 
 func draw_fore(_ci: CanvasItem) -> void:
+	pass
+
+
+## Everything in the room that moves, drawn every frame just above draw_back().
+func draw_anim(_ci: CanvasItem) -> void:
 	pass
 
 
@@ -185,7 +335,11 @@ func current_tint() -> Color:
 	if GameState.emergency and is_station() and freq == "H":
 		c = Color(1.0, 0.5, 0.47)
 	if is_dark():
-		c = DARK
+		return DARK * GameState.freq_tint(freq)
+	if outdoors:
+		# Outside, the light is the shown station's: its hour, its season.
+		var e := env()
+		return e.tint(c) * (GameState.freq_tint(shown()) if e.story() else Color(1, 1, 1))
 	return c * GameState.freq_tint(freq)
 
 
@@ -262,7 +416,10 @@ func add_actor(kind: String, x: float, facing: int = 1) -> Actor:
 func make_player(x: float, facing: int = 1, kind: String = "mara") -> Actor:
 	player = add_actor(kind, x, facing)
 	player.z_index = 2
-	if kind == "mara" and GameState.has("swapped"):
+	player.idle_step = 1.0 / 12.0
+	if kind == "mara" and GameState.has("playing_red"):
+		player.wrist_tape = Color("b8322c")  # Act 3.7: the Mara left in the dark
+	elif kind == "mara" and GameState.has("swapped"):
 		player.wrist_tape = Color("2f63c9")
 	elif kind == "mara" and GameState.has("wrist_tape"):
 		player.wrist_tape = Color("b8322c")
@@ -415,20 +572,40 @@ func _draw_flash(ci: CanvasItem) -> void:
 		Kit.text(ci, tag.position + Vector2(7, 19), h.label, 17, Color(1.0, 0.85, 0.6, a))
 
 
+## A prop at its own depth (a counter, a desk). Static: redrawn with the room's
+## kept picture (refresh_static), unless the room redraws everything anyway.
 class PropLayer extends Node2D:
 	var fn: Callable
 
 	func _process(_delta: float) -> void:
-		queue_redraw()
+		var room := get_parent() as Room
+		if room == null or room.animated_back:
+			queue_redraw()
 
 	func _draw() -> void:
+		var room := get_parent() as Room
+		if room != null:
+			Env.current = room.env()
 		fn.call(self)
+
+
+## The moving parts of a room (and the dust in the air of its interiors),
+## drawn every frame just above its kept picture.
+class AnimLayer extends Node2D:
+	var room: Room
+
+	func _draw() -> void:
+		Env.current = room.env()
+		if room.is_station() or str(room.name) in ["pike_radio", "diner", "garage", "basement", "ash_kitchen", "sheriff_office"]:
+			EnvironmentArt.motes(self, room.t, room.floor_y)
+		room.draw_anim(self)
 
 
 class ForeLayer extends Node2D:
 	var room: Room
 
 	func _draw() -> void:
+		Env.current = room.env()
 		room.draw_fore(self)
 
 
@@ -437,7 +614,19 @@ class GlowLayer extends Node2D:
 	var room: Room
 
 	func _draw() -> void:
+		Env.current = room.env()
 		room.draw_glow(self)
+
+
+## Renders a room's kept picture (its draw_back()) into the cache texture.
+class Painter extends Node2D:
+	var room: Room
+
+	func _draw() -> void:
+		room.cv = self
+		Env.current = room.env()
+		room.draw_back()
+		room.cv = room
 
 
 ## The ? button's highlights: also on their own layer, so they show in the dark.

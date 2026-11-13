@@ -1,0 +1,77 @@
+Off Frequency v0.5.1: files changed since the v0.5.0 source
+Paths are relative to the project root. Overlay the changed-files zip on the v0.5.0 source,
+then delete the files listed under Removed. Godot regenerates .godot on import.
+
+Added (31)
+  UPDATE_v0.5.1.md
+  audio/song_clear.ogg
+  audio/song_clear.ogg.import
+  audio/song_radio.ogg
+  audio/song_radio.ogg.import
+  docs/VALIDATION_v0.5.1.md
+  docs/screenshots/25_opening_the_lantern.png
+  docs/screenshots/26_opening_service_road.png
+  docs/screenshots/27_opening_hold_the_light.png
+  docs/screenshots/28_opening_their_song.png
+  docs/screenshots/29_opening_the_gate.png
+  docs/screenshots/30_aftermath_they_stop_here.png
+  docs/screenshots/31_aftermath_posters.png
+  docs/screenshots/32_aftermath_eat_while_we_do.png
+  docs/screenshots/33_1983_the_locker.png
+  docs/screenshots/34_settings_display.png
+  docs/screenshots/35_corridor_walls.png
+  docs/screenshots/36_control_room_window.png
+  scripts/display_settings.gd
+  scripts/display_settings.gd.uid
+  scripts/intro_art.gd
+  scripts/intro_art.gd.uid
+  scripts/radio_fix.gd
+  scripts/radio_fix.gd.uid
+  scripts/rooms/intro_after.gd
+  scripts/rooms/intro_after.gd.uid
+  scripts/rooms/intro_diner.gd
+  scripts/rooms/intro_diner.gd.uid
+  scripts/rooms/intro_road.gd
+  scripts/rooms/intro_road.gd.uid
+  tools/gen_song.py
+
+Changed (37)
+  README.md
+  docs/preview.png
+  docs/screenshots/02_snowfield_1980_goodbye.png
+  export_presets.cfg
+  project.godot
+  scripts/actor.gd
+  scripts/audio_manager.gd
+  scripts/audio_settings.gd
+  scripts/autotest.gd
+  scripts/chapter_states.gd
+  scripts/chapters.gd
+  scripts/environment_art.gd
+  scripts/figure.gd
+  scripts/game_state.gd
+  scripts/hud.gd
+  scripts/kit.gd
+  scripts/looks.gd
+  scripts/main.gd
+  scripts/notebook.gd
+  scripts/room.gd
+  scripts/rooms/ash_kitchen.gd
+  scripts/rooms/ash_street.gd
+  scripts/rooms/control_room.gd
+  scripts/rooms/corridor.gd
+  scripts/rooms/diner.gd
+  scripts/rooms/lobby.gd
+  scripts/rooms/main_street.gd
+  scripts/rooms/menu.gd
+  scripts/rooms/pike_radio.gd
+  scripts/rooms/receiver_room.gd
+  scripts/rooms/sheriff_office.gd
+  scripts/rooms/snowfield_1980.gd
+  scripts/rooms/sollen_office.gd
+  scripts/station_room.gd
+  scripts/story.gd
+  scripts/townscape.gd
+  scripts/vehicles.gd
+
+Removed (0): delete these

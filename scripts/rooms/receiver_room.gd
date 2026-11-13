@@ -204,7 +204,12 @@ func _answer() -> void:
 	Audio.play_loop("static", -10.0, 0.2)
 	await mara("Who is this?")
 	await say("VOICE", "Oh God. Which one are you?")
-	await say("VOICE", "Listen. Tomas's radio. The box in the basement. Get it before she does. She'll say she's—")
+	await say("VOICE", "Prove it. What did you say to Tomas? Last thing, every night.")
+	await mara("...\"%s\"" % Story.signoff_line())
+	GameState.set_flag("voice_tested")
+	await say("VOICE", "Okay. Okay, it's you.")
+	await say("VOICE", "Listen. Tomas's radio. The box in the basement. The key's on Sollen's ring.")
+	await say("VOICE", "Get it before she does. She'll say she's—")
 	Audio.sfx("crack", -2.0)
 	Audio.stop_loop("static", 0.05)
 	await wait(1.3)
@@ -232,12 +237,12 @@ func _cut() -> void:
 
 func draw_back() -> void:
 	draw_shell([330.0, 930.0])
-	Kit.door(self, Rect2(30, 340, 92, 310), DOOR, "CORRIDOR")
+	Kit.door(cv, Rect2(30, 340, 92, 310), DOOR, "CORRIDOR")
 	_cabinet()
 	_rack(300.0, "RX-1", true)
 	_rack(440.0, "RX-2", GameState.has("fuse_installed"))
 	_rack(580.0, "RX-3", false)
-	Kit.night_view(self, Rect2(762, 204, 336, 192), t, 960.0, 0.62)
+	Kit.night_view(cv, Rect2(762, 204, 336, 192), 0.0, 960.0, 0.62)
 	_desk()
 	_breaker()
 
@@ -250,77 +255,88 @@ func draw_fore(ci: CanvasItem) -> void:
 		ci.draw_arc(Vector2(1195, 410), 58.0, 0.0, TAU, 40, Color(1.0, 0.5, 0.4, a), 3.0)
 
 
-func _cabinet() -> void:
-	var r := Rect2(168, 348, 96, 106)
-	draw_rect(r, Color("56626c"))
-	draw_rect(r, Color("2c353c"), false, 2.0)
-	Kit.text(self, Vector2(r.position.x, r.position.y + 24), "SPARES", 13, Color("1c2226"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
-	if GameState.has("cabinet_open"):
-		draw_rect(r.grow(-6), Color("171c20"))
-		draw_line(Vector2(176, 386), Vector2(256, 386), Color("3a444b"), 3.0)
-		draw_line(Vector2(176, 420), Vector2(256, 420), Color("3a444b"), 3.0)
-		draw_colored_polygon(PackedVector2Array([Vector2(168, 348), Vector2(140, 336), Vector2(140, 466), Vector2(168, 454)]), Color("4b5760"))
-
-
-func _rack(x: float, label: String, on: bool) -> void:
-	var r := Rect2(x, 300, 120, 340)
-	draw_rect(r, Color("232a31"))
-	draw_rect(r, Color("12171b"), false, 3.0)
-	Kit.text(self, Vector2(x, 324), label, 15, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, 120)
-	for row in 4:
-		var y := 340.0 + row * 50.0
-		draw_rect(Rect2(x + 10, y, 100, 40), Color("2c343c"))
-		for k in 3:
-			draw_circle(Vector2(x + 28 + k * 30, y + 20), 8.0, Color("15191d"))
-			draw_line(Vector2(x + 28 + k * 30, y + 20), Vector2(x + 28 + k * 30 + 5, y + 14), Color("9aa3a8"), 2.0)
-		var led := Color("49d17a") if on else Color("1b2a20")
-		if on and row == 1:
-			led = Color("e8a54b") if sin(t * 6.0 + x) > 0.0 else Color("6b4a1c")
-		draw_circle(Vector2(x + 104, y + 8), 3.0, led)
-	if label == "RX-2":
-		draw_rect(Rect2(472, 552, 56, 38), Color("15191d"))
-		draw_rect(Rect2(484, 562, 32, 18), Color("cfd7d0") if on else Color("2a2f33"))
-		Kit.text(self, Vector2(472, 606), "FUSE 5A", 11, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, 56)
-
-
-func _desk() -> void:
-	draw_rect(Rect2(732, 548, 380, 16), Color("4a3a2c"))
-	draw_rect(Rect2(744, 564, 10, 86), Color("3a2e24"))
-	draw_rect(Rect2(1090, 564, 10, 86), Color("3a2e24"))
-	# Chart recorder with a paper strip and a pen trace.
-	var cr := Rect2(758, 470, 148, 78)
-	draw_rect(cr, Color("2b3238"))
+## Receiver 1 and 2's activity lamps blink, and the chart pen scratches.
+func draw_anim(ci: CanvasItem) -> void:
+	super(ci)
+	for rx in [[300.0, true], [440.0, GameState.has("fuse_installed")]]:
+		if rx[1]:
+			var x: float = rx[0]
+			ci.draw_circle(Vector2(x + 104, 398), 3.0, Color("e8a54b") if sin(t * 6.0 + x) > 0.0 else Color("6b4a1c"))
 	var paper := Rect2(768, 480, 128, 44)
-	draw_rect(paper, Color("e9e4d2"))
 	var pts := PackedVector2Array()
 	for i in 33:
-		var x := paper.position.x + i * 4.0
 		var y := paper.get_center().y
 		if _scratching:
 			y += sin(i * 1.7 + t * 18.0) * 12.0 + sin(i * 0.6 - t * 7.0) * 6.0
 		elif GameState.has("fuse_installed") and not GameState.has("heard_transmission"):
 			y += sin(i * 0.4 + t * 2.0) * 2.0
-		pts.append(Vector2(x, y))
-	draw_polyline(pts, Color("b8322c"), 1.6)
-	Kit.text(self, Vector2(768, 540), "2.14 MHz" if GameState.has("chart_checked") else "CHART", 12, Color("9aa3a0"))
+		pts.append(Vector2(paper.position.x + i * 4.0, y))
+	ci.draw_polyline(pts, Color("b8322c"), 1.6)
+
+
+## The headphones on their hook come and go with Mara.
+func static_key() -> String:
+	return str(player != null and player.headphones)
+
+
+func _cabinet() -> void:
+	var r := Rect2(168, 348, 96, 106)
+	cv.draw_rect(r, Color("56626c"))
+	cv.draw_rect(r, Color("2c353c"), false, 2.0)
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 24), "SPARES", 13, Color("1c2226"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	if GameState.has("cabinet_open"):
+		cv.draw_rect(r.grow(-6), Color("171c20"))
+		cv.draw_line(Vector2(176, 386), Vector2(256, 386), Color("3a444b"), 3.0)
+		cv.draw_line(Vector2(176, 420), Vector2(256, 420), Color("3a444b"), 3.0)
+		cv.draw_colored_polygon(PackedVector2Array([Vector2(168, 348), Vector2(140, 336), Vector2(140, 466), Vector2(168, 454)]), Color("4b5760"))
+
+
+func _rack(x: float, label: String, on: bool) -> void:
+	var r := Rect2(x, 300, 120, 340)
+	cv.draw_rect(r, Color("232a31"))
+	cv.draw_rect(r, Color("12171b"), false, 3.0)
+	Kit.text(cv, Vector2(x, 324), label, 15, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, 120)
+	for row in 4:
+		var y := 340.0 + row * 50.0
+		cv.draw_rect(Rect2(x + 10, y, 100, 40), Color("2c343c"))
+		for k in 3:
+			cv.draw_circle(Vector2(x + 28 + k * 30, y + 20), 8.0, Color("15191d"))
+			cv.draw_line(Vector2(x + 28 + k * 30, y + 20), Vector2(x + 28 + k * 30 + 5, y + 14), Color("9aa3a8"), 2.0)
+		if not (on and row == 1):  # that one blinks: draw_anim()
+			cv.draw_circle(Vector2(x + 104, y + 8), 3.0, Color("49d17a") if on else Color("1b2a20"))
+	if label == "RX-2":
+		cv.draw_rect(Rect2(472, 552, 56, 38), Color("15191d"))
+		cv.draw_rect(Rect2(484, 562, 32, 18), Color("cfd7d0") if on else Color("2a2f33"))
+		Kit.text(cv, Vector2(472, 606), "FUSE 5A", 11, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, 56)
+
+
+func _desk() -> void:
+	cv.draw_rect(Rect2(732, 548, 380, 16), Color("4a3a2c"))
+	cv.draw_rect(Rect2(744, 564, 10, 86), Color("3a2e24"))
+	cv.draw_rect(Rect2(1090, 564, 10, 86), Color("3a2e24"))
+	# Chart recorder with a paper strip and a pen trace.
+	var cr := Rect2(758, 470, 148, 78)
+	cv.draw_rect(cr, Color("2b3238"))
+	cv.draw_rect(Rect2(768, 480, 128, 44), Color("e9e4d2"))
+	Kit.text(cv, Vector2(768, 540), "2.14 MHz" if GameState.has("chart_checked") else "CHART", 12, Color("9aa3a0"))
 	# Headphones on their hook.
-	draw_line(Vector2(944, 430), Vector2(944, 444), Color("6f777d"), 3.0)
+	cv.draw_line(Vector2(944, 430), Vector2(944, 444), Color("6f777d"), 3.0)
 	if not player.headphones:
-		draw_arc(Vector2(944, 470), 22.0, PI, TAU, 14, Color("1f2226"), 5.0)
-		draw_circle(Vector2(923, 478), 9.0, Color("2a2d33"))
-		draw_circle(Vector2(965, 478), 9.0, Color("2a2d33"))
+		cv.draw_arc(Vector2(944, 470), 22.0, PI, TAU, 14, Color("1f2226"), 5.0)
+		cv.draw_circle(Vector2(923, 478), 9.0, Color("2a2d33"))
+		cv.draw_circle(Vector2(965, 478), 9.0, Color("2a2d33"))
 	# Talkback mic with its red transmit key.
-	draw_rect(Rect2(1000, 530, 64, 18), Color("2b3238"))
-	draw_line(Vector2(1030, 530), Vector2(1030, 486), Color("7c858b"), 4.0)
-	draw_rect(Rect2(1018, 462, 24, 30), Color("3a4146"))
-	draw_rect(Rect2(1046, 534, 12, 10), Color("c0392b"))
+	cv.draw_rect(Rect2(1000, 530, 64, 18), Color("2b3238"))
+	cv.draw_line(Vector2(1030, 530), Vector2(1030, 486), Color("7c858b"), 4.0)
+	cv.draw_rect(Rect2(1018, 462, 24, 30), Color("3a4146"))
+	cv.draw_rect(Rect2(1046, 534, 12, 10), Color("c0392b"))
 
 
 func _breaker() -> void:
 	var r := Rect2(1148, 338, 94, 144)
-	draw_rect(r, Color("596670"))
-	draw_rect(r, Color("2c353c"), false, 3.0)
-	Kit.text(self, Vector2(r.position.x, r.position.y + 22), "MAIN", 14, Color("1c2226"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
-	draw_rect(Rect2(1186, 370, 18, 96), Color("2a3036"))
+	cv.draw_rect(r, Color("596670"))
+	cv.draw_rect(r, Color("2c353c"), false, 3.0)
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 22), "MAIN", 14, Color("1c2226"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	cv.draw_rect(Rect2(1186, 370, 18, 96), Color("2a3036"))
 	var lever_y := 448.0 if GameState.emergency else 386.0
-	draw_rect(Rect2(1176, lever_y - 8, 38, 16), Color("c0392b"))
+	cv.draw_rect(Rect2(1176, lever_y - 8, 38, 16), Color("c0392b"))

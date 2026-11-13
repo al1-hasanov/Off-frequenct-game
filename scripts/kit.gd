@@ -11,6 +11,46 @@ static func text(ci: CanvasItem, pos: Vector2, s: String, size: int, col: Color,
 	ci.draw_string(ThemeDB.fallback_font, pos, s, align, width, size, col)
 
 
+static func text_width(s: String, size: int) -> float:
+	return ThemeDB.fallback_font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+
+
+## Einstein's field equation with his cosmological constant, written out with
+## its subscripts: G_μν + Λg_μν = 8πG T_μν. `pos` is the left end of the
+## baseline. Returns the width drawn.
+static func field_equation(ci: CanvasItem, pos: Vector2, size: int, col: Color) -> float:
+	var sub := maxi(8, int(size * 0.55))
+	var drop := size * 0.28
+	var x := pos.x
+	for part in [["G", false], ["μν", true], [" + Λg", false], ["μν", true], [" = 8πG T", false], ["μν", true]]:
+		var s: String = part[0]
+		var k := sub if part[1] else size
+		text(ci, Vector2(x, pos.y + (drop if part[1] else 0.0)), s, k, col)
+		x += text_width(s, k)
+	return x - pos.x
+
+
+static var _soft: ImageTexture
+
+
+## A soft round glow of colour `col` and radius r at c (a lamp, a porch light).
+static func soft_glow(ci: CanvasItem, c: Vector2, r: float, col: Color) -> void:
+	ci.draw_texture_rect(soft_tex(), Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0), false, col)
+
+
+## A white dot that fades to nothing at its edge (glows, snowflakes, fireflies).
+static func soft_tex() -> ImageTexture:
+	if _soft == null:
+		var n := 64
+		var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+		for y in n:
+			for x in n:
+				var d := Vector2(x + 0.5 - n * 0.5, y + 0.5 - n * 0.5).length() / (n * 0.5)
+				img.set_pixel(x, y, Color(1, 1, 1, pow(clampf(1.0 - d, 0.0, 1.0), 2.2)))
+		_soft = ImageTexture.create_from_image(img)
+	return _soft
+
+
 static func vgrad(ci: CanvasItem, r: Rect2, top: Color, bottom: Color) -> void:
 	var pts := PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
 	ci.draw_polygon(pts, PackedColorArray([top, top, bottom, bottom]))
@@ -97,10 +137,15 @@ static func door(ci: CanvasItem, r: Rect2, col: Color, label: String = "") -> vo
 
 
 static func stars(ci: CanvasItem, r: Rect2, n: int, t: float) -> void:
+	var bright := Env.now().stars()
+	if bright <= 0.0:
+		return
+	if bright < 1.0:
+		n = int(n * 0.3)
 	for i in n:
 		var x := r.position.x + fposmod(i * 263.7, r.size.x)
 		var y := r.position.y + fposmod(i * 97.31 + i * i * 0.37, r.size.y)
-		var a := 0.35 + 0.3 * sin(t * 1.3 + i * 1.7)
+		var a := (0.35 + 0.3 * sin(t * 1.3 + i * 1.7)) * bright
 		ci.draw_circle(Vector2(x, y), 1.3 if i % 5 else 1.9, Color(0.85, 0.9, 1.0, a))
 
 
@@ -123,6 +168,10 @@ static func dish(ci: CanvasItem, base: Vector2, s: float, col: Color) -> void:
 
 
 static func pines(ci: CanvasItem, base_y: float, col: Color) -> void:
+	var e := Env.now()
+	col = e.pine(col)
+	# Out of the dark, snow shows on their branches.
+	var snow := e.snowy() and not (e.night() or e.story())
 	var x := L
 	var i := 0
 	while x < R:
@@ -135,12 +184,19 @@ static func pines(ci: CanvasItem, base_y: float, col: Color) -> void:
 			ci.draw_colored_polygon(PackedVector2Array([
 				Vector2(x,tip),Vector2(x+spread,tip+h*.36),Vector2(x+spread*.2,tip+h*.29),
 				Vector2(x,tip+h*.32),Vector2(x-spread,tip+h*.36)]),col)
+			if snow:
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(x, tip), Vector2(x + spread * 0.55, tip + h * 0.2),
+					Vector2(x, tip + h * 0.14), Vector2(x - spread * 0.55, tip + h * 0.2)]), e.shade(Color("e8eef6")))
 		x += 30.0 + 14.0 * absf(sin(i * 3.1))
 		i += 1
 
 
 ## The view through a window at night: sky, mountains, the dish, a snowy field.
 static func night_view(ci: CanvasItem, r: Rect2, t: float, dish_x: float, dish_s: float) -> void:
+	var e := Env.now()
+	if not e.story():
+		_station_view(ci, r, t, dish_x, dish_s, e)
+		return
 	vgrad(ci, r, Color("04060d"), Color("1b2542"))
 	stars(ci, Rect2(r.position, Vector2(r.size.x, r.size.y * 0.55)), int(r.size.x / 9.0), t)
 	var horizon := r.position.y + r.size.y * 0.72
@@ -156,6 +212,27 @@ static func night_view(ci: CanvasItem, r: Rect2, t: float, dish_x: float, dish_s
 		dish(ci, Vector2(dish_x, horizon + 4.0), dish_s, Color("0a0e18"))
 
 
+## The view through a window on another station: its sky, its season.
+static func _station_view(ci: CanvasItem, r: Rect2, t: float, dish_x: float, dish_s: float, e: Env) -> void:
+	var sk: Array = e.sky()
+	vgrad(ci, r, sk[0], sk[1])
+	stars(ci, Rect2(r.position, Vector2(r.size.x, r.size.y * 0.55)), int(r.size.x / 9.0), t)
+	var horizon := r.position.y + r.size.y * 0.72
+	var m := PackedVector2Array([Vector2(r.position.x, horizon)])
+	var steps := 8
+	for i in steps + 1:
+		var x := r.position.x + r.size.x * i / steps
+		m.append(Vector2(x, horizon - 18.0 - 26.0 * absf(sin(i * 1.9 + r.position.x * 0.01))))
+	m.append(Vector2(r.end.x, horizon))
+	ci.draw_colored_polygon(m, e.hills())
+	var g: Array = e.ground()
+	if e.state == "gone":
+		g = [Color("e8ebf0"), Color("f4f6f8")]
+	vgrad(ci, Rect2(r.position.x, horizon, r.size.x, r.end.y - horizon), g[1], g[0])
+	if dish_x >= 0.0 and e.state != "gone":
+		dish(ci, Vector2(dish_x, horizon + 4.0), dish_s, Color("0a0e18") if e.night() else e.shade(Color("5a606a")))
+
+
 static func window_frame(ci: CanvasItem, r: Rect2, panes: int) -> void:
 	var frame := Color("1b2124")
 	# Quiet glass sheen and frost along the lower edge; never obscure the view.
@@ -163,48 +240,18 @@ static func window_frame(ci: CanvasItem, r: Rect2, panes: int) -> void:
 	for i in int(r.size.x/18):
 		var p := Vector2(r.position.x+9+i*18,r.end.y)
 		ci.draw_line(p,p+Vector2(-4,-6-i%4),Color(0.7,0.84,0.9,0.2),1.0)
-	ci.draw_rect(r.grow(10), frame, false, 20.0)
+	# The frame sits just outside the opening: 12 px, plus a 14 px sill. Keep
+	# other wall objects at least 16 px clear of the opening.
+	ci.draw_rect(r.grow(6), frame, false, 12.0)
+	ci.draw_rect(r.grow(1), Color("0d1113"), false, 2.0)
 	for i in range(1, panes):
 		var x := r.position.x + r.size.x * i / panes
 		ci.draw_rect(Rect2(x - 5, r.position.y, 10, r.size.y), frame)
-	ci.draw_rect(Rect2(r.position.x - 16, r.end.y + 8, r.size.x + 32, 10), Color("2a3134"))
-	ci.draw_line(Vector2(r.position.x-14,r.end.y+9),Vector2(r.end.x+14,r.end.y+9),Color("4b5557"),1.0)
+	ci.draw_rect(Rect2(r.position.x - 14, r.end.y + 6, r.size.x + 28, 9), Color("2a3134"))
+	ci.draw_line(Vector2(r.position.x-12,r.end.y+7),Vector2(r.end.x+12,r.end.y+7),Color("4b5557"),1.0)
 
 
-## Sollen's snowcat, side view, facing right. `base` is the ground under its middle.
+## Sollen's snowcat, side view, facing right. `base` is the ground under its
+## middle. Kept for older callers: Vehicles.snowcat() takes the full options.
 static func snowcat(ci: CanvasItem, base: Vector2, s: float, t: float, moving: bool, body: Color = Color("c8642a")) -> void:
-	var p := func(x: float, y: float) -> Vector2: return base + Vector2(x, y) * s
-	var track := Color("1f2124")
-	ci.draw_rect(Rect2(p.call(-200, -56), Vector2(400, 56) * s), track)
-	ci.draw_circle(p.call(-200, -28), 28.0 * s, track)
-	ci.draw_circle(p.call(200, -28), 28.0 * s, track)
-	for i in 7:
-		var x := -180.0 + i * 60.0
-		ci.draw_circle(p.call(x, -28), 18.0 * s, Color("3a3d42"))
-		ci.draw_circle(p.call(x, -28), 6.0 * s, Color("6a6f73"))
-	var off := fmod(t * 60.0, 20.0) if moving else 0.0
-	var x2 := -200.0 + off
-	while x2 < 200.0:
-		ci.draw_line(p.call(x2, -56), p.call(x2, -50), Color("4a4d52"), 3.0 * s)
-		x2 += 20.0
-	ci.draw_colored_polygon(PackedVector2Array([
-		p.call(-190, -56), p.call(210, -56), p.call(218, -110), p.call(150, -126), p.call(-190, -126)]), body)
-	ci.draw_rect(Rect2(p.call(-190, -96), Vector2(400, 8) * s), body.darkened(0.25))
-	ci.draw_colored_polygon(PackedVector2Array([
-		p.call(-120, -126), p.call(110, -126), p.call(90, -226), p.call(-110, -226)]), body.lightened(0.05))
-	ci.draw_rect(Rect2(p.call(-100, -214), Vector2(84, 74) * s), Color("1a2430"))
-	ci.draw_colored_polygon(PackedVector2Array([p.call(0, -214), p.call(84, -214), p.call(102, -140), p.call(0, -140)]), Color("1a2430"))
-	ci.draw_line(p.call(-104, -230), p.call(96, -230), Color("2a2a2a"), 6.0 * s)
-	ci.draw_rect(Rect2(p.call(196, -108), Vector2(16, 18) * s), Color("e8e0c0"))
-	ci.draw_rect(Rect2(p.call(-170, -120), Vector2(40, 8) * s), Color("2a2a2a"))
-	# Windscreen reflection, seals, access panels and a perforated engine grille.
-	ci.draw_line(p.call(-96,-208),p.call(-37,-147),Color(0.55,0.72,0.8,0.18),6*s)
-	ci.draw_line(p.call(8,-208),p.call(76,-146),Color(0.55,0.72,0.8,0.12),5*s)
-	ci.draw_line(p.call(42,-145),p.call(72,-185),Color("111b22"),3*s)
-	ci.draw_rect(Rect2(p.call(-116,-129),Vector2(104,65)*s),body.darkened(.2),false,1.5*s)
-	ci.draw_rect(Rect2(p.call(-35,-120),Vector2(17,4)*s),Color("b1ada0"))
-	for i in 10:
-		ci.draw_line(p.call(118+i*7,-111),p.call(118+i*7,-85),body.darkened(.4),2*s)
-	ci.draw_line(p.call(-104,-234),p.call(94,-234),Color("bac5be"),3*s)
-	ci.draw_rect(Rect2(p.call(-176,-88),Vector2(52,18)*s),Color("d4c3a0"))
-	text(ci,p.call(-170,-75),"HRO 03",int(11*s),Color("383c36"))
+	Vehicles.snowcat(ci, base, s, t, {"moving": moving, "body": body})

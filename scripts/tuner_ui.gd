@@ -28,7 +28,7 @@ const FIXED := {
 	"07": {"sound": "breath", "caption": "Breathing. Close. Too close."},
 	"08": {"sound": "knock", "caption": "Knocking. Three, then two."},
 	"09": {"sound": "ring", "caption": "A phone ringing in an empty room."},
-	"12": {"sound": "engine", "caption": "A truck idling in the snow. A boy laughing. It sounds like 1980."},
+	"12": {"sound": "truck_idle", "caption": "A truck idling in the snow. A boy laughing. It sounds like 1980."},
 	"14": {"sound": "wind", "caption": "Wind through an empty house. Nobody home."},
 }
 const POOL := [
@@ -45,7 +45,7 @@ const POOL := [
 	["breath", "Breathing. Close."],
 	["snore", "Somebody snoring."],
 	["plow", "A plow, a long way off."],
-	["engine", "An engine idling."],
+	["truck_idle", "An engine idling."],
 	["drone", "A low groan, like the dish turning."],
 ]
 const QUIET_CAPTION := "Nothing. Not static. Nothing at all. One of the quiet ones."

@@ -8,10 +8,12 @@ class_name Chapters
 ## tunnel has one per combination of both choices. P1 is just a new game.
 
 const LIST := [
-	{"id": "P1", "num": "P1", "act": "Prologue", "title": "The snowfield, 1980",
-		"blurb": "Mara at thirteen, Tomas, and the gate."},
+	{"id": "P1", "num": "P1", "act": "Prologue", "title": "The Lantern, 1980",
+		"blurb": "Just after midnight. Henrik calls Mara back up the mountain."},
+	{"id": "P1b", "num": "P1b", "act": "Prologue", "title": "The clearing",
+		"blurb": "After two. The radio, their song, the gate."},
 	{"id": "P2", "num": "P2", "act": "Prologue", "title": "Night shift",
-		"blurb": "1983. Receiver 2 is dead and needs a fuse."},
+		"blurb": "1983. The locker, the radio down the hall, a dead receiver."},
 	{"id": "P3", "num": "P3", "act": "Prologue", "title": "2:14 AM",
 		"blurb": "Fuse in, the transmission, Choice 1."},
 	{"id": "1.2", "num": "1.2", "act": "Act 1", "title": "The body",
@@ -42,9 +44,25 @@ const LIST := [
 		"blurb": "Ma's truck to the observatory. Choice 2."},
 	{"id": "2.7", "num": "2.7", "act": "Act 2", "title": "The mine tunnel",
 		"blurb": "The dish is turning. Hold home in the dark."},
+	{"id": "3.1", "num": "3.1", "act": "Act 3", "title": "The 2.14 chain",
+		"blurb": "Warm batteries, Dad's diagram, the patch bay."},
+	{"id": "3.2", "num": "3.2", "act": "Act 3", "title": "Future one: 2031",
+		"blurb": "The visitor center. Cal at 83. Ma's last night, on tape."},
+	{"id": "3.3", "num": "3.3", "act": "Act 3", "title": "The desk and the chalkboard",
+		"blurb": "SILENCE: 2031. The key in the leg of the desk."},
+	{"id": "3.4", "num": "3.4", "act": "Act 3", "title": "Future two: 2009",
+		"blurb": "The lamp line, the Lunds, Tomas at forty."},
+	{"id": "3.5", "num": "3.5", "act": "Act 3", "title": "Tomas's notebook",
+		"blurb": "The wall behind the boiler. Days 17 and 18, again."},
+	{"id": "3.6", "num": "3.6", "act": "Act 3", "title": "Future three: 1991",
+		"blurb": "Pike & Lind Radio. Hold the light. The roll call."},
+	{"id": "3.7", "num": "3.7", "act": "Act 3", "title": "Red",
+		"blurb": "The other Mara, in the dark. Listen your way to June's."},
+	{"id": "3.8", "num": "3.8", "act": "Act 3", "title": "Eighty-One",
+		"blurb": "TONIGHT on the board. Choice 3. Three knocks."},
 ]
 
-const ACTS := ["Prologue", "Act 1", "Act 2"]
+const ACTS := ["Prologue", "Act 1", "Act 2", "Act 3"]
 
 
 static func find(id: String) -> Dictionary:

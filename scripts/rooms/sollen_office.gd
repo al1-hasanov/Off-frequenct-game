@@ -36,6 +36,10 @@ func setup() -> void:
 		add_hotspot("cassette", Rect2(1028, 480, 70, 44), "Cassette player", 1060.0)
 		add_hotspot("drawer", Rect2(950, 540, 124, 46), "Drawer", 1010.0)
 	add_hotspot("shelf", Rect2(1134, 294, 124, 356), "Bookshelf", 1120.0, 1)
+	add_hotspot("book", Rect2(1212, 444, 38, 64), "Black textbook", 1120.0, 1)
+	if freq == "H":
+		add_hotspot("desk_leg", Rect2(826, 594, 48, 56), "Desk leg", 880.0, -1, func() -> bool:
+			return GameState.has("knows_key") and not GameState.has("key_taken"))
 
 
 func enter(entry: String) -> void:
@@ -117,8 +121,14 @@ func on_hotspot(id: String) -> void:
 			await _cassette()
 		"drawer":
 			await _drawer()
-		"shelf":
-			await mara("Radio astronomy, birdwatching, and nine copies of the station's budget report.")
+		"shelf", "book":
+			if GameState.has("act3"):
+				await _dads_book()
+			else:
+				await mara("Radio astronomy, birdwatching, and nine copies of the station's budget report.")
+				await mara("And a big black textbook that isn't his. GRAVITATION. I'd swear that was Dad's.")
+		"desk_leg":
+			await _desk_leg()
 
 
 func _sollen() -> void:
@@ -211,8 +221,8 @@ func _logbook() -> void:
 		await mara("My initial. Not my night.")
 		return
 	await hud.read_doc("HALVARD RADIO OBSERVATORY — STATION LOG", [
-		"Oct 14, 1980. Night shift: H. Sollen.\n\n02:14  Carrier on 2.14 MHz. Unlicensed. Female voice, words: \"Don't let her in.\"\n\nNo bearing. Source appears to be INSIDE Rx-2.",
-		"02:31  Phone, sheriff's office: the Lind boy (Tomas, 13) missing from the Hollis Road trailhead. Search parties out.\n\n03:40  Dep. Ostrander on site. Asked about our \"beacon.\" Told him we don't have one.",
+		"Oct 14, 1980. Night shift: H. Sollen.\n\n02:14  Carrier on 2.14 MHz. Unlicensed. Female voice, words: \"Don't let her in.\"\n\nNo bearing. Source appears to be INSIDE Rx-2.\n\n[In the margin, in pencil: LAMBDA RUN.]",
+		"02:31  M. Lind at the door. Her brother (Tomas, 13) gone from the clearing at the outer gate. Phoned the sheriff. Search parties out.\n\n03:40  Dep. Ostrander on site. Asked about our \"beacon.\" Told him we don't have one.",
 		"04:50  Air Force liaison, Maj. D. Price. Log sealed by order. All tapes from tonight surrendered.\n\n05:10  All but one.\n\n— H.S.",
 	])
 	if not GameState.has("read_logbook"):
@@ -220,6 +230,65 @@ func _logbook() -> void:
 		await mara("October fourteenth, 1980. The night Tomas went missing.")
 		await mara("Same voice. Same words. Same 2:14.")
 		await mara("'All but one.' Sollen kept a tape.")
+	if GameState.has("act3") and not GameState.has("chain_known"):
+		await _chain_sheet()
+
+
+## Act 3.1: a folded sheet in the back of the log. The patch-bay routing for
+## receiver 2, "the 2.14 chain", and it isn't in Sollen's hand.
+func _chain_sheet() -> void:
+	await narrate("Folded into the back of the log, a sheet of graph paper.")
+	await hud.read_doc("THE 2.14 CHAIN", [
+		"Rx-2 patch routing, for the field set.\n\n1.  DISH LO-FEED  →  jack A1\n2.  Rx-2 IF OUT  →  jack B3\n3.  FIELD SET OUT  →  jack C2\n\nDo NOT route through the forward bank.\n\n— Λ.L.  10/79",
+	])
+	GameState.set_flag("chain_known")
+	GameState.add_item("chain_sheet")
+	hud.toast("Got: Dad's diagram")
+	await mara("Λ.L. That's Dad's writing. He made his A like that, a Greek lambda. October '79. A month before the road.")
+	await mara("He was the Air Force's engineer on the dish. I knew that. I didn't know he'd drawn anything Tomas would need.")
+	objective()
+
+
+## Act 3: Dad's old textbook on Sollen's shelf, and his LAMBDA notes folded
+## inside it: Einstein's constant, the bridge between sheets of space, Everett's
+## branches and Gödel's loop, in his hand.
+func _dads_book() -> void:
+	var g := GameState
+	await narrate("Between the bird books, a black textbook as thick as a phone book: GRAVITATION. Misner, Thorne and Wheeler.")
+	await narrate("Inside the cover: PROPERTY OF Λ. LIND, USAF. Folded in the back, three sheets of graph paper.")
+	await hud.read_doc("LAMBDA  ·  WORKING NOTES  ·  Λ.L.", [
+		"Einstein, 1917, with his constant:\n\n      Gμν + Λgμν = 8πG Tμν\n\nOn the left, the shape of space and time. On the right, what's in it. Matter tells space how to curve.\n\nΛ is what's left when you take everything else out: the energy of empty space. Gamow says Einstein called it his biggest blunder.",
+		"It isn't a blunder. It just isn't the same everywhere.\n\nHere, Λ runs thin. Where it's thin, the geometry gives.\n\nEinstein and Rosen, 1935: two sheets of space, joined by a bridge.\nEverett, 1957: every branch is real.\n\nOn 2.14 I can hear the next sheet over.",
+		"Gödel, 1949: the same equations let a path come back round to its own past. Einstein wrote that the problem had disturbed him since he first built the theory.\n\nSome nights the next sheet over is LATER.\n\nLIGHT = BALLAST. Keep a lamp lit and you stay where you are.\n\n— Λ.L.  6/79",
+	])
+	if g.has("dad_notes_read"):
+		await mara("Dad's LAMBDA notes. I'm putting them back exactly where he left them.")
+		return
+	g.set_flag("dad_notes_read")
+	await mara("Dad's notes. The same capitals he did the crossword in.")
+	await mara("He wasn't listening for little green men. He was listening to empty space.")
+	await mara("'Some nights the next sheet over is later.' In 1979 he already knew.")
+	await mara("And LIGHT = BALLAST. Light holds you where you are. Dad worked that out before any of us.")
+	objective()
+
+
+## Act 3.3: the transmit key, where a museum finds it in 1998.
+func _desk_leg() -> void:
+	var g := GameState
+	if not g.has("chalk_2031"):
+		await mara("First I write it down. Before I forget what I saw. The chalkboard in the control room.")
+		return
+	await narrate("She kneels, and unscrews the foot cap on the left rear leg of Sollen's desk.")
+	Audio.sfx("keys", -6.0)
+	await narrate("The transmitter key drops out on its lanyard.")
+	g.add_item("transmit_key")
+	g.set_flag("key_taken")
+	hud.toast("Got: Transmit key")
+	await mara("The key. Right where 2031 said.")
+	await narrate("She checks the dial. The needle won't settle on 2031 any more. It slides past.")
+	await mara("That future needed the key lost. I took it.")
+	await say("JUNE (TUNER)", "Then it's a different song now.")
+	objective()
 
 
 func _cassette() -> void:
@@ -257,121 +326,129 @@ func _drawer() -> void:
 # --- drawing ------------------------------------------------------------------------
 
 func draw_back() -> void:
-	Kit.wall(self, floor_y, Color("4a3f36"), Color("3a312b"), Color("1d1916"))
-	EnvironmentArt.wall_props(self, str(name))
+	Kit.wall(cv, floor_y, Color("4a3f36"), Color("3a312b"), Color("1d1916"))
+	EnvironmentArt.wall_props(cv, str(name))
 	_carpet()
-	Kit.door(self, Rect2(40, 340, 90, 310), Color("5a4a3c"))
+	Kit.door(cv, Rect2(40, 340, 90, 310), Color("5a4a3c"))
 	_photo_art()
 	_couch()
 	_coat_stand()
 	var win := Rect2(580, 220, 200, 200)
-	Kit.night_view(self, win, t, 700.0, 0.5)
-	Kit.window_frame(self, win, 2)
+	Kit.night_view(cv, win, 0.0, 700.0, 0.5)
+	Kit.window_frame(cv, win, 2)
 	_desk()
 	_shelf()
 
 
 func _carpet() -> void:
-	draw_rect(Rect2(Kit.L, floor_y, Kit.R - Kit.L, 400), Color("3a2a26"))
-	draw_rect(Rect2(150, floor_y + 6, 1000, 60), Color("5a3530"))
-	draw_rect(Rect2(150, floor_y + 6, 1000, 60), Color("6e443c"), false, 3.0)
+	cv.draw_rect(Rect2(Kit.L, floor_y, Kit.R - Kit.L, 400), Color("3a2a26"))
+	cv.draw_rect(Rect2(150, floor_y + 6, 1000, 60), Color("5a3530"))
+	cv.draw_rect(Rect2(150, floor_y + 6, 1000, 60), Color("6e443c"), false, 3.0)
 
 
 func _photo_art() -> void:
 	var r := Rect2(268, 326, 66, 78)
-	draw_rect(r.grow(5), Color("6a5030"))
-	draw_rect(r, Color("c9c2b0"))
+	cv.draw_rect(r.grow(5), Color("6a5030"))
+	cv.draw_rect(r, Color("c9c2b0"))
 	if freq == "01":
-		draw_rect(Rect2(r.position.x + 6, r.position.y + 6, 54, 50), Color("7a8a9a"))
-		draw_circle(Vector2(r.get_center().x, r.position.y + 26), 9.0, Color("d8a688"))
-		draw_circle(Vector2(r.get_center().x - 2, r.position.y + 21), 9.0, Color("3b2a22"))
-		draw_circle(Vector2(r.get_center().x + 1, r.position.y + 27), 7.5, Color("d8a688"))
-		draw_rect(Rect2(r.get_center().x - 12, r.position.y + 37, 24, 19), Color("5d5a3b"))
-		Kit.text(self, Vector2(r.position.x, r.end.y - 8), "1982", 10, Color("3a3a3a"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		cv.draw_rect(Rect2(r.position.x + 6, r.position.y + 6, 54, 50), Color("7a8a9a"))
+		cv.draw_circle(Vector2(r.get_center().x, r.position.y + 26), 9.0, Color("d8a688"))
+		cv.draw_circle(Vector2(r.get_center().x - 2, r.position.y + 21), 9.0, Color("3b2a22"))
+		cv.draw_circle(Vector2(r.get_center().x + 1, r.position.y + 27), 7.5, Color("d8a688"))
+		cv.draw_rect(Rect2(r.get_center().x - 12, r.position.y + 37, 24, 19), Color("5d5a3b"))
+		Kit.text(cv, Vector2(r.position.x, r.end.y - 8), "1982", 10, Color("3a3a3a"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 	else:
-		draw_rect(Rect2(r.position.x + 6, r.position.y + 6, 54, 50), Color("8aa0a8"))
-		draw_rect(Rect2(r.position.x + 6, r.position.y + 38, 54, 18), Color("4a6a7a"))
-		draw_circle(Vector2(r.position.x + 24, r.position.y + 26), 6.0, Color("d4a386"))
-		draw_circle(Vector2(r.position.x + 42, r.position.y + 28), 6.0, Color("d4a386"))
-		Kit.text(self, Vector2(r.position.x, r.end.y - 8), "1961", 10, Color("3a3a3a"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		cv.draw_rect(Rect2(r.position.x + 6, r.position.y + 6, 54, 50), Color("8aa0a8"))
+		cv.draw_rect(Rect2(r.position.x + 6, r.position.y + 38, 54, 18), Color("4a6a7a"))
+		cv.draw_circle(Vector2(r.position.x + 24, r.position.y + 26), 6.0, Color("d4a386"))
+		cv.draw_circle(Vector2(r.position.x + 42, r.position.y + 28), 6.0, Color("d4a386"))
+		Kit.text(cv, Vector2(r.position.x, r.end.y - 8), "1961", 10, Color("3a3a3a"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 
 
 func _couch() -> void:
 	var c := Color("5a3a2c")
-	draw_rect(Rect2(170, 500, 262, 70), c.darkened(0.1))
-	draw_rect(Rect2(176, 566, 250, 40), c)
-	draw_rect(Rect2(160, 530, 26, 80), c.darkened(0.2))
-	draw_rect(Rect2(416, 530, 26, 80), c.darkened(0.2))
-	draw_rect(Rect2(178, 606, 10, 44), Color("2a1f1a"))
-	draw_rect(Rect2(414, 606, 10, 44), Color("2a1f1a"))
+	cv.draw_rect(Rect2(170, 500, 262, 70), c.darkened(0.1))
+	cv.draw_rect(Rect2(176, 566, 250, 40), c)
+	cv.draw_rect(Rect2(160, 530, 26, 80), c.darkened(0.2))
+	cv.draw_rect(Rect2(416, 530, 26, 80), c.darkened(0.2))
+	cv.draw_rect(Rect2(178, 606, 10, 44), Color("2a1f1a"))
+	cv.draw_rect(Rect2(414, 606, 10, 44), Color("2a1f1a"))
 	if freq == "H":
-		draw_rect(Rect2(196, 548, 70, 22), Color("6e5446"))
+		cv.draw_rect(Rect2(196, 548, 70, 22), Color("6e5446"))
 
 
 func _coat_stand() -> void:
 	var x := 476.0
-	draw_line(Vector2(x, 400), Vector2(x, 646), Color("3a2a1e"), 6.0)
-	draw_line(Vector2(x - 26, 650), Vector2(x + 26, 650), Color("3a2a1e"), 6.0)
-	draw_line(Vector2(x, 404), Vector2(x - 20, 392), Color("3a2a1e"), 4.0)
-	draw_line(Vector2(x, 404), Vector2(x + 20, 392), Color("3a2a1e"), 4.0)
+	cv.draw_line(Vector2(x, 400), Vector2(x, 646), Color("3a2a1e"), 6.0)
+	cv.draw_line(Vector2(x - 26, 650), Vector2(x + 26, 650), Color("3a2a1e"), 6.0)
+	cv.draw_line(Vector2(x, 404), Vector2(x - 20, 392), Color("3a2a1e"), 4.0)
+	cv.draw_line(Vector2(x, 404), Vector2(x + 20, 392), Color("3a2a1e"), 4.0)
 	if freq != "01":
 		return
 	# Coat on the left hook.
-	draw_colored_polygon(PackedVector2Array([Vector2(x - 22, 396), Vector2(x - 4, 404), Vector2(x - 2, 572), Vector2(x - 46, 576), Vector2(x - 40, 420)]), Color("54452e"))
-	draw_line(Vector2(x - 34, 470), Vector2(x - 12, 470), Color("3e3322"), 3.0)
+	cv.draw_colored_polygon(PackedVector2Array([Vector2(x - 22, 396), Vector2(x - 4, 404), Vector2(x - 2, 572), Vector2(x - 46, 576), Vector2(x - 40, 420)]), Color("54452e"))
+	cv.draw_line(Vector2(x - 34, 470), Vector2(x - 12, 470), Color("3e3322"), 3.0)
 	# Scarf on the right hook, until Mara takes it.
 	if not GameState.has("scarf_taken"):
-		draw_line(Vector2(x + 20, 394), Vector2(x + 22, 498), Color("3e5a46"), 12.0)
-		draw_line(Vector2(x + 30, 394), Vector2(x + 34, 470), Color("3e5a46"), 10.0)
+		cv.draw_line(Vector2(x + 20, 394), Vector2(x + 22, 498), Color("3e5a46"), 12.0)
+		cv.draw_line(Vector2(x + 30, 394), Vector2(x + 34, 470), Color("3e5a46"), 10.0)
 		for k in 4:
-			draw_line(Vector2(x + 15, 420 + k * 20), Vector2(x + 27, 420 + k * 20), Color("8a2f2a"), 4.0)
+			cv.draw_line(Vector2(x + 15, 420 + k * 20), Vector2(x + 27, 420 + k * 20), Color("8a2f2a"), 4.0)
 
 
 func _desk() -> void:
-	draw_rect(Rect2(816, 518, 304, 12), Color("6a4a30"))
-	draw_rect(Rect2(824, 530, 288, 120), Color("54392a"))
-	draw_rect(Rect2(958, 546, 108, 34), Color("4a3224"))
-	draw_rect(Rect2(1002, 560, 22, 6), Color("c9a332"))
+	cv.draw_rect(Rect2(816, 518, 304, 12), Color("6a4a30"))
+	cv.draw_rect(Rect2(824, 530, 288, 120), Color("54392a"))
+	cv.draw_rect(Rect2(958, 546, 108, 34), Color("4a3224"))
+	cv.draw_rect(Rect2(1002, 560, 22, 6), Color("c9a332"))
 	# Lamp.
 	var on := _lamp_on()
-	draw_rect(Rect2(840, 508, 36, 10), Color("2a2f33"))
-	draw_line(Vector2(858, 508), Vector2(858, 470), Color("2a2f33"), 4.0)
-	draw_colored_polygon(PackedVector2Array([Vector2(836, 474), Vector2(880, 474), Vector2(870, 444), Vector2(846, 444)]), Color("2e5a3a"))
+	cv.draw_rect(Rect2(840, 508, 36, 10), Color("2a2f33"))
+	cv.draw_line(Vector2(858, 508), Vector2(858, 470), Color("2a2f33"), 4.0)
+	cv.draw_colored_polygon(PackedVector2Array([Vector2(836, 474), Vector2(880, 474), Vector2(870, 444), Vector2(846, 444)]), Color("2e5a3a"))
 	if on:
-		draw_colored_polygon(PackedVector2Array([Vector2(836, 474), Vector2(880, 474), Vector2(930, 518), Vector2(800, 518)]), Color(1.0, 0.9, 0.6, 0.18))
-		draw_rect(Rect2(850, 474, 16, 6), Color("fff0c0"))
+		cv.draw_colored_polygon(PackedVector2Array([Vector2(836, 474), Vector2(880, 474), Vector2(930, 518), Vector2(800, 518)]), Color(1.0, 0.9, 0.6, 0.18))
+		cv.draw_rect(Rect2(850, 474, 16, 6), Color("fff0c0"))
 	# Phone: off the hook at home.
-	draw_rect(Rect2(894, 500, 48, 18), Color("1f1f22"))
+	cv.draw_rect(Rect2(894, 500, 48, 18), Color("1f1f22"))
 	if freq == "H":
-		draw_line(Vector2(930, 498), Vector2(950, 516), Color("1f1f22"), 8.0)
-		draw_rect(Rect2(946, 512, 12, 8), Color("1f1f22"))
-		draw_arc(Vector2(920, 512), 14.0, 0.2, 2.6, 10, Color("2a2a2e"), 2.0)
+		cv.draw_line(Vector2(930, 498), Vector2(950, 516), Color("1f1f22"), 8.0)
+		cv.draw_rect(Rect2(946, 512, 12, 8), Color("1f1f22"))
+		cv.draw_arc(Vector2(920, 512), 14.0, 0.2, 2.6, 10, Color("2a2a2e"), 2.0)
 	else:
-		draw_rect(Rect2(892, 490, 52, 10), Color("1f1f22"))
+		cv.draw_rect(Rect2(892, 490, 52, 10), Color("1f1f22"))
 	# Logbook.
-	draw_rect(Rect2(958, 504, 58, 14), Color("6a2a22"))
-	draw_rect(Rect2(960, 502, 54, 4), Color("e6dfc8"))
+	cv.draw_rect(Rect2(958, 504, 58, 14), Color("6a2a22"))
+	cv.draw_rect(Rect2(960, 502, 54, 4), Color("e6dfc8"))
 	# Cassette deck.
 	if freq == "H":
-		draw_rect(Rect2(1032, 494, 62, 24), Color("2a2c30"))
-		draw_rect(Rect2(1040, 498, 34, 14), Color("101114"))
-		draw_circle(Vector2(1049, 505), 3.0, Color("6a6f73"))
-		draw_circle(Vector2(1065, 505), 3.0, Color("6a6f73"))
-		draw_rect(Rect2(1078, 500, 10, 4), Color("b8322c"))
+		cv.draw_rect(Rect2(1032, 494, 62, 24), Color("2a2c30"))
+		cv.draw_rect(Rect2(1040, 498, 34, 14), Color("101114"))
+		cv.draw_circle(Vector2(1049, 505), 3.0, Color("6a6f73"))
+		cv.draw_circle(Vector2(1065, 505), 3.0, Color("6a6f73"))
+		cv.draw_rect(Rect2(1078, 500, 10, 4), Color("b8322c"))
 
 
 func _shelf() -> void:
 	var r := Rect2(1140, 300, 112, 350)
-	draw_rect(r, Color("3a2a1e"))
+	cv.draw_rect(r, Color("3a2a1e"))
 	for i in 5:
 		var y := r.position.y + 10 + i * 68
-		draw_rect(Rect2(r.position.x + 6, y + 56, r.size.x - 12, 6), Color("2a1f16"))
+		cv.draw_rect(Rect2(r.position.x + 6, y + 56, r.size.x - 12, 6), Color("2a1f16"))
 		var x := r.position.x + 10
 		var k := 0
-		while x < r.end.x - 16:
+		# The middle shelf ends in Dad's GRAVITATION, a black brick of a book.
+		var stop := r.end.x - (44.0 if i == 2 else 16.0)
+		while x < stop:
 			var w := 8.0 + float((i * 7 + k * 3) % 9)
 			var h := 36.0 + float((i * 5 + k * 11) % 18)
 			var cols := [Color("6a2a22"), Color("2e4a5a"), Color("5a5a3a"), Color("8a7a5a")]
-			draw_rect(Rect2(x, y + 56 - h, w, h), cols[(i + k) % 4])
+			cv.draw_rect(Rect2(x, y + 56 - h, w, h), cols[(i + k) % 4])
 			x += w + 2.0
 			k += 1
+		if i == 2:
+			var b := Rect2(r.end.x - 34, y + 4, 26, 52)
+			cv.draw_rect(b, Color("141416"))
+			cv.draw_rect(Rect2(b.position.x + 3, b.position.y + 8, b.size.x - 6, 4), Color("e8e4da"))
+			cv.draw_rect(Rect2(b.position.x + 3, b.position.y + 14, b.size.x - 6, 2), Color("b8322c"))
+			cv.draw_rect(Rect2(b.position.x + 3, b.end.y - 9, b.size.x - 6, 3), Color("8a867c"))

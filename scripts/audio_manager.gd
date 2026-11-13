@@ -58,7 +58,7 @@ func _ready() -> void:
 	_music = AudioStreamPlayer.new()
 	_music.bus = "Music"
 	_music.stream = _stream("night_score", true)
-	_music.volume_db = -10.0
+	_music.volume_db = -9.0  # v0.5: three minutes of dark ambient (tools/gen_atmosphere.py dystopia())
 	add_child(_music)
 	load_settings()
 	_apply_settings()
@@ -133,18 +133,20 @@ func set_tuning(active: bool) -> void:
 	_tuning = active
 
 
-func music_context(id: String) -> void:
-	# The mine's intentional silence and listening puzzle keep their original mix.
-	_score_quiet = id == "mine_tunnel"
+func music_context(id: String, quiet: bool = false) -> void:
+	# The mine's intentional silence and listening puzzle keep their original mix,
+	# and the opening in 1980 has only the music on Tomas's radio.
+	_score_quiet = quiet or id == "mine_tunnel"
 	_sync_music()
 
 
 func set_environment(id: String, frequency: String) -> void:
 	var desired := {}
 	match id:
-		"main_street": desired = {"street_air": -18.0, "people_murmur": -25.0}
+		# People on the street come from the "crowd" loop (steps, doors, a shovel): no murmur.
+		"main_street": desired = {"street_air": -18.0}
 		"ash_street": desired = {"street_air": -30.0}
-		"diner": desired = {"diner_room": -25.0, "people_murmur": -34.0}
+		"diner": desired = {"diner_room": -25.0}
 		"pike_radio": desired = {"room_air": -30.0, "street_air": -36.0}
 		"corridor", "receiver_room", "control_room", "lobby", "east_corridor", "sollen_office", "garage", "sheriff_office":
 			desired = {"room_air": -31.0}

@@ -118,6 +118,8 @@ func _silence() -> void:
 	await wait(0.4)
 	var master := AudioServer.get_bus_index("Master")
 	AudioServer.set_bus_mute(master, true)
+	# The same moment for players without sound: say what they can't hear.
+	hud.toast("[Every sound stops. Footsteps, hiss, breath. Nothing.]")
 	await wait(2.0)
 	AudioServer.set_bus_mute(master, false)
 	silence_left = 0.0
@@ -126,33 +128,34 @@ func _silence() -> void:
 
 func _slide() -> void:
 	slip = 0.0
-	GameState.story["FRACTURE"] = int(GameState.story.get("FRACTURE", 0)) + 1
+	GameState.fray()
 	Audio.sfx("crossing", -10.0)
 	hud.glitch(0.6)
 	progress = maxf(0.0, progress - 0.12)
 	hud.toast("Mara slid into another station. Back to the hum, between 06 and 07.")
 	hud.tuner.value = 6.5
+	main.warn_fracture(2.4)
 
 
 # --- drawing --------------------------------------------------------------------
 
 func draw_back() -> void:
-	draw_rect(Rect2(Kit.L, -100, Kit.R - Kit.L, 920), Color("0a0a0c"))
+	cv.draw_rect(Rect2(Kit.L, -100, Kit.R - Kit.L, 920), Color("0a0a0c"))
 	# Rock ceiling and walls.
-	draw_rect(Rect2(Kit.L, 100, Kit.R - Kit.L, 300), Color("2a2622"))
+	cv.draw_rect(Rect2(Kit.L, 100, Kit.R - Kit.L, 300), Color("2a2622"))
 	for i in 40:
 		var x := fposmod(i * 97.0 - scroll * 0.9, Kit.R - Kit.L) + Kit.L
-		draw_circle(Vector2(x, 130 + (i * 37) % 240), 10.0 + (i % 5) * 4.0, Color("231f1c"))
+		cv.draw_circle(Vector2(x, 130 + (i * 37) % 240), 10.0 + (i % 5) * 4.0, Color("231f1c"))
 	# Rails.
-	draw_rect(Rect2(Kit.L, 398, Kit.R - Kit.L, 10), Color("3a3430"))
+	cv.draw_rect(Rect2(Kit.L, 398, Kit.R - Kit.L, 10), Color("3a3430"))
 	for i in 60:
 		var x := fposmod(i * 40.0 - scroll, Kit.R - Kit.L) + Kit.L
-		draw_rect(Rect2(x, 404, 26, 8), Color("4a3a2a"))
-	draw_line(Vector2(Kit.L, 404), Vector2(Kit.R, 404), Color("5a5a5e"), 3.0)
+		cv.draw_rect(Rect2(x, 404, 26, 8), Color("4a3a2a"))
+	cv.draw_line(Vector2(Kit.L, 404), Vector2(Kit.R, 404), Color("5a5a5e"), 3.0)
 	# Timber sets every few metres.
 	for i in 14:
 		var x := fposmod(i * 220.0 - scroll, Kit.R - Kit.L + 220.0) + Kit.L - 110.0
-		draw_rect(Rect2(x, 110, 22, 290), Color("5a4430"))
-		draw_rect(Rect2(x - 40, 100, 160, 20), Color("5a4430"))
-		draw_rect(Rect2(x + 120, 110, 22, 290), Color("5a4430"))
-	draw_rect(Rect2(Kit.L, 412, Kit.R - Kit.L, 400), Color("15120f"))
+		cv.draw_rect(Rect2(x, 110, 22, 290), Color("5a4430"))
+		cv.draw_rect(Rect2(x - 40, 100, 160, 20), Color("5a4430"))
+		cv.draw_rect(Rect2(x + 120, 110, 22, 290), Color("5a4430"))
+	cv.draw_rect(Rect2(Kit.L, 412, Kit.R - Kit.L, 400), Color("15120f"))

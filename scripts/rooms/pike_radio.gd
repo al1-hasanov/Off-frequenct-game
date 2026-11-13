@@ -8,6 +8,7 @@ var tomas: Actor
 
 
 func setup() -> void:
+	animated_back = false
 	place_name = "Pike Radio & Repair"
 	base_tint = Color(0.95, 0.96, 0.86)
 	walk_min = 110.0
@@ -55,6 +56,8 @@ func on_arrive() -> void:
 		await wait(0.4)
 		await say("JUNE", "Mara Lind. Come in out of the snow.")
 		await say("JUNE", "Lit up like Christmas, all of it. And a woman on 2.14 saying the same thing for an hour.")
+		await say("JUNE", "Pardon the mess. Mrs. Halloran's kitchen set. She can't sleep without the farm report.")
+		await say("JUNE", "Tonight there's a farm report on every band, and none of them agree on the weather.")
 	objective()
 
 
@@ -64,11 +67,11 @@ func on_hotspot(id: String) -> void:
 			Audio.sfx("shopbell", -12.0)
 			main.change_room("main_street", "from_pike")
 		"shelves":
-			await mara("Every radio in the shop is switched on. Every one of them is talking over the others.")
+			await mara("Every radio in the shop is switched on, all of them going at once.")
 		"rig":
 			await mara("June's ham rig. The meters are pinned. Every band's crowded with voices.")
 		"counter":
-			await mara("Tubes, crystals, a soldering iron still warm.")
+			await mara("Tubes, crystals, a soldering iron still warm. A kitchen radio with a repair ticket: HALLORAN.")
 		"june":
 			await _june()
 		"tomas":
@@ -95,6 +98,8 @@ func _june() -> void:
 	elif not GameState.has("tuner_repaired"):
 		await say("JUNE", "The sheriff's base radio, honey. Same crystal. Cal won't miss it till Monday.")
 		await say("JUNE", "And stay out of the dark. If you can't, know where you're going.")
+	elif GameState.story.get("SWITCH") == "conceal":
+		await _maybe_confide()
 	elif _tomas_here():
 		await say("JUNE", "He's fine. He ate two sandwiches and asked about my rig. I'll keep him in the light.")
 	elif GameState.has("swapped"):
@@ -102,6 +107,25 @@ func _june() -> void:
 		await mara("Not yet.")
 	else:
 		await say("JUNE", "Some of those stations are quiet. Don't go to the quiet ones.")
+
+
+## After the kitchen, if Mara kept quiet there: she can tell June instead.
+func _maybe_confide() -> void:
+	var pick: int = await hud.choose(["Tell June what happened in the dark.", "\"Just checking on you.\""])
+	if pick != 0:
+		await say("JUNE", "I'm fine, honey. I've got a cot and a pot of coffee and every station in creation.")
+		return
+	GameState.set_story("SWITCH", "confide")
+	GameState.set_flag("told_june")
+	await mara("June. Something happened to me tonight, in the dark. I don't think I'm who I was an hour ago.")
+	await say("JUNE", "Honey, nobody is. Not tonight.")
+	await wait(0.4)
+	await say("JUNE", "...You told me that already, you know. Tuesday.")
+	await mara("I wasn't here Tuesday.")
+	await say("JUNE", "Somebody with your face was. Asked me if a person could be in two places on the dial at once.")
+	await say("JUNE", "Had her hand all bandaged up. I thought you'd burned yourself on the boiler again.")
+	await say("JUNE", "I'll tell you what I told her. A station's only as real as whoever's listening.")
+	await say("JUNE", "I'm listening, Mara. Whichever one you are.")
 
 
 func _diagnose() -> void:
@@ -159,12 +183,12 @@ func _with_tomas() -> void:
 # --- drawing ------------------------------------------------------------------------
 
 func draw_back() -> void:
-	Kit.wall(self, floor_y, Color("4a5048"), Color("3a403a"), Color("1f2420"))
-	EnvironmentArt.wall_props(self, str(name))
-	draw_rect(Rect2(Kit.L, floor_y, Kit.R - Kit.L, 400), Color("3a3028"))
+	Kit.wall(cv, floor_y, Color("4a5048"), Color("3a403a"), Color("1f2420"))
+	EnvironmentArt.wall_props(cv, str(name))
+	cv.draw_rect(Rect2(Kit.L, floor_y, Kit.R - Kit.L, 400), Color("3a3028"))
 	for i in 20:
-		draw_line(Vector2(Kit.L + i * 120.0, floor_y), Vector2(Kit.L + i * 120.0 - 60, 760), Color(0, 0, 0, 0.15), 2.0)
-	Kit.door(self, Rect2(30, 340, 92, 310), Color("4a5258"))
+		cv.draw_line(Vector2(Kit.L + i * 120.0, floor_y), Vector2(Kit.L + i * 120.0 - 60, 760), Color(0, 0, 0, 0.15), 2.0)
+	Kit.door(cv, Rect2(30, 340, 92, 310), Color("4a5258"))
 	_shelves()
 	_rig()
 	_cot()
@@ -172,45 +196,57 @@ func draw_back() -> void:
 
 func _shelves() -> void:
 	var r := Rect2(150, 240, 330, 260)
-	draw_rect(r, Color("2a241e"))
+	cv.draw_rect(r, Color("2a241e"))
 	for row in 3:
 		var y := r.position.y + 10 + row * 84
-		draw_rect(Rect2(r.position.x, y + 72, r.size.x, 8), Color("4a3a2a"))
+		cv.draw_rect(Rect2(r.position.x, y + 72, r.size.x, 8), Color("4a3a2a"))
 		for k in 4:
 			var x := r.position.x + 12 + k * 80
 			var body: Color = [Color("6a4a30"), Color("3a3a3e"), Color("8a6a40"), Color("2e4a3a")][(row + k) % 4]
-			draw_rect(Rect2(x, y + 22, 66, 50), body)
-			var glow := 0.6 + 0.4 * sin(t * (1.3 + k * 0.4) + row)
-			draw_rect(Rect2(x + 8, y + 30, 34, 12), Color(1.0, 0.68, 0.3, glow))
-			draw_circle(Vector2(x + 54, y + 52), 6.0, Color("1a1a1a"))
-			draw_line(Vector2(x+54,y+48),Vector2(x+54,y+52),Color("c6b890"),1.0)
+			cv.draw_rect(Rect2(x, y + 22, 66, 50), body)
+			cv.draw_circle(Vector2(x + 54, y + 52), 6.0, Color("1a1a1a"))
+			cv.draw_line(Vector2(x+54,y+48),Vector2(x+54,y+52),Color("c6b890"),1.0)
 			for bar in 8:
-				draw_line(Vector2(x+7+bar*4,y+49),Vector2(x+7+bar*4,y+63),body.darkened(0.45),1.0)
+				cv.draw_line(Vector2(x+7+bar*4,y+49),Vector2(x+7+bar*4,y+63),body.darkened(0.45),1.0)
+			cv.draw_rect(Rect2(x+2,y+24,62,46),body.lightened(0.15),false,1.0)
+
+
+## The shelf radios' dials breathe and the rig's needles swing.
+func draw_anim(ci: CanvasItem) -> void:
+	super(ci)
+	var r := Rect2(150, 240, 330, 260)
+	for row in 3:
+		var y := r.position.y + 10 + row * 84
+		for k in 4:
+			var x := r.position.x + 12 + k * 80
+			var glow := 0.6 + 0.4 * sin(t * (1.3 + k * 0.4) + row)
+			ci.draw_rect(Rect2(x + 8, y + 30, 34, 12), Color(1.0, 0.68, 0.3, glow))
 			for mark in 7:
-				draw_line(Vector2(x+10+mark*4,y+31),Vector2(x+10+mark*4,y+35),Color("6a553a"),1.0)
-			draw_rect(Rect2(x+2,y+24,62,46),body.lightened(0.15),false,1.0)
+				ci.draw_line(Vector2(x + 10 + mark * 4, y + 31), Vector2(x + 10 + mark * 4, y + 35), Color("6a553a"), 1.0)
+	for k in 3:
+		var x := 900.0 + k * 76.0
+		var a := -0.8 + 0.25 * sin(t * (3.0 + k)) + 1.2
+		ci.draw_line(Vector2(x + 30, 428), Vector2(x + 30, 428) + Vector2(sin(a), -cos(a)) * 26.0, Color("8a1d1d"), 2.0)
 
 
 func _rig() -> void:
-	draw_rect(Rect2(870, 470, 280, 20), Color("4a3a2a"))
-	draw_rect(Rect2(884, 384, 240, 88), Color("2a2c30"))
+	cv.draw_rect(Rect2(870, 470, 280, 20), Color("4a3a2a"))
+	cv.draw_rect(Rect2(884, 384, 240, 88), Color("2a2c30"))
 	for k in 3:
 		var x := 900.0 + k * 76.0
-		draw_rect(Rect2(x, 396, 60, 36), Color("e8e0c0"))
-		var a := -0.8 + 0.25 * sin(t * (3.0 + k)) + 1.2
-		draw_line(Vector2(x + 30, 428), Vector2(x + 30, 428) + Vector2(sin(a), -cos(a)) * 26.0, Color("8a1d1d"), 2.0)
+		cv.draw_rect(Rect2(x, 396, 60, 36), Color("e8e0c0"))
 	for k in 6:
-		draw_circle(Vector2(906 + k * 38, 452), 8.0, Color("1a1a1a"))
-	draw_line(Vector2(1110, 384), Vector2(1110, 0), Color("1a1a1a"), 3.0)
-	draw_rect(Rect2(1040, 330, 70, 50), Color("3a3a3e"))
-	draw_circle(Vector2(1075, 355), 18.0, Color("2a2a2e"))
+		cv.draw_circle(Vector2(906 + k * 38, 452), 8.0, Color("1a1a1a"))
+	cv.draw_line(Vector2(1110, 384), Vector2(1110, 0), Color("1a1a1a"), 3.0)
+	cv.draw_rect(Rect2(1040, 330, 70, 50), Color("3a3a3e"))
+	cv.draw_circle(Vector2(1075, 355), 18.0, Color("2a2a2e"))
 
 
 func _cot() -> void:
-	draw_rect(Rect2(1050, 600, 190, 16), Color("4a5a48"))
-	draw_line(Vector2(1060, 616), Vector2(1060, 650), Color("2a2a2a"), 4.0)
-	draw_line(Vector2(1230, 616), Vector2(1230, 650), Color("2a2a2a"), 4.0)
-	draw_rect(Rect2(1180, 584, 54, 18), Color("d8d0c0"))
+	cv.draw_rect(Rect2(1050, 600, 190, 16), Color("4a5a48"))
+	cv.draw_line(Vector2(1060, 616), Vector2(1060, 650), Color("2a2a2a"), 4.0)
+	cv.draw_line(Vector2(1230, 616), Vector2(1230, 650), Color("2a2a2a"), 4.0)
+	cv.draw_rect(Rect2(1180, 584, 54, 18), Color("d8d0c0"))
 
 
 func _draw_counter(ci: CanvasItem) -> void:

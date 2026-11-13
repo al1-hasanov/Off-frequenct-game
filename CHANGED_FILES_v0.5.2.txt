@@ -1,0 +1,66 @@
+Off Frequency v0.5.2: files changed since the v0.5.1 source
+Paths are relative to the project root. Overlay the changed-files zip on the v0.5.1 source,
+then delete the files listed under Removed. Godot regenerates .godot on import.
+
+Added (14)
+  UPDATE_v0.5.2.md
+  docs/VALIDATION_v0.5.2.md
+  docs/screenshots/37_ash_street_windows.png
+  docs/screenshots/38_station_06_autumn_dusk.png
+  docs/screenshots/39_station_09_summer_day.png
+  docs/screenshots/40_station_08_spring_rain.png
+  docs/screenshots/41_main_street_station_02_rain.png
+  docs/screenshots/42_opening_workbench.png
+  docs/screenshots/43_opening_windscreen.png
+  docs/screenshots/44_aftermath_spring_porch.png
+  scripts/env.gd
+  scripts/env.gd.uid
+  scripts/lind_house.gd
+  scripts/lind_house.gd.uid
+
+Changed (43)
+  README.md
+  docs/preview.png
+  docs/screenshots/14_ash_street.png
+  docs/screenshots/25_opening_the_lantern.png
+  export_presets.cfg
+  project.godot
+  scripts/actor.gd
+  scripts/autotest.gd
+  scripts/chapter_states.gd
+  scripts/environment_art.gd
+  scripts/figure.gd
+  scripts/game_state.gd
+  scripts/kit.gd
+  scripts/looks.gd
+  scripts/room.gd
+  scripts/rooms/ash_kitchen.gd
+  scripts/rooms/ash_street.gd
+  scripts/rooms/basement.gd
+  scripts/rooms/control_room.gd
+  scripts/rooms/corridor.gd
+  scripts/rooms/diner.gd
+  scripts/rooms/east_corridor.gd
+  scripts/rooms/end_card.gd
+  scripts/rooms/garage.gd
+  scripts/rooms/intro_after.gd
+  scripts/rooms/intro_diner.gd
+  scripts/rooms/intro_road.gd
+  scripts/rooms/lineup.gd
+  scripts/rooms/lineup2.gd
+  scripts/rooms/lineup3.gd
+  scripts/rooms/lobby.gd
+  scripts/rooms/main_street.gd
+  scripts/rooms/menu.gd
+  scripts/rooms/mine_tunnel.gd
+  scripts/rooms/pike_radio.gd
+  scripts/rooms/receiver_room.gd
+  scripts/rooms/road_down.gd
+  scripts/rooms/sheriff_office.gd
+  scripts/rooms/snowfield_1980.gd
+  scripts/rooms/sollen_office.gd
+  scripts/snow.gd
+  scripts/station_room.gd
+  scripts/townscape.gd
+
+Removed (0): delete these

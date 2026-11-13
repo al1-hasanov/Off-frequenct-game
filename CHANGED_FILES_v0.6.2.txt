@@ -1,0 +1,34 @@
+Off Frequency v0.6.2: files changed since the v0.6.1 source
+Paths are relative to the project root. Overlay the changed-files zip on the v0.6.1 source,
+then delete the files listed under Removed. Godot regenerates .godot on import.
+
+Added (9)
+  UPDATE_v0.6.2.md
+  docs/VALIDATION_v0.6.2.md
+  docs/screenshots/53_chalkboard_lambda.png
+  docs/screenshots/54_lambda_notes.png
+  docs/screenshots/55_museum_equation_2031.png
+  docs/screenshots/56_museum_dark_energy_2031.png
+  docs/screenshots/57_big_rip_2009.png
+  docs/screenshots/58_wormhole_paper_1991.png
+  docs/screenshots/59_red_turnings_labels.png
+
+Changed (16)
+  README.md
+  export_presets.cfg
+  project.godot
+  scripts/autotest.gd
+  scripts/game_state.gd
+  scripts/hud.gd
+  scripts/kit.gd
+  scripts/notebook.gd
+  scripts/rooms/basement.gd
+  scripts/rooms/control_room.gd
+  scripts/rooms/dish.gd
+  scripts/rooms/red_dark.gd
+  scripts/rooms/shop_1991.gd
+  scripts/rooms/sollen_office.gd
+  scripts/rooms/visitor_center.gd
+  scripts/story.gd
+
+Removed (0): delete these

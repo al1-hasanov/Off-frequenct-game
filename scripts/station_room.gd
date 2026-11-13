@@ -35,12 +35,26 @@ func music_db() -> float:
 	return -30.0
 
 
+var _shell := false
+
+
+func _ready() -> void:
+	animated_back = false
+	super()
+
+
 func draw_shell(lights: Array) -> void:
-	Kit.wall(self, floor_y, WALL, WALL_LOW, TRIM)
-	EnvironmentArt.wall_props(self, str(name))
-	Kit.floor_tiles(self, floor_y, FLOOR, FLOOR_LINE)
+	_shell = true
+	Kit.wall(cv, floor_y, WALL, WALL_LOW, TRIM)
+	EnvironmentArt.wall_props(cv, str(name))
+	Kit.floor_tiles(cv, floor_y, FLOOR, FLOOR_LINE)
 	var red := GameState.emergency and freq == "H"
 	for x in lights:
-		Kit.ceiling_light(self, x, floor_y, not red)
-	if red:
-		Kit.emergency_lamp(self, Vector2(76.0, 262.0), t)
+		Kit.ceiling_light(cv, x, floor_y, not red)
+
+
+
+## The emergency lamp pulses (drawn every frame, over the kept picture).
+func draw_anim(ci: CanvasItem) -> void:
+	if _shell and GameState.emergency and freq == "H":
+		Kit.emergency_lamp(ci, Vector2(76.0, 262.0), t)

@@ -50,6 +50,42 @@ static func mug(ci: CanvasItem, p: Vector2) -> void:
 	ci.draw_line(p,p+Vector2(12,0),Color("e2ddc6"),2.0)
 
 
+## Where each room's wall vent goes: clear of its windows, signs and boards
+## (none where the wall has no free space).
+const VENTS := {
+	"corridor": Rect2(1050, 190, 110, 28), "receiver_room": Rect2(160, 214, 100, 28),
+	"control_room": Rect2(1060, 190, 110, 28), "lobby": Rect2(1050, 190, 110, 28),
+	"east_corridor": Rect2(1050, 190, 110, 28), "sollen_office": Rect2(1050, 190, 110, 28),
+}
+
+## Every wall decoration wall_props() draws, room by room, so the layout check
+## (--autotest=layout) can make sure none of them sits on top of anything else.
+static func prop_rects(id: String) -> Array:
+	var out := []
+	if VENTS.has(id):
+		out.append(VENTS[id])
+	match id:
+		"corridor":
+			out.append(Rect2(262, 262, 140, 72))   # OBSERVATORY / 1983, over the lockers
+			out.append(Rect2(878, 570, 44, 74))    # radiator, between the control door and the vending machine
+		"east_corridor":
+			out.append(Rect2(842, 200, 100, 72))
+		"lobby":
+			out.append(Rect2(586, 214, 140, 72))
+		"pike_radio":
+			out.append(Rect2(548, 245, 175, 72))
+			out.append(Rect2(758, 188, 100, 28))
+		"diner":
+			out.append(Rect2(365, 320, 110, 72))
+			out.append(Rect2(1070, 181, 60, 60))
+		"basement":
+			out.append(Rect2(930, 240, 150, 28))
+		"sheriff_office":
+			out.append(Rect2(600, 226, 170, 72))
+			out.append(Rect2(860, 190, 110, 28))
+	return out
+
+
 static func wall_props(ci: CanvasItem, id: String) -> void:
 	# High wall service details lie behind the existing consoles/windows/doors.
 	if id in ["corridor","receiver_room","control_room","lobby","east_corridor","sollen_office"]:
@@ -57,14 +93,16 @@ static func wall_props(ci: CanvasItem, id: String) -> void:
 		ci.draw_line(Vector2(-100,148),Vector2(1380,148),Color("52635b"),1.5)
 		for x in range(0,1380,190):
 			ci.draw_rect(Rect2(x,145,6,12),Color("69736a"))
-		vent(ci,Vector2(1050,190),110)
+		if VENTS.has(id):
+			var v: Rect2 = VENTS[id]
+			vent(ci, v.position, v.size.x)
 		if id == "corridor":
-			frame(ci,Vector2(602,225),"OBSERVATORY / 1983",140)
-			radiator(ci,Vector2(908,570),10)
+			frame(ci,Vector2(262,262),"OBSERVATORY / 1983",140)
+			radiator(ci,Vector2(886,570),3)
 		elif id == "east_corridor":
-			frame(ci,Vector2(270,205),"STAFF ACCESS",120)
+			frame(ci,Vector2(842,200),"STAFF ACCESS",100)
 		elif id == "lobby":
-			frame(ci,Vector2(1030,215),"HALVARD STATION",160)
+			frame(ci,Vector2(586,214),"HALVARD STATION",140)
 	elif id == "pike_radio":
 		frame(ci,Vector2(548,245),"REPAIRS / EST. 1948",175)
 		vent(ci,Vector2(758,188),100)
@@ -73,8 +111,7 @@ static func wall_props(ci: CanvasItem, id: String) -> void:
 			ci.draw_line(Vector2(570+i*30,370),Vector2(570+i*30,348),Color("6b7967"),2.0)
 		ci.draw_rect(Rect2(530,340,200,6),Color("677461"))
 	elif id == "diner":
-		for x in [190.0,365.0]:
-			frame(ci,Vector2(x,320),"HALVARD / WINTER",110)
+		frame(ci,Vector2(365,320),"WINTER FAIR",110)
 		ci.draw_circle(Vector2(1100,211),30,Color("c4c0a6"))
 		ci.draw_circle(Vector2(1100,211),26,Color("e5dbc1"))
 		ci.draw_line(Vector2(1100,211),Vector2(1114,204),Color("343b35"),2.0)
@@ -92,7 +129,7 @@ static func wall_props(ci: CanvasItem, id: String) -> void:
 			ci.draw_line(Vector2(-100,y-3),Vector2(1380,y-3),Color("5a6252"),2.0)
 		vent(ci,Vector2(930,240),150)
 	elif id == "sheriff_office":
-		frame(ci,Vector2(190,215),"COUNTY / DUTY ROSTER",170)
+		frame(ci,Vector2(600,226),"COUNTY / DUTY ROSTER",170)
 		vent(ci,Vector2(860,190),110)
 	elif id == "ash_kitchen":
 		# This house is empty in the story: exposed pipes and faded paper, not new furniture.
@@ -151,4 +188,4 @@ static func street_details(ci: CanvasItem) -> void:
 static func motes(ci: CanvasItem, time: float, floor_y: float) -> void:
 	for i in 16:
 		var p := Vector2(90+fposmod(i*83.7+sin(time*.2+i)*9,1120),140+fposmod(i*39.1-time*(1.0+i%3),maxf(100,floor_y-200)))
-		ci.draw_circle(p,0.8,Color(.83,.89,.8,.07+.04*sin(time+i)))
+		ci.draw_rect(Rect2(p - Vector2(0.8, 0.8), Vector2(1.6, 1.6)), Color(.83,.89,.8,.07+.04*sin(time+i)))

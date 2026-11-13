@@ -1,16 +1,49 @@
 extends Room
 ## Act 2.5 — The Lantern diner, where Mara's mother works nights.
 ##   H : 1983. Ma behind the counter. The pantry is the only room in town dark
-##       enough to cross, but Ma always leaves its bulb burning.
+##       enough to cross, but Ma always leaves its bulb burning. Tomas's poster
+##       is taped in the front window: she put up a new one today.
 ##   12: 1980, the night Tomas vanished. A younger Ma, lower prices, and the
 ##       truck keys on the hook by the pantry door.
+## The opening (intro_diner.gd) is this diner in our own 1980, an hour and a
+## half earlier; is_1980() gives it the 1980 look.
+
+## The front window over the corner booth.
+const WIN := Rect2(152, 268, 146, 188)
 
 var ruth: Actor
 var tomas: Actor
 var trucker: Actor
+var window_snow: Snowfall
+## Daylight through the front window (the opening's montage).
+var window_day := false
+## ...and in spring: no snow out there any more.
+var window_spring := false
+
+
+func is_1980() -> bool:
+	return freq == "12"
+
+
+## Snow falling past the front window (added before anyone, so it's behind them).
+func add_window_snow() -> void:
+	window_snow = Snowfall.new()
+	window_snow.area = WIN
+	window_snow.count = 28
+	window_snow.wind = 16.0
+	window_snow.speed = 40.0
+	add_child(window_snow)
+
+
+## The weather past the front window follows the station on screen.
+func on_tuning() -> void:
+	if window_snow != null:
+		window_snow.follow(env())
 
 
 func setup() -> void:
+	animated_back = false
+	add_window_snow()
 	place_name = "The Lantern · October 14, 1980" if freq == "12" else "The Lantern"
 	base_tint = Color(1.0, 0.95, 0.86)
 	walk_min = 110.0
@@ -19,13 +52,16 @@ func setup() -> void:
 	ruth = add_actor("ruth_1980" if freq == "12" else "ruth", 880.0, -1)
 	if GameState.has("pie_sent") and freq == "H" and not GameState.has("in_12"):
 		ruth.position.x = 620.0
-	trucker = add_actor("townsman", 300.0, 1)
+	trucker = add_actor("dahl_1980" if freq == "12" else "dahl", 300.0, 1)
 	trucker.seated = true
+	# Mr. Dahl's booth: in H, after Mara comes back from 1980, it's empty.
+	trucker.visible = not (freq == "H" and GameState.has("back_from_12"))
 	tomas = add_actor("tomas", 1000.0, -1)
 	tomas.visible = false
 	add_layer(1, _draw_counter)
 	add_hotspot("front_door", Rect2(26, 330, 100, 320), "Front door", 110.0, -1)
 	add_hotspot("booths", Rect2(150, 470, 330, 180), "Booths", 330.0)
+	add_hotspot("window", WIN.grow(8), "Front window", 230.0)
 	add_hotspot("ruth", Rect2(560, 440, 400, 120), "Ma" if GameState.has("swapped") else "Mom", 540.0, 1)
 	add_hotspot("pie_case", Rect2(566, 500, 90, 60), "Pie case", 540.0, 1)
 	add_hotspot("menu", Rect2(600, 240, 360, 100), "Menu board", 760.0)
@@ -61,7 +97,7 @@ func ambience() -> void:
 	Audio.stop_all(0.4)
 	Audio.play_loop("radio_music", -24.0)
 	if freq == "12":
-		Audio.play_loop("engine", -38.0)
+		Audio.play_loop("truck_idle", -34.0)  # Ma's truck, idling out back
 	Audio.set_environment(str(name), freq)
 
 
@@ -99,6 +135,9 @@ func on_hotspot(id: String) -> void:
 		"booths":
 			if freq == "12":
 				await mara("Mr. Dahl, in his booth. Three years younger and he still hasn't paid his tab.")
+			elif not trucker.visible:
+				await mara("Mr. Dahl's booth is empty. His coffee's still steaming.")
+				await say("RUTH", "He went to wash his hands. That was an hour ago, I think. Was it an hour?")
 			else:
 				await mara("Mr. Dahl, in his booth, holding his coffee with both hands. He keeps looking at the window.")
 		"ruth", "pie_case":
@@ -106,6 +145,12 @@ func on_hotspot(id: String) -> void:
 				await say("RUTH", "Go on, Mara. Your brother's waiting.")
 			else:
 				await _talk_ma(id == "pie_case")
+		"window":
+			if freq == "12":
+				await mara("Snow. It was raining when I came down the mountain. It's still 1980 out there.")
+			else:
+				await mara("Ma's poster. A new one, taped up today, every corner smoothed flat.")
+				await mara("The old one went almost white in the sun. Three years of sun.")
 		"menu":
 			if freq == "12":
 				await narrate("\"COFFEE 35¢ · PIE 85¢ · SPECIAL: MEATLOAF\"")
@@ -146,8 +191,19 @@ func _talk_ma(at_pie: bool) -> void:
 		await say("RUTH", "Tonight I'd believe him.")
 		await mara("Ma... who's feeding Biscuit?")
 		await say("RUTH", "Pepper's fine, honey. He's got the heater.")
+		await say("RUTH", "What was it you two always said? When he went off with that radio of his.")
+		await mara("\"%s\"" % Story.signoff_line(2))
+		await say("RUTH", "No, honey. \"%s\" Every night. I could hear you from the kitchen." % Story.signoff_line())
+		await mara("...Right. That's what I meant.")
+		GameState.set_flag("signoff_wrong")
 	if GameState.has("in_12"):
-		await say("RUTH", "Your pie's right there, honey. Eat something.")
+		if not GameState.has("ate_pie"):
+			GameState.set_flag("ate_pie")
+			await say("RUTH", "Sit. Eat. I mean it, Mara. You're not leaving here on an empty stomach.")
+			await narrate("Mara sits at the counter and eats the pie. It's the first thing she's eaten since yesterday. It's very good.")
+			await say("RUTH", "There. Now you look like somebody's daughter.")
+		else:
+			await say("RUTH", "More coffee, honey?")
 		return
 	var pick: int = await hud.choose(["Can I get a slice of pie?", "Never mind."])
 	if pick == 0:
@@ -209,9 +265,10 @@ func _arrive_1980() -> void:
 	await wait(0.6)
 	await say("RUTH", "Mara? Did you cut your hair?")
 	await mara("...Yeah. Yeah, I did.")
-	await say("RUTH", "Weren't you taking the truck up to fetch your brother?")
-	await mara("I'm going. Right now.")
-	await mara("The keys are on the hook. Same hook.")
+	await mara("Twelve's 1980. Their night, not mine. Their Tomas is still up the mountain.")
+	await say("RUTH", "Where's your brother? You said straight back.")
+	await mara("He's still up at the dish. I'm going back for him. Right now.")
+	await mara("Her truck keys are on the hook. Same hook.")
 
 
 func _back_door() -> void:
@@ -228,7 +285,7 @@ func _back_door() -> void:
 	await mara("I know exactly where he'll be standing.")
 	Audio.sfx("door", -10.0)
 	await hud.fade_out(0.8)
-	Audio.sfx("engine", -8.0)
+	Audio.sfx("truck_start", -8.0)
 	await hud.card("October 14, 1980", "2:11 AM", 2.2)
 	main.change_room("snowfield_1980", "from_truck")
 
@@ -270,6 +327,7 @@ func _home_refusal(st: String) -> String:
 ## Out of the pantry in 1983, after 1980.
 func _back_in_1983() -> void:
 	GameState.set_flag("back_from_12")
+	trucker.visible = false  # while she was in 1980, Mr. Dahl's booth went quiet
 	ruth.position.x = 880.0
 	await wait(0.5)
 	if tomas.visible:
@@ -286,65 +344,142 @@ func _back_in_1983() -> void:
 # --- drawing --------------------------------------------------------------------
 
 func draw_back() -> void:
-	var y1980 := freq == "12"
-	Kit.wall(self, floor_y, Color("7a5a48") if y1980 else Color("6a4e44"), Color("5a4036"), Color("2a1e1a"))
-	EnvironmentArt.wall_props(self, str(name))
+	var y1980 := is_1980()
+	Kit.wall(cv, floor_y, Color("7a5a48") if y1980 else Color("6a4e44"), Color("5a4036"), Color("2a1e1a"))
+	EnvironmentArt.wall_props(cv, "diner")
 	# Checkerboard floor.
 	for i in 30:
 		for j in 3:
 			var x := Kit.L + i * 80.0
 			var y := floor_y + j * 30.0
-			draw_rect(Rect2(x + (40.0 if j % 2 == 1 else 0.0), y, 40, 30), Color("d8d0c0") if (i + j) % 2 == 0 else Color("2a2a2e"))
-	Kit.ceiling_light(self, 380.0, floor_y, true)
-	Kit.ceiling_light(self, 860.0, floor_y, true)
-	Kit.door(self, Rect2(30, 340, 92, 310), Color("8a6a4a"), "")
-	draw_rect(Rect2(46, 360, 60, 80), Color("101828"))
+			cv.draw_rect(Rect2(x + (40.0 if j % 2 == 1 else 0.0), y, 40, 30), Color("d8d0c0") if (i + j) % 2 == 0 else Color("2a2a2e"))
+	Kit.ceiling_light(cv, 380.0, floor_y, true)
+	Kit.ceiling_light(cv, 860.0, floor_y, true)
+	Kit.door(cv, Rect2(30, 340, 92, 310), Color("8a6a4a"), "")
+	cv.draw_rect(Rect2(46, 360, 60, 80), Color("101828"))
+	_front_window()
 	_booths()
 	_menu(y1980)
 	_pantry_door()
-	Kit.door(self, Rect2(1166, 340, 90, 310), Color("5a4a3a"), "")
+	Kit.door(cv, Rect2(1166, 340, 90, 310), Color("5a4a3a"), "")
 	# A calendar by the back door.
-	draw_rect(Rect2(1170, 250, 60, 70), Color("f0ece0"))
-	draw_rect(Rect2(1170, 250, 60, 16), Color("8a1d1d"))
-	Kit.text(self, Vector2(1170, 263), "1980" if y1980 else "1983", 11, Color("f0ece0"), HORIZONTAL_ALIGNMENT_CENTER, 60)
+	cv.draw_rect(Rect2(1170, 250, 60, 70), Color("f0ece0"))
+	cv.draw_rect(Rect2(1170, 250, 60, 16), Color("8a1d1d"))
+	Kit.text(cv, Vector2(1170, 263), "1980" if y1980 else "1983", 11, Color("f0ece0"), HORIZONTAL_ALIGNMENT_CENTER, 60)
+
+
+## The street through the front window: the building across the way, a
+## streetlamp, the snowbank; the frame and sill. (Snow falls past it.)
+func _front_window() -> void:
+	var r := WIN
+	if window_day:
+		Kit.vgrad(cv, r, Color("7aa0c8") if window_spring else Color("9aa6b6"), Color("dce8ee") if window_spring else Color("d8dde2"))
+		cv.draw_rect(Rect2(r.position.x, r.position.y + 70, r.size.x, 90), Color("6a6460"))
+		for k in 3:
+			cv.draw_rect(Rect2(r.position.x + 14 + k * 44, r.position.y + 92, 24, 30), Color("3a4250"))
+		if window_spring:
+			# A tree in new leaf across the street, the road wet and clear.
+			cv.draw_line(Vector2(r.end.x - 30, r.end.y - 26), Vector2(r.end.x - 34, r.position.y + 70), Color("4a3a30"), 5.0)
+			for k in 7:
+				cv.draw_circle(Vector2(r.end.x - 34 + (Townscape.h(k) - 0.5) * 50.0, r.position.y + 50 + Townscape.h(k * 3) * 40.0),
+					16.0, Color("7aaa5a").lerp(Color("9ac46a"), Townscape.h(k * 5)))
+	elif not env().story():
+		_window_station(r, env())
+	else:
+		Kit.vgrad(cv, r, Color("060a16"), Color("1c2640"))
+		cv.draw_rect(Rect2(r.position.x, r.position.y + 70, r.size.x, 90), Color("0d121e"))
+		for k in 3:
+			var lit := k != 1
+			cv.draw_rect(Rect2(r.position.x + 14 + k * 44, r.position.y + 92, 24, 30), Color("d8a65a") if lit else Color("141a26"))
+		cv.draw_circle(Vector2(r.end.x - 26, r.position.y + 54), 16.0, Color(1.0, 0.75, 0.4, 0.18))
+		cv.draw_circle(Vector2(r.end.x - 26, r.position.y + 54), 4.0, Color("ffd9a0"))
+	if window_day or env().story():
+		cv.draw_rect(Rect2(r.position.x, r.end.y - 26, r.size.x, 26), Color("6a7062") if window_spring and window_day else Color("8a96ac"))
+	cv.draw_rect(Rect2(r.position.x, r.position.y + r.size.y * 0.3, r.size.x, 5), Color("2a201c"))
+	Kit.window_frame(cv, r, 1)
+
+
+## Across the street, on another station: its sky, its season, its lights.
+func _window_station(r: Rect2, e: Env) -> void:
+	if e.state == "gone":
+		Kit.vgrad(cv, r, Color("d8dce4"), Color("f0f2f5"))
+		return
+	var sky: Array = e.sky()
+	Kit.vgrad(cv, r, sky[0], sky[1])
+	Kit.stars(cv, Rect2(r.position, Vector2(r.size.x, 60)), 14, 0.0)
+	var wall := Color("0d121e") if e.night() else e.shade(Color("7a6a60"))
+	cv.draw_rect(Rect2(r.position.x, r.position.y + 70, r.size.x, 90), wall)
+	for k in 3:
+		var on: bool = e.lit and e.windows_glow() and bool(e.windows[k])
+		var c := Color("d8a65a") if on else (e.shade(Color("6a8098")) if e.day() else Color("141a26"))
+		if e.state == "derelict":
+			c = Color("5a4a3a")
+		cv.draw_rect(Rect2(r.position.x + 14 + k * 44, r.position.y + 92, 24, 30), c)
+	if not e.day() and e.state != "derelict":
+		cv.draw_circle(Vector2(r.end.x - 26, r.position.y + 54), 16.0, Color(1.0, 0.75, 0.4, 0.18))
+		cv.draw_circle(Vector2(r.end.x - 26, r.position.y + 54), 4.0, Color("ffd9a0"))
+	var g: Array = e.road() if e.snowy() else e.ground()
+	cv.draw_rect(Rect2(r.position.x, r.end.y - 26, r.size.x, 26), g[0])
+
+
+## Tomas's poster, taped inside the glass facing the street: from in here, its
+## back, the print showing through. Over the snow beyond the glass.
+func draw_fore(ci: CanvasItem) -> void:
+	if is_1980() or freq != "H":
+		return
+	draw_poster_back(ci, 1.0)
+
+
+func draw_poster_back(ci: CanvasItem, fresh: float) -> void:
+	var p := Rect2(WIN.position + Vector2(30, 22), Vector2(86, 112))
+	ci.draw_rect(p, Color("eee8d6"))
+	ci.draw_set_transform(Vector2(p.end.x, 0), 0.0, Vector2(-1, 1))
+	var ink := 0.3 * fresh
+	Kit.text(ci, Vector2(0, p.position.y + 18), "MISSING", 13, Color(0.55, 0.15, 0.12, ink + 0.05), HORIZONTAL_ALIGNMENT_CENTER, p.size.x)
+	ci.draw_rect(Rect2(20, p.position.y + 26, 46, 44), Color(0.3, 0.3, 0.3, ink * 0.75))
+	Kit.text(ci, Vector2(0, p.position.y + 86), "TOMAS LIND", 11, Color(0.1, 0.1, 0.1, ink), HORIZONTAL_ALIGNMENT_CENTER, p.size.x)
+	Kit.text(ci, Vector2(0, p.position.y + 100), "AGE 13", 10, Color(0.1, 0.1, 0.1, ink), HORIZONTAL_ALIGNMENT_CENTER, p.size.x)
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	for c in [p.position, Vector2(p.end.x, p.position.y), p.end, Vector2(p.position.x, p.end.y)]:
+		ci.draw_rect(Rect2(c - Vector2(7, 4), Vector2(14, 8)), Color(0.85, 0.85, 0.8, 0.7))
 
 
 func _booths() -> void:
 	for k in 2:
 		var x := 160.0 + k * 170.0
-		draw_rect(Rect2(x, 520, 26, 130), Color("8a2a2a"))
-		draw_rect(Rect2(x + 120, 520, 26, 130), Color("8a2a2a"))
-		draw_rect(Rect2(x + 30, 570, 86, 10), Color("c8c0b0"))
-		draw_line(Vector2(x + 73, 580), Vector2(x + 73, 650), Color("6a6a6a"), 5.0)
-		draw_rect(Rect2(x + 50, 556, 16, 14), Color("e8e4dc"))
+		cv.draw_rect(Rect2(x, 520, 26, 130), Color("8a2a2a"))
+		cv.draw_rect(Rect2(x + 120, 520, 26, 130), Color("8a2a2a"))
+		cv.draw_rect(Rect2(x + 30, 570, 86, 10), Color("c8c0b0"))
+		cv.draw_line(Vector2(x + 73, 580), Vector2(x + 73, 650), Color("6a6a6a"), 5.0)
+		cv.draw_rect(Rect2(x + 50, 556, 16, 14), Color("e8e4dc"))
 		for i in 5:
-			draw_line(Vector2(x+4,530+i*20),Vector2(x+22,530+i*20),Color("a34a40"),1.0)
-		draw_rect(Rect2(x+81,549,8,20),Color("8d382d"))
-		draw_rect(Rect2(x+82,545,6,5),Color("dad3bf"))
+			cv.draw_line(Vector2(x+4,530+i*20),Vector2(x+22,530+i*20),Color("a34a40"),1.0)
+		cv.draw_rect(Rect2(x+81,549,8,20),Color("8d382d"))
+		cv.draw_rect(Rect2(x+82,545,6,5),Color("dad3bf"))
 
 
 func _menu(y1980: bool) -> void:
 	var r := Rect2(600, 240, 360, 100)
-	draw_rect(r, Color("1a1a1a"))
-	draw_rect(r, Color("5a4430"), false, 4.0)
-	Kit.text(self, Vector2(r.position.x, r.position.y + 30), "COFFEE " + ("35¢" if y1980 else "50¢") + "   PIE " + ("85¢" if y1980 else "$1.25"), 20, Color("f0ece0"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
-	Kit.text(self, Vector2(r.position.x, r.position.y + 62), "SPECIAL: MEATLOAF", 18, Color("e8a54b"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
-	Kit.text(self, Vector2(r.position.x, r.position.y + 88), "OPEN ALL NIGHT", 14, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	cv.draw_rect(r, Color("1a1a1a"))
+	cv.draw_rect(r, Color("5a4430"), false, 4.0)
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 30), "COFFEE " + ("35¢" if y1980 else "50¢") + "   PIE " + ("85¢" if y1980 else "$1.25"), 20, Color("f0ece0"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 62), "SPECIAL: MEATLOAF", 18, Color("e8a54b"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 88), "OPEN ALL NIGHT", 14, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 
 
 func _pantry_door() -> void:
 	var r := Rect2(1034, 340, 84, 310)
-	draw_rect(r.grow(6), Color("2a1e1a"))
+	cv.draw_rect(r.grow(6), Color("2a1e1a"))
 	var bulb_out := GameState.has("in_12") and freq == "H"
-	draw_rect(r, Color("1a1410") if bulb_out else Color("e8d0a0"))
-	draw_colored_polygon(PackedVector2Array([r.position, Vector2(r.position.x + 56, r.position.y + 18),
+	cv.draw_rect(r, Color("1a1410") if bulb_out else Color("e8d0a0"))
+	cv.draw_colored_polygon(PackedVector2Array([r.position, Vector2(r.position.x + 56, r.position.y + 18),
 		Vector2(r.position.x + 56, r.end.y - 10), Vector2(r.position.x, r.end.y)]), Color("6a5040"))
-	Kit.plate(self, Vector2(r.get_center().x, r.position.y - 28), "PANTRY", 13)
+	Kit.plate(cv, Vector2(r.get_center().x, r.position.y - 28), "PANTRY", 13)
 	# The key hook.
-	draw_rect(Rect2(1126, 410, 24, 6), Color("6a6a6a"))
+	cv.draw_rect(Rect2(1126, 410, 24, 6), Color("6a6a6a"))
 	if freq == "12" and not GameState.has_item("truck_keys") and not GameState.has("choice2"):
-		draw_line(Vector2(1136, 416), Vector2(1136, 440), Color("c9a332"), 3.0)
-		draw_circle(Vector2(1136, 452), 7.0, Color("e8e0d0"))
+		cv.draw_line(Vector2(1136, 416), Vector2(1136, 440), Color("c9a332"), 3.0)
+		cv.draw_circle(Vector2(1136, 452), 7.0, Color("e8e0d0"))
 
 
 func _draw_counter(ci: CanvasItem) -> void:

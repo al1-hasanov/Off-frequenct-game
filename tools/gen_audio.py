@@ -1142,10 +1142,13 @@ if __name__ == "__main__":
     write("carrier", carrier(), 0.6, edges=False)
     write("snore", snore(), 0.7, edges=False)
     write("rain", rain(), 0.7, edges=False)
-    write("plow", plow(), 0.7, edges=False)
+    # v0.5: the vehicle sounds (plow, engine, engine_stop) come from
+    # tools/gen_vehicles.py. They're still generated here, and thrown away, so
+    # the shared random sequence, and every sound after them, stays the same.
+    plow()
     write("siren", siren(), 0.6, edges=False)
-    write("engine", engine(), 0.8, edges=False)
-    write("engine_stop", engine_stop(), 0.8)
+    engine()
+    engine_stop()
     write("tape_hiss", tape_hiss(), 0.35, edges=False)
     write("tape_rip", tape_rip(), 0.8)
     write("keys", keys(), 0.7)

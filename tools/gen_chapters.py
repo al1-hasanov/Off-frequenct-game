@@ -10,19 +10,20 @@ every chapter:
     godot --headless --path . -- --autotest=cut          --chapters=ch_cut.json
     python3 tools/gen_chapters.py ch_*.json
 
-A chapter whose state is the same in all four runs gets one state ("any").
-One that only depends on Choice 1 gets "answer" and "cut". Anything else
-gets all four combinations.
+A chapter that starts before Choice 1 gets one state ("any"). One that
+starts after Choice 1 but before Choice 2 gets "answer" and "cut". Anything
+later gets all four combinations. Which choices a chapter depends on comes
+from the story keys each run had set (ANSWERED, TOMAS), not from comparing
+whole states: the four runs deliberately differ in things that aren't
+choices (each picks a different goodbye in the prologue, and each tries
+different optional scenes), and those shouldn't split a chapter. Each state
+is taken whole from one real run, so it is always a state the game reached.
 """
 import json
 import sys
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "scripts" / "chapter_states.gd"
-
-
-def canon(x):
-    return json.dumps(x, sort_keys=True)
 
 
 def main(paths):
@@ -43,10 +44,12 @@ def main(paths):
     out = {}
     for cid in ids:
         s = {c: runs[c][cid] for c in combos}
-        if len({canon(v) for v in s.values()}) == 1:
+        answered = any(v["story"].get("ANSWERED") is not None for v in s.values())
+        tomas = any(v["story"].get("TOMAS") is not None for v in s.values())
+        if not answered and not tomas:
             out[cid] = {"any": s[(True, True)]}
             kind = "any"
-        elif all(canon(s[(a, True)]) == canon(s[(a, False)]) for a in (True, False)):
+        elif not tomas:
             out[cid] = {"answer": s[(True, True)], "cut": s[(False, False)]}
             kind = "choice 1"
         else:

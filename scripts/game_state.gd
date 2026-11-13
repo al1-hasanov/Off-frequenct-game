@@ -2,17 +2,21 @@ extends Node
 ## Story state, inventory and saves. Autoloaded as `GameState`.
 ##
 ## The `story` dictionary holds the hidden variables from the story bible
-## (ANSWERED, TOMAS, EIGHTY, FINALE, FRACTURE). `flags` holds every smaller
+## (ANSWERED, TOMAS, EIGHTY, FINALE, FRACTURE, plus SIGNOFF: the goodbye Mara
+## and Tomas always said, chosen in the prologue; SWITCH: how Mara answered
+## the kitchen switch; CROSSINGS: every crossing). `flags` holds every smaller
 ## fact the scenes need ("read_note", "fuse_installed", ...). `meta` survives
 ## across playthroughs: it will hold the transmission's tail lines.
 ##
 ## `frequency` is the version of Halvard Mara is standing in: "H" is home,
-## "01".."99" are the others. Every crossing adds 1 to FRACTURE.
+## "01".."99" are the others. Every crossing adds 1 to CROSSINGS. FRACTURE
+## only counts the avoidable ones: making a crossing Mara has already made
+## (same doorway, same two stations) or sliding off the dial in the mine.
 
 signal changed
 signal inventory_changed
 
-const VERSION := "0.3.2"
+const VERSION := "0.6.2"
 
 const ITEMS := {
 	"red_tape": {
@@ -69,7 +73,35 @@ const ITEMS := {
 	},
 	"tuner": {
 		"name": "Tomas's radio",
-		"desc": "An army field radio Tomas gutted and rebuilt. The dial runs 00 to 99. On the back, masking tape in his handwriting: HOME = 00.",
+		"desc": "A field radio Tomas gutted and rebuilt. The dial runs 00 to 99. On the back, masking tape in his handwriting: HOME = 00.",
+	},
+	"transmit_key": {
+		"name": "Transmit key",
+		"desc": "TX-1's key, on its lanyard. It was in the hollow leg of Sollen's desk, where a museum finds it in 1998. Found it, I mean. Won't, now.",
+	},
+	"fire_axe": {
+		"name": "Fire axe",
+		"desc": "Out of the case by the basement door. BREAK GLASS. I didn't have to: the case was never locked.",
+	},
+	"station_log": {
+		"name": "Tomas's notebook",
+		"desc": "STATION LOG, in his handwriting. September to October 1980. Two strips of chart paper taped inside.",
+	},
+	"chart_strips": {
+		"name": "Chart strips",
+		"desc": "Two strips off the chart recorder, mine: flat with the dish parked, climbing while it listens. They match his.",
+	},
+	"chain_sheet": {
+		"name": "Dad's diagram",
+		"desc": "THE 2.14 CHAIN, in Dad's hand. DISH LO-FEED to jack A1. Rx-2 IF OUT to jack B3. FIELD SET OUT to jack C2. Don't route through the forward bank. Λ.L. 10/79.",
+	},
+	"revolver": {
+		"name": "Sollen's revolver",
+		"desc": "Sollen's old service revolver. She gave it to me handle first. In case she loses her nerve.",
+	},
+	"cassette_2031": {
+		"name": "Cassette",
+		"desc": "A copy of Ma's last night at the Lantern, March 1998. The visitor center made it for me. In 2031.",
 	},
 }
 
@@ -90,6 +122,7 @@ const FREQS := {
 	"05": {"tint": Color(0.95, 1.0, 0.86), "hum": 1.22},
 	"12": {"tint": Color(1.0, 0.86, 0.72), "hum": 0.76},
 	"14": {"tint": Color(0.84, 0.82, 0.95), "hum": 1.3},
+	"44": {"tint": Color(0.8, 0.86, 0.94), "hum": 1.06},
 }
 
 var story := {}
@@ -105,11 +138,21 @@ var place := ""
 ## True once Mara pulls the main breaker: station rooms switch to red emergency light.
 var emergency := false
 var frequency := "H"
+## Act 3.7: which turning Red is at in the dark (0 = still in the basement).
+## Not saved: the room starts again from the basement stairs.
+var red_turning := 0
+## The year Mara is walking in, when the dish has taken her into a future
+## ("2031", "2009", "1991"), or "" in tonight's 1983.
+var era := ""
+## Blue's pockets while the player is Red (Act 3.7): see Act3.become_red().
+var stash: Array[String] = []
 
 var meta := {"tail": [], "endings": [], "slices_completed": 0}
 
 ## Set by the automated test run.
 var test_mode := false
+## Test runs that only look at rooms (perf) skip their arrival scenes.
+var test_skip_arrive := false
 var test_choices: Array = []
 ## Stations the automated test picks on the Tuner dial, in order.
 var test_tune: Array = []
@@ -132,11 +175,12 @@ func use_test_paths() -> void:
 
 
 func new_game() -> void:
-	story = {"ANSWERED": null, "TOMAS": null, "EIGHTY": null, "FINALE": null, "FRACTURE": 0}
+	story = {"ANSWERED": null, "TOMAS": null, "EIGHTY": null, "FINALE": null, "FRACTURE": 0,
+		"CROSSINGS": 0, "SIGNOFF": null, "SWITCH": null, "LETGO": null}
 	flags = {}
 	inventory.clear()
 	selected_item = ""
-	room = "snowfield_1980"
+	room = "intro_diner"
 	entry = ""
 	clock_text = "2:12"
 	clock_frozen = false
@@ -144,6 +188,8 @@ func new_game() -> void:
 	place = ""
 	emergency = false
 	frequency = "H"
+	era = ""
+	stash.clear()
 	changed.emit()
 	inventory_changed.emit()
 
@@ -188,7 +234,18 @@ func item_name(id: String) -> String:
 
 
 func item_desc(id: String) -> String:
-	return ITEMS.get(id, {}).get("desc", "")
+	var d: String = ITEMS.get(id, {}).get("desc", "")
+	if id == "tuner" and has("notebook_read"):
+		# Tomas's Day 1: it was Dad's field set, and Dad wrote in the lid.
+		d += " Inside the lid, in Dad's writing: Λ  LIGHT = BALLAST."
+	if id == "tuner" and has("patched"):
+		# Act 3: Dad's relay is in. The dial reads years.
+		if has("bank_burst"):
+			return d + " Its fourth digit is dark now. No more futures."
+		var y := Act3.next_future()
+		d += " Since Dad's relay clicked in, there's a fourth digit: the dial reads years."
+		d += (" The needle's on %s." % y) if y != "" else " The needle won't settle on anything."
+	return d
 
 
 func recipe(a: String, b: String) -> Dictionary:
@@ -204,8 +261,58 @@ func has_light() -> bool:
 
 # --- frequencies -------------------------------------------------------------
 
-func cross_to(freq: String) -> void:
+## Crosses to `freq` from the current room. Returns true if this frays Mara:
+## she has made this exact crossing before. The way forward is always free.
+func cross_to(freq: String, required: bool = false) -> bool:
+	var route := "route:%s:%s>%s" % [room, frequency, freq]
 	frequency = freq
+	story["CROSSINGS"] = int(story.get("CROSSINGS", 0)) + 1
+	var frays := flags.has(route) and not required
+	flags[route] = true
+	if frays:
+		story["FRACTURE"] = int(story.get("FRACTURE", 0)) + 1
+	changed.emit()
+	return frays
+
+
+## A trip through the feed cabin, into a future or back out of one. Required
+## travel: it counts as a crossing, never as FRACTURE.
+func travel(to_era: String) -> void:
+	era = to_era
+	story["CROSSINGS"] = int(story.get("CROSSINGS", 0)) + 1
+	changed.emit()
+
+
+## Mara climbs into the feed cabin with no future on the needle: a crossing
+## for nothing, and it costs her (+2).
+func cabin_fray() -> void:
+	story["CROSSINGS"] = int(story.get("CROSSINGS", 0)) + 1
+	story["FRACTURE"] = int(story.get("FRACTURE", 0)) + 2
+	changed.emit()
+
+
+## The warning due now that FRACTURE has reached 8, 12 or 14 (once each), or
+## "". At 15 Mara can no longer find home's hum: the game warns three times
+## before that.
+func fracture_warning() -> String:
+	var f := int(story.get("FRACTURE", 0))
+	for level in [14, 12, 8]:
+		if f >= level and not has("fracture_warn_%d" % level):
+			for l in [8, 12, 14]:
+				if l <= level:
+					flags["fracture_warn_%d" % l] = true
+			match level:
+				8:
+					return "Something frays. Home's hum is harder to find. (FRACTURE 8 of 15: written in Mara's notebook.)"
+				12:
+					return "\"I can barely hear home.\" (FRACTURE 12 of 15.)"
+				14:
+					return "Something frays. One more, and home won't hold. (FRACTURE 14 of 15.)"
+	return ""
+
+
+## Something avoidable happened in the dark (a slide in the mine): +1 FRACTURE.
+func fray() -> void:
 	story["FRACTURE"] = int(story.get("FRACTURE", 0)) + 1
 	changed.emit()
 
@@ -249,25 +356,34 @@ func snapshot() -> Dictionary:
 		"objective": objective,
 		"emergency": emergency,
 		"frequency": frequency,
+		"era": era,
+		"stash": stash.duplicate(),
 	}
 
 
 func apply_snapshot(data: Dictionary) -> void:
 	story = (data.get("story", {}) as Dictionary).duplicate(true)
-	for k in ["ANSWERED", "TOMAS", "EIGHTY", "FINALE"]:
+	for k in ["ANSWERED", "TOMAS", "EIGHTY", "FINALE", "SIGNOFF", "SWITCH", "LETGO"]:
 		if not story.has(k):
 			story[k] = null
+	if not story.has("CROSSINGS"):
+		# A save from before v0.5, when every crossing counted as FRACTURE.
+		story["CROSSINGS"] = int(story.get("FRACTURE", 0))
+		story["FRACTURE"] = 0
 	story["FRACTURE"] = int(story.get("FRACTURE", 0))
+	story["CROSSINGS"] = int(story.get("CROSSINGS", 0))
 	flags = (data.get("flags", {}) as Dictionary).duplicate(true)
 	inventory.assign(data.get("inventory", []))
 	selected_item = ""
-	room = str(data.get("room", "snowfield_1980"))
+	room = str(data.get("room", "intro_diner"))
 	entry = str(data.get("entry", ""))
 	clock_text = str(data.get("clock_text", "1:40"))
 	clock_frozen = bool(data.get("clock_frozen", false))
 	objective = str(data.get("objective", ""))
 	emergency = bool(data.get("emergency", false))
 	frequency = str(data.get("frequency", "H"))
+	era = str(data.get("era", ""))
+	stash.assign(data.get("stash", []))
 	changed.emit()
 	inventory_changed.emit()
 

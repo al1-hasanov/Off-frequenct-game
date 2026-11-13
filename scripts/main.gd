@@ -8,7 +8,10 @@ extends Node2D
 
 const ROOMS := {
 	"menu": "res://scripts/rooms/menu.gd",
+	"intro_diner": "res://scripts/rooms/intro_diner.gd",
+	"intro_road": "res://scripts/rooms/intro_road.gd",
 	"snowfield_1980": "res://scripts/rooms/snowfield_1980.gd",
+	"intro_after": "res://scripts/rooms/intro_after.gd",
 	"corridor": "res://scripts/rooms/corridor.gd",
 	"receiver_room": "res://scripts/rooms/receiver_room.gd",
 	"control_room": "res://scripts/rooms/control_room.gd",
@@ -26,6 +29,21 @@ const ROOMS := {
 	"diner": "res://scripts/rooms/diner.gd",
 	"mine_tunnel": "res://scripts/rooms/mine_tunnel.gd",
 	"end_card": "res://scripts/rooms/end_card.gd",
+	# Act 3: the dish, and the futures it hears.
+	"dish": "res://scripts/rooms/dish.gd",
+	"visitor_center": "res://scripts/rooms/visitor_center.gd",
+	"basement_2009": "res://scripts/rooms/basement_2009.gd",
+	"main_street_1991": "res://scripts/rooms/main_street_1991.gd",
+	"shop_1991": "res://scripts/rooms/shop_1991.gd",
+	"red_dark": "res://scripts/rooms/red_dark.gd",
+	"pike_dark": "res://scripts/rooms/pike_dark.gd",
+	# Debug only: every character and pose, for checking the art.
+	"lineup": "res://scripts/rooms/lineup.gd",
+	"lineup2": "res://scripts/rooms/lineup2.gd",
+	"lineup3": "res://scripts/rooms/lineup3.gd",
+	"lineup4": "res://scripts/rooms/lineup4.gd",
+	"lineup5": "res://scripts/rooms/lineup5.gd",
+	"lineup6": "res://scripts/rooms/lineup6.gd",
 }
 
 ## Fired as a room change begins, before the new room's arrival scene runs.
@@ -40,6 +58,8 @@ var camera: Camera2D
 
 
 func _ready() -> void:
+	DisplaySettings.load_settings()
+	DisplaySettings.apply()
 	camera = Camera2D.new()
 	camera.position = Vector2(640, 360)
 	add_child(camera)
@@ -81,6 +101,8 @@ func _notification(what: int) -> void:
 			# Android back button: pause in game, quit from the title screen.
 			if hud.audio_settings.visible:
 				hud.audio_settings.close()
+			elif hud.notebook_layer != null and hud.notebook_layer.visible:
+				hud.close_notebook()
 			elif room_id == "menu":
 				quit_game()
 			elif room != null and room.shows_hud:
@@ -114,19 +136,35 @@ func change_room(id: String, entry: String = "") -> void:
 
 ## Mara slips into another version of the building: the same room, or another
 ## room, on frequency `freq`. Like change_room(), call it last and don't await it.
-func cross(freq: String, id: String, entry: String = "") -> void:
+func cross(freq: String, id: String, entry: String = "", required: bool = false) -> void:
 	busy_count += 1
 	Audio.sfx("crossing", -3.0)
 	hud.glitch(1.4)
 	await get_tree().create_timer(0.5).timeout
-	GameState.cross_to(freq)
+	var frays := GameState.cross_to(freq, required)
 	busy_count -= 1
 	_go(id, entry)
+	if frays:
+		# A crossing Mara has already made once: the extra trip costs her.
+		get_tree().create_timer(1.3).timeout.connect(func() -> void:
+			hud.toast("Something frays. (FRACTURE %d: crossing back over your own tracks)" % int(GameState.story.FRACTURE))
+			warn_fracture(2.6))
+
+
+## At FRACTURE 8, 12 and 14 the game says so, once each, before home stops
+## holding at 15.
+func warn_fracture(delay: float = 0.0) -> void:
+	var w := GameState.fracture_warning()
+	if w == "":
+		return
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+	hud.toast(w)
 
 
 func _go(id: String, entry: String) -> void:
 	Audio.stop_all(0.4)
-	Audio.music_context(id)
+	hud.clear_caption()
 	entering.emit(id, entry)
 	busy_count += 1
 	if room != null:
@@ -145,6 +183,7 @@ func _go(id: String, entry: String) -> void:
 	GameState.selected_item = ""
 	add_child(next)
 	next.setup()
+	Audio.music_context(id, next.score_quiet())
 	next.enter(entry)
 	if next.is_story_room:
 		GameState.room = id
@@ -157,14 +196,14 @@ func _go(id: String, entry: String) -> void:
 		GameState.save_game()
 	await hud.fade_in(0.45)
 	busy_count -= 1
-	if room == next:
+	if room == next and not GameState.test_skip_arrive:
 		run(next.on_arrive)
 
 
 func start_new_game() -> void:
 	GameState.new_game()
 	GameState.delete_save()
-	change_room("snowfield_1980")
+	change_room("intro_diner")
 
 
 ## Debug chapter select: jump to the start of a chapter with the story state a

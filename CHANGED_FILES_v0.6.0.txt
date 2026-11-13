@@ -1,0 +1,78 @@
+Off Frequency v0.6.0: files changed since the v0.5.2 source
+Paths are relative to the project root. Overlay the changed-files zip on the v0.5.2 source,
+then delete the files listed under Removed. Godot regenerates .godot on import.
+
+Added (41)
+  UPDATE_v0.6.0.md
+  audio/chalk.wav
+  audio/chalk.wav.import
+  audio/whistle.wav
+  audio/whistle.wav.import
+  audio/whistle_rev.wav
+  audio/whistle_rev.wav.import
+  docs/VALIDATION_v0.6.0.md
+  docs/screenshots/45_dish_1983.png
+  docs/screenshots/46_dish_2031.png
+  docs/screenshots/47_visitor_center_2031.png
+  docs/screenshots/48_dish_2009.png
+  docs/screenshots/49_main_street_1991.png
+  docs/screenshots/50_shop_1991.png
+  docs/screenshots/51_roll_call_wrist.png
+  docs/screenshots/52_control_room_act3.png
+  scripts/act3.gd
+  scripts/act3.gd.uid
+  scripts/era_vehicles.gd
+  scripts/era_vehicles.gd.uid
+  scripts/rooms/basement_2009.gd
+  scripts/rooms/basement_2009.gd.uid
+  scripts/rooms/dish.gd
+  scripts/rooms/dish.gd.uid
+  scripts/rooms/lineup4.gd
+  scripts/rooms/lineup4.gd.uid
+  scripts/rooms/lineup5.gd
+  scripts/rooms/lineup5.gd.uid
+  scripts/rooms/lineup6.gd
+  scripts/rooms/lineup6.gd.uid
+  scripts/rooms/main_street_1991.gd
+  scripts/rooms/main_street_1991.gd.uid
+  scripts/rooms/pike_dark.gd
+  scripts/rooms/pike_dark.gd.uid
+  scripts/rooms/red_dark.gd
+  scripts/rooms/red_dark.gd.uid
+  scripts/rooms/shop_1991.gd
+  scripts/rooms/shop_1991.gd.uid
+  scripts/rooms/visitor_center.gd
+  scripts/rooms/visitor_center.gd.uid
+  tools/gen_audio_v06.py
+
+Changed (28)
+  README.md
+  docs/preview.png
+  export_presets.cfg
+  project.godot
+  scripts/actor.gd
+  scripts/autotest.gd
+  scripts/chapter_states.gd
+  scripts/chapters.gd
+  scripts/env.gd
+  scripts/figure.gd
+  scripts/game_state.gd
+  scripts/hud.gd
+  scripts/looks.gd
+  scripts/main.gd
+  scripts/notebook.gd
+  scripts/room.gd
+  scripts/rooms/basement.gd
+  scripts/rooms/control_room.gd
+  scripts/rooms/corridor.gd
+  scripts/rooms/diner.gd
+  scripts/rooms/east_corridor.gd
+  scripts/rooms/end_card.gd
+  scripts/rooms/intro_after.gd
+  scripts/rooms/intro_diner.gd
+  scripts/rooms/lobby.gd
+  scripts/rooms/mine_tunnel.gd
+  scripts/rooms/sollen_office.gd
+  scripts/story.gd
+
+Removed (0): delete these

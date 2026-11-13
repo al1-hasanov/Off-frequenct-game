@@ -28,6 +28,8 @@ func setup() -> void:
 
 	add_hotspot("front_door", Rect2(70, 268, 262, 384), "Front doors", 370.0, -1)
 	add_hotspot("footprints", Rect2(330, 640, 360, 40), "Footprints", 520.0, -1, func() -> bool: return _door_open())
+	add_hotspot("gauze", Rect2(668, 618, 54, 36), "Something on the floor", 640.0, 1,
+		func() -> bool: return _door_open() and GameState.has("saw_footprints") and not GameState.has("saw_gauze"))
 	add_hotspot("board", Rect2(396, 284, 170, 132), "Bulletin board", 480.0)
 	add_hotspot("bench", Rect2(392, 556, 200, 64), "Bench", 600.0, -1)
 	add_hotspot("junction", Rect2(700, 372, 88, 116), "Junction box", 744.0)
@@ -45,6 +47,9 @@ func enter(entry: String) -> void:
 	entered_from = entry
 	player.position.x = 1140.0 if entry == "from_corridor" else 900.0
 	player.face(-1)
+	if entry == "from_dish":
+		player.position.x = 370.0
+		player.face(1)
 
 
 func on_arrive() -> void:
@@ -65,7 +70,11 @@ func on_hotspot(id: String) -> void:
 			Audio.sfx("door", -10.0)
 			main.change_room("corridor", "from_lobby")
 		"front_door":
-			if not GameState.has("choice1"):
+			if GameState.has("act3"):
+				Audio.stop_loop("wind", 0.4)
+				Audio.sfx("door", -10.0)
+				main.change_room("dish", "from_lobby")
+			elif not GameState.has("choice1"):
 				await mara("Snowing harder. Nobody's coming up that road tonight.")
 			elif _door_open():
 				await mara("Wide open. The lock's fine. Somebody opened it.")
@@ -77,6 +86,15 @@ func on_hotspot(id: String) -> void:
 			GameState.set_flag("saw_footprints")
 			await mara("Wet footprints. They come in from the snow...")
 			await mara("...and stop. Right there. Like whoever made them just stopped existing.")
+			await mara("Work boots. Size eight, a cracked heel on the left.")
+			await mara("Those are my boots. That's my crack.")
+			if not GameState.has("saw_gauze"):
+				await mara("There's something on the floor where they stop.")
+		"gauze":
+			GameState.set_flag("saw_gauze")
+			await narrate("A strip of yellowed burn gauze, the kind from a first-aid kit. It smells of smoke.")
+			await mara("The voice said don't let her in. It didn't say she had a key.")
+			await mara("Or my boots. Or a burned hand.")
 		"board":
 			await mara("Visitors welcome, nine to five. Nobody's visited since summer.")
 		"bench":
@@ -254,106 +272,116 @@ func _call_observatory() -> void:
 
 
 func draw_back() -> void:
-	Kit.wall(self, floor_y, Color("3a3f3a"), Color("2d322e"), TRIM)
-	EnvironmentArt.wall_props(self, str(name))
-	Kit.floor_tiles(self, floor_y, Color("26292a"), Color("2e3233"))
+	Kit.wall(cv, floor_y, Color("3a3f3a"), Color("2d322e"), TRIM)
+	EnvironmentArt.wall_props(cv, str(name))
+	Kit.floor_tiles(cv, floor_y, Color("26292a"), Color("2e3233"))
 	for x in [520.0, 1000.0]:
-		Kit.ceiling_light(self, x, floor_y, not GameState.emergency)
-	if GameState.emergency:
-		Kit.emergency_lamp(self, Vector2(1222, 262), t)
+		Kit.ceiling_light(cv, x, floor_y, not GameState.emergency)
 	_front_doors()
 	_board()
 	_bench()
 	_junction_box()
 	_booth()
-	Kit.door(self, Rect2(1176, 340, 92, 310), DOOR, "LABS")
+	Kit.door(cv, Rect2(1176, 340, 92, 310), DOOR, "LABS")
 	if _door_open():
 		for i in 12:
 			var x := 340.0 + i * 30.0
 			var y := 662.0 + (5.0 if i % 2 == 0 else -1.0)
-			draw_set_transform(Vector2(x, y), 0.0, Vector2(1.0, 0.42))
-			draw_circle(Vector2.ZERO, 8.0, Color(0.55, 0.62, 0.72, 0.55))
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			cv.draw_set_transform(Vector2(x, y), 0.0, Vector2(1.0, 0.42))
+			cv.draw_circle(Vector2.ZERO, 8.0, Color(0.55, 0.62, 0.72, 0.55))
+		cv.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		# Where the prints stop: a twist of burn gauze, scorched at one end.
+		cv.draw_colored_polygon(PackedVector2Array([Vector2(676, 640), Vector2(706, 634), Vector2(716, 641),
+			Vector2(694, 648), Vector2(680, 647)]), Color("d8cfae"))
+		cv.draw_line(Vector2(682, 642), Vector2(708, 637), Color("b9ae8a"), 1.0)
+		cv.draw_circle(Vector2(712, 639), 3.0, Color("5a4a36"))
+
+
+## The emergency lamp over the labs door pulses.
+func draw_anim(ci: CanvasItem) -> void:
+	super(ci)
+	if GameState.emergency:
+		Kit.emergency_lamp(ci, Vector2(1222, 262), t)
 
 
 func _front_doors() -> void:
 	var r := Rect2(82, 282, 236, 366)
-	Kit.night_view(self, r, t, -1.0, 1.0)
-	draw_rect(r.grow(12), Color("15191b"), false, 24.0)
+	Kit.night_view(cv, r, 0.0, -1.0, 1.0)
+	cv.draw_rect(r.grow(12), Color("15191b"), false, 24.0)
 	if _door_open():
-		draw_rect(Rect2(82, 282, 116, 366), Color("8fa0b4", 0.12))
-		draw_line(Vector2(200, 282), Vector2(200, 648), Color("15191b"), 8.0)
-		draw_colored_polygon(PackedVector2Array([Vector2(318, 282), Vector2(360, 300), Vector2(360, 640), Vector2(318, 648)]), Color("1d2427"))
-		draw_colored_polygon(PackedVector2Array([Vector2(318, 648), Vector2(330, 652), Vector2(470, 672), Vector2(318, 680)]), Color("cdd6e4"))
+		cv.draw_rect(Rect2(82, 282, 116, 366), Color("8fa0b4", 0.12))
+		cv.draw_line(Vector2(200, 282), Vector2(200, 648), Color("15191b"), 8.0)
+		cv.draw_colored_polygon(PackedVector2Array([Vector2(318, 282), Vector2(360, 300), Vector2(360, 640), Vector2(318, 648)]), Color("1d2427"))
+		cv.draw_colored_polygon(PackedVector2Array([Vector2(318, 648), Vector2(330, 652), Vector2(470, 672), Vector2(318, 680)]), Color("cdd6e4"))
 	else:
-		draw_rect(Rect2(82, 282, 236, 366), Color("8fa0b4", 0.1))
-		draw_line(Vector2(200, 282), Vector2(200, 648), Color("15191b"), 8.0)
-		draw_rect(Rect2(180, 450, 6, 50), Color("9aa3a8"))
-		draw_rect(Rect2(214, 450, 6, 50), Color("9aa3a8"))
-	Kit.plate(self, Vector2(200, 244), "HALVARD RADIO OBSERVATORY", 14)
+		cv.draw_rect(Rect2(82, 282, 236, 366), Color("8fa0b4", 0.1))
+		cv.draw_line(Vector2(200, 282), Vector2(200, 648), Color("15191b"), 8.0)
+		cv.draw_rect(Rect2(180, 450, 6, 50), Color("9aa3a8"))
+		cv.draw_rect(Rect2(214, 450, 6, 50), Color("9aa3a8"))
+	Kit.plate(cv, Vector2(200, 244), "HALVARD RADIO OBSERVATORY", 14)
 
 
 func _board() -> void:
 	var r := Rect2(400, 288, 162, 124)
-	draw_rect(r.grow(5), Color("4a3a2c"))
-	draw_rect(r, Color("8a6a45"))
+	cv.draw_rect(r.grow(5), Color("4a3a2c"))
+	cv.draw_rect(r, Color("8a6a45"))
 	var papers := [Rect2(410, 298, 46, 56), Rect2(466, 304, 40, 40), Rect2(514, 296, 38, 62), Rect2(430, 362, 60, 40)]
 	for p in papers:
-		draw_rect(p, Color("e6dfc8"))
-	Kit.text(self, Vector2(430, 384), "VISITORS", 10, Color("2a2a2a"), HORIZONTAL_ALIGNMENT_CENTER, 60)
-	Kit.text(self, Vector2(430, 396), "9 – 5", 10, Color("2a2a2a"), HORIZONTAL_ALIGNMENT_CENTER, 60)
+		cv.draw_rect(p, Color("e6dfc8"))
+	Kit.text(cv, Vector2(430, 384), "VISITORS", 10, Color("2a2a2a"), HORIZONTAL_ALIGNMENT_CENTER, 60)
+	Kit.text(cv, Vector2(430, 396), "9 – 5", 10, Color("2a2a2a"), HORIZONTAL_ALIGNMENT_CENTER, 60)
 
 
 func _bench() -> void:
-	draw_rect(Rect2(396, 570, 192, 14), Color("5a4532"))
-	draw_rect(Rect2(406, 584, 10, 66), Color("2a2f33"))
-	draw_rect(Rect2(568, 584, 10, 66), Color("2a2f33"))
+	cv.draw_rect(Rect2(396, 570, 192, 14), Color("5a4532"))
+	cv.draw_rect(Rect2(406, 584, 10, 66), Color("2a2f33"))
+	cv.draw_rect(Rect2(568, 584, 10, 66), Color("2a2f33"))
 
 
 func _junction_box() -> void:
-	draw_rect(Rect2(736, 26, 14, 350), Color("4a545b"))
+	cv.draw_rect(Rect2(736, 26, 14, 350), Color("4a545b"))
 	var r := Rect2(704, 376, 80, 108)
-	draw_rect(r, Color("6a747b"))
-	draw_rect(r, Color("2c353c"), false, 2.0)
+	cv.draw_rect(r, Color("6a747b"))
+	cv.draw_rect(r, Color("2c353c"), false, 2.0)
 	if GameState.has("junction_open"):
-		draw_rect(r.grow(-6), Color("1a1f22"))
-		draw_line(Vector2(720, 384), Vector2(720, 476), Color("3a7bbf"), 3.0)
-		draw_line(Vector2(732, 384), Vector2(732, 476), Color("e8e0c0"), 3.0)
+		cv.draw_rect(r.grow(-6), Color("1a1f22"))
+		cv.draw_line(Vector2(720, 384), Vector2(720, 476), Color("3a7bbf"), 3.0)
+		cv.draw_line(Vector2(732, 384), Vector2(732, 476), Color("e8e0c0"), 3.0)
 		if GameState.has("phone_fixed"):
-			draw_line(Vector2(752, 384), Vector2(752, 476), Color("6aa84f"), 3.0)
-			draw_line(Vector2(766, 384), Vector2(766, 476), Color("c9a332"), 3.0)
-			draw_rect(Rect2(744, 424, 30, 16), Color("b8322c"))
+			cv.draw_line(Vector2(752, 384), Vector2(752, 476), Color("6aa84f"), 3.0)
+			cv.draw_line(Vector2(766, 384), Vector2(766, 476), Color("c9a332"), 3.0)
+			cv.draw_rect(Rect2(744, 424, 30, 16), Color("b8322c"))
 		else:
-			draw_line(Vector2(752, 384), Vector2(752, 422), Color("6aa84f"), 3.0)
-			draw_line(Vector2(752, 440), Vector2(752, 476), Color("6aa84f"), 3.0)
-			draw_line(Vector2(766, 384), Vector2(766, 424), Color("c9a332"), 3.0)
-			draw_line(Vector2(766, 442), Vector2(766, 476), Color("c9a332"), 3.0)
-		draw_colored_polygon(PackedVector2Array([Vector2(704, 376), Vector2(680, 366), Vector2(680, 494), Vector2(704, 484)]), Color("5d676e"))
+			cv.draw_line(Vector2(752, 384), Vector2(752, 422), Color("6aa84f"), 3.0)
+			cv.draw_line(Vector2(752, 440), Vector2(752, 476), Color("6aa84f"), 3.0)
+			cv.draw_line(Vector2(766, 384), Vector2(766, 424), Color("c9a332"), 3.0)
+			cv.draw_line(Vector2(766, 442), Vector2(766, 476), Color("c9a332"), 3.0)
+		cv.draw_colored_polygon(PackedVector2Array([Vector2(704, 376), Vector2(680, 366), Vector2(680, 494), Vector2(704, 484)]), Color("5d676e"))
 	else:
-		draw_circle(Vector2(774, 430), 4.0, Color("2c353c"))
-		Kit.text(self, Vector2(704, 404), "PHONE", 11, Color("2c353c"), HORIZONTAL_ALIGNMENT_CENTER, 80)
+		cv.draw_circle(Vector2(774, 430), 4.0, Color("2c353c"))
+		Kit.text(cv, Vector2(704, 404), "PHONE", 11, Color("2c353c"), HORIZONTAL_ALIGNMENT_CENTER, 80)
 
 
 func _booth() -> void:
 	var r := Rect2(852, 262, 296, 388)
-	draw_rect(r, Color("2f3534"))
-	draw_rect(r, Color("161b1c"), false, 4.0)
+	cv.draw_rect(r, Color("2f3534"))
+	cv.draw_rect(r, Color("161b1c"), false, 4.0)
 	var win := Rect2(868, 286, 264, 150)
-	draw_rect(win, Color("0f171b"))
-	draw_rect(Rect2(880, 400, 240, 34), Color("3a3027"))
-	draw_rect(Rect2(982, 404, 56, 26), Color("2a2a2e"))
-	draw_rect(Rect2(988, 398, 44, 10), Color("1b1b1f"))
-	draw_circle(Vector2(1010, 418), 8.0, Color("c8c3b0"))
-	draw_rect(win, Color(0.6, 0.75, 0.85, 0.08))
-	draw_rect(win, Color("161b1c"), false, 6.0)
-	draw_rect(Rect2(852, 450, 296, 26), Color("4a3a2c"))
-	Kit.plate(self, Vector2(1000, 236), "SECURITY")
+	cv.draw_rect(win, Color("0f171b"))
+	cv.draw_rect(Rect2(880, 400, 240, 34), Color("3a3027"))
+	cv.draw_rect(Rect2(982, 404, 56, 26), Color("2a2a2e"))
+	cv.draw_rect(Rect2(988, 398, 44, 10), Color("1b1b1f"))
+	cv.draw_circle(Vector2(1010, 418), 8.0, Color("c8c3b0"))
+	cv.draw_rect(win, Color(0.6, 0.75, 0.85, 0.08))
+	cv.draw_rect(win, Color("161b1c"), false, 6.0)
+	cv.draw_rect(Rect2(852, 450, 296, 26), Color("4a3a2c"))
+	Kit.plate(cv, Vector2(1000, 236), "SECURITY")
 	var d := Rect2(1070, 484, 66, 166)
 	if GameState.has("booth_open"):
-		draw_rect(d, Color("0e1214"))
-		draw_colored_polygon(PackedVector2Array([d.position, Vector2(d.position.x - 30, d.position.y + 10),
+		cv.draw_rect(d, Color("0e1214"))
+		cv.draw_colored_polygon(PackedVector2Array([d.position, Vector2(d.position.x - 30, d.position.y + 10),
 			Vector2(d.position.x - 30, d.end.y - 4), Vector2(d.position.x, d.end.y)]), Color("3a4142"))
 	else:
-		draw_rect(d, Color("3a4142"))
-		draw_rect(d, Color("161b1c"), false, 3.0)
-		draw_circle(Vector2(d.position.x + 12, d.position.y + 86), 4.0, Color("9aa3a8"))
+		cv.draw_rect(d, Color("3a4142"))
+		cv.draw_rect(d, Color("161b1c"), false, 3.0)
+		cv.draw_circle(Vector2(d.position.x + 12, d.position.y + 86), 4.0, Color("9aa3a8"))

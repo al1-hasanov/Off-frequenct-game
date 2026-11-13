@@ -4,11 +4,43 @@ extends RefCounted
 ## happened so far, so every room in Acts 1 and 2 agrees on what's next.
 ## (The prologue rooms from v0.1 still set their objectives by hand.)
 
+## The goodbye Mara and Tomas always said when he went off to listen, chosen
+## in the prologue (story SIGNOFF): [what Mara says, what Tomas says back].
+## Other frequencies have their own: Tomas in 12 remembers the next one in
+## ORDER, the Mara from 07 the one after that.
+const SIGNOFFS := {
+	"over": ["Over and out, Tomas.", "Over and out."],
+	"light": ["Leave a light on, kid.", "Always."],
+	"dial": ["See you at the end of the dial.", "Ninety-nine."],
+}
+const SIGNOFF_ORDER := ["over", "light", "dial"]
+
+
+## The player's goodbye (H), or another world's: shift 1 = Tomas in 12, 2 = the Mara from 07.
+static func signoff_key(shift: int = 0) -> String:
+	var mine := str(GameState.story.get("SIGNOFF", "over"))
+	if not SIGNOFFS.has(mine):
+		mine = "over"
+	return SIGNOFF_ORDER[(SIGNOFF_ORDER.find(mine) + shift) % 3]
+
+
+static func signoff_line(shift: int = 0) -> String:
+	return SIGNOFFS[signoff_key(shift)][0]
+
+
+static func signoff_reply(shift: int = 0) -> String:
+	return SIGNOFFS[signoff_key(shift)][1]
+
 
 static func objective(freq: String) -> String:
 	var g := GameState
+	if g.has("act3"):
+		return _act3_objective()
 	if g.has("road_done"):
 		return _act2_objective(freq)
+	if not g.has("called_observatory"):
+		# The opening and the prologue set their objectives scene by scene.
+		return g.objective
 	if freq == "03":
 		return "Same snowcat. Same key, I bet. Drive down to Ash Street."
 	if freq == "01":
@@ -64,13 +96,23 @@ static func _in_01() -> String:
 ## instructions rather than Mara's voice: this is the player's safety net.
 static func hint(room: String, freq: String) -> String:
 	var g := GameState
+	if g.has("act3"):
+		return _act3_hint(room) + _science_extra(room)
 	if g.has("road_done"):
 		return _act2_hint(room, freq)
 	match room:
+		"intro_diner":
+			if g.has("intro_called"):
+				return "Tap the front door, on the far left, to take Tomas up the mountain."
+			return "Tap the telephone on the wall, between the booths and the counter."
 		"snowfield_1980":
-			if not g.has("p1_talked"):
-				return "Walk over to Tomas at the far right of the field and tap him."
-			return "Tap the padlock on the gate, on the left next to the truck."
+			if g.has("p1_vanished"):
+				return "Walk over to the flashlight lying in the snow, out on the right."
+			if g.has("p1_talked"):
+				return "Tap the padlock on the gate, on the left by the truck. It sticks: keep trying it."
+			return "Drag the light onto the back of the radio, then where Tomas points."
+		"intro_road", "intro_after":
+			return ""
 		"road_down":
 			return "Drag the dial slowly. Home has no number: it's the low hum between 06 and 07. Then tap Step into the dark."
 		"menu", "end_card", "":
@@ -367,3 +409,243 @@ static func _hint_swapped(room: String) -> String:
 	if not g.has("pie_sent"):
 		return "Tap Ma and ask for a slice of pie. That sends her to the front."
 	return "Tap the pantry door on the right. In the dark the dial opens on 10–19: tune to 12 (a truck idling), then Step into the dark."
+
+
+# --- Act 3 ---------------------------------------------------------------------------
+
+## How the observatory's rooms connect, and what the door to each is called.
+const MAP := {
+	"dish": {"lobby": "the Lobby doors"},
+	"lobby": {"dish": "the Front doors", "corridor": "the Corridor door"},
+	"corridor": {"lobby": "the Lobby door", "control_room": "the Control room door", "east_corridor": "the East wing",
+		"receiver_room": "the Receiver room door"},
+	"control_room": {"corridor": "the Corridor door"},
+	"receiver_room": {"corridor": "the Corridor door"},
+	"east_corridor": {"corridor": "the Fire doors", "sollen_office": "Sollen's office", "basement": "the Basement door", "garage": "the Garage door"},
+	"sollen_office": {"east_corridor": "the Door"},
+	"basement": {"east_corridor": "the Stairs up"},
+	"garage": {"east_corridor": "the East wing door"},
+}
+
+
+## "Tap X, then Y." from one room to another, or "" if already there.
+static func _path(from: String, to: String) -> String:
+	if from == to or not MAP.has(from):
+		return ""
+	var prev := {from: ""}
+	var queue := [from]
+	while not queue.is_empty():
+		var r: String = queue.pop_front()
+		if r == to:
+			break
+		for n in MAP[r]:
+			if not prev.has(n):
+				prev[n] = r
+				queue.append(n)
+	if not prev.has(to):
+		return ""
+	var steps: Array = []
+	var cur := to
+	while cur != from:
+		var p: String = prev[cur]
+		steps.push_front(MAP[p][cur])
+		cur = p
+	return "Tap " + ", then ".join(steps) + "."
+
+
+## Go somewhere, then do something there.
+static func _go3(room: String, target: String, then: String) -> String:
+	var p := _path(room, target)
+	return then if p == "" else p + " Then " + then.left(1).to_lower() + then.substr(1)
+
+
+static func _act3_objective() -> String:
+	var g := GameState
+	var room := g.room
+	if g.has("playing_red"):
+		if room == "pike_dark":
+			if not g.has("red_lamp"):
+				return "A light. June keeps storm batteries for the winters."
+			return "Call on 2.14 from June's rig."
+		if not g.has("red_coats"):
+			return "Find your way by touch."
+		return "Follow the farm report: June's radio."
+	match g.era:
+		"2031":
+			if room == "dish":
+				return "The visitor center. Go in."
+			if not g.has("ruth_tape"):
+				return "Ask the docent about Ma."
+			return "Look round the exhibits: Sollen's desk, the 2.14 study, the plaque by the door."
+		"2009":
+			if room == "basement_2009":
+				return "Back up the chute." if g.has("knows_tin") else "Stay in his light."
+			if not g.has("lund_count"):
+				return "The lamp line. Somebody keeps it."
+			if not g.has("tomas09_met"):
+				return "The man with the lamp, at the hut by the dish."
+			return "Round the line with Tomas: the coal chute."
+		"1991":
+			if room == "main_street_1991":
+				if g.has("street_done"):
+					return "Back inside the shop."
+				return "His car." if g.story.get("TOMAS") == "taken" else "The van."
+			if not g.has("coffee_1991"):
+				return "Tomas."
+			if not g.has("street_done"):
+				return "Out front, through the shop."
+			if not g.has("held_light"):
+				return "Hold the light for him: the radio on the bench."
+			return "Tomas."
+	if not g.has("batteries_warm"):
+		return "Warm the frozen batteries on the boiler."
+	if not g.has("patched"):
+		if not g.has("cr3_seen"):
+			return "The control room. The dish is turning."
+		if not g.has("chain_known"):
+			if g.has("patch_tried"):
+				return "Find the patch-bay routing. Sollen writes everything in his station log."
+			return "Get Tomas's radio into receiver 2: the patch bay on the transmitter."
+		return "Patch the Tuner into receiver 2, the way Dad drew it."
+	if not g.has("been_2031"):
+		return "The feed cabin, up on the dish. Out through the lobby's front doors."
+	if not g.has("chalk_2031"):
+		return "Write down what you saw: the chalkboard in the control room."
+	if not g.has("key_taken"):
+		return "Sollen's desk: the hollow left rear leg."
+	if not g.has("board_2009"):
+		return "Back to the control room."
+	if not g.has("been_2009"):
+		return "The feed cabin. 2009."
+	if not g.has("wall_broken"):
+		if not g.has_item("fire_axe"):
+			return "The tin behind the boiler. Something to break plaster with: the fire axe by the basement door."
+		return "Break open the wet plaster behind the boiler."
+	if not g.has("experiment_done"):
+		if not g.has("dish_parked"):
+			return "Repeat Days 17 and 18: park the dish from the control room's drive panel."
+		if not g.has("crossed_parked"):
+			return "With the dish parked, cross twice through the dark east wing and back."
+		if not g.has("strip_flat"):
+			return "Tear off the flat strip at the chart recorder."
+		if not g.has("dish_released"):
+			return "Release the dish from the drive panel."
+		return "Tear off the second strip at the chart recorder."
+	if not g.has("been_1991"):
+		return "One more. The feed cabin: 1991."
+	if g.has("red_done") and not g.has("e81_done"):
+		return "The control room."
+	return ""
+
+
+## v0.6.2: the optional science clue in the room the player is standing in,
+## while it's still unread (the 2031 wall has its own, in _act3_hint). Never
+## during Red's dark or after it.
+static func _science_extra(room: String) -> String:
+	var g := GameState
+	if g.has("playing_red") or g.has("red_done"):
+		return ""
+	match g.era:
+		"":
+			if room == "control_room" and not g.has("saw_chalk_lambda"):
+				return " Optional: the old chalk under the schedule on the chalkboard."
+			if room == "sollen_office" and not g.has("dad_notes_read"):
+				return " Optional: the black textbook on Sollen's shelf."
+		"2009":
+			if room == "dish" and g.has("tomas09_met") and not g.has("big_rip"):
+				return " Optional: the papers on Tomas's hut door."
+		"1991":
+			if room == "shop_1991" and g.has("coffee_1991") and not g.has("wormhole_paper"):
+				return " Optional: the photocopy pinned over the workbench."
+	return ""
+
+
+static func _act3_hint(room: String) -> String:
+	var g := GameState
+	if g.has("playing_red"):
+		if room == "pike_dark":
+			if not g.has("red_lamp"):
+				return "Tap Under the bench, left of the counter, and clamp the leads fat post to fat post."
+			return "Tap June's rig, behind the counter, to call on 2.14."
+		if not g.has("red_coats"):
+			return "Tap the coats on the left."
+		if g.red_turning > 0:
+			# Where the farm report is at this turning, by name.
+			return str(load("res://scripts/rooms/red_dark.gd").call("hint_for", g.red_turning))
+		return "Tap Listen, in the middle of the dark. Then follow the farm report: its name is written in the middle of its rings."
+	match g.era:
+		"2031":
+			if room == "dish":
+				return "Tap the glass doors of the visitor center, on the left."
+			if not g.has("ruth_tape"):
+				return "Tap Cal, the docent, and ask for Ruth Lind."
+			var left: Array = []
+			if not g.has("knows_key"):
+				left.append("Sollen's desk")
+			if not g.has("anders_exhibit"):
+				left.append("the 2.14 study")
+			if not g.has("cal_plaque"):
+				left.append("the brass plaque by the control-room door")
+			var extra := "" if g.has("museum_lambda") else " Optional, before 2:14: the lettering high on the wall."
+			return ("Tap " + ", ".join(left) + "." + extra) if not left.is_empty() else "Wait. It's nearly 2:14."
+		"2009":
+			if room == "basement_2009":
+				if g.has("knows_tin"):
+					return "Tap the coal chute on the left to go back up."
+				return "Tap His light to follow Tomas. At the boiler, tap Behind the boiler."
+			if not g.has("lund_count"):
+				return "Tap the lamp line on the left, where Mrs. Lund keeps it."
+			if not g.has("tomas09_met"):
+				return "Tap the man with the lamp, by the hut on the right."
+			return "Tap the coal chute: the iron hatch at the foot of the stone wing."
+		"1991":
+			if room == "main_street_1991":
+				if not g.has("street_done"):
+					return "Tap his car, the maroon sedan on the left." if g.story.get("TOMAS") == "taken" else "Tap the van, the wood-panelled minivan on the right."
+				return "Tap the door of Pike & Lind Radio to go back inside."
+			if not g.has("coffee_1991"):
+				return "Tap Tomas."
+			if not g.has("street_done"):
+				return "Tap the Shop front door on the left to go out to the street."
+			if not g.has("held_light"):
+				return "Tap the Workbench to hold the light for him."
+			return "Tap Tomas."
+	if not g.has("batteries_warm"):
+		return _go3(room, "basement", "Tap the dead flashlight in your pockets, then tap the Boiler.")
+	if not g.has("patched"):
+		if not g.has("cr3_seen"):
+			return _go3(room, "control_room", "Look around.")
+		if not g.has("chain_known"):
+			if not g.has("patch_tried"):
+				return _go3(room, "control_room", "Tap the Patch bay on the transmitter, on the right.")
+			return _go3(room, "sollen_office", "Tap the Station log on Sollen's desk.")
+		return _go3(room, "control_room", "Tap the Patch bay. Dad's diagram: DISH LO-FEED to A1, Rx-2 IF OUT to B3, FIELD SET OUT to C2.")
+	if not g.has("been_2031"):
+		return _go3(room, "dish", "Tap The dish, out on the right, to walk out to it and climb to the feed cabin.")
+	if not g.has("chalk_2031"):
+		return _go3(room, "control_room", "Tap the Chalkboard.")
+	if not g.has("key_taken"):
+		return _go3(room, "sollen_office", "Tap the Desk leg, at the left end of the desk.")
+	if not g.has("board_2009"):
+		return _go3(room, "control_room", "Look at the chalkboard.")
+	if not g.has("been_2009"):
+		return _go3(room, "dish", "Tap The dish, out on the right, to walk out to it and climb to the feed cabin.")
+	if not g.has("wall_broken"):
+		if not g.has_item("fire_axe"):
+			return _go3(room, "east_corridor", "Tap the Fire axe case, between the Basement and Garage doors.")
+		return _go3(room, "basement", "Tap the fire axe in your pockets, then tap the Wall behind the boiler.")
+	if not g.has("experiment_done"):
+		if not g.has("dish_parked"):
+			return _go3(room, "control_room", "Tap the Dish drive, on the right end of the console.")
+		if not g.has("crossed_parked"):
+			return _go3(room, "corridor", "Tap the East wing, on the right.")
+		if not g.has("strip_flat"):
+			return _go3(room, "control_room", "Tap the Chart recorder, on the left end of the console.")
+		if not g.has("dish_released"):
+			return _go3(room, "control_room", "Tap the Dish drive.")
+		return _go3(room, "control_room", "Tap the Chart recorder.")
+	if not g.has("been_1991"):
+		return _go3(room, "dish", "Tap The dish, out on the right, to walk out to it and climb to the feed cabin.")
+	if g.has("red_done") and not g.has("e81_done"):
+		return _go3(room, "control_room", "Listen to her.")
+	return "Listen."

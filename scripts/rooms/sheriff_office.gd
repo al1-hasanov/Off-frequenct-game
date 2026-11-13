@@ -8,6 +8,7 @@ var cal: Actor
 
 
 func setup() -> void:
+	animated_back = false
 	place_name = "County Sheriff · October 17, 1983"
 	base_tint = Color(0.92, 0.9, 0.82)
 	walk_min = 110.0
@@ -98,11 +99,14 @@ func _board() -> void:
 		"A photo: a body under a sheet against the transmitter console. Halvard Observatory control room.\n\nCause of death: gunshot. Time of death: approx. 02:14, Oct 14.",
 		"A witness sketch. A woman's face: Mara's face, older.\n\n\"Female, 35 to 45, bandaged left hand. Seen on Ash St. 03:00. Strongly resembles victim.\"",
 		"Cal's handwriting, on an index card:\n\n\"Twin? No record. Sister? None.\"\n\nThe word SISTER is circled three times.",
+		"A typed statement, pinned crooked:\n\n\"E. HAAS, county plow. CB channel 9, approx. 02:05: a woman's voice, very clear, 'Don't let her in.' Repeated. Then static.\"\n\nCal has written beside it: \"Before the call came in??\"",
 	])
 	if not GameState.has("read_board"):
 		GameState.set_flag("read_board")
 		await mara("Someone killed me. In this one, someone killed me, and she had my face.")
 		await mara("A bandaged left hand.")
+		await mara("And a plow driver heard the warning at 2:05. It didn't start till 2:14.")
+		await mara("That goes in the notebook.")
 
 
 func _radio() -> void:
@@ -185,12 +189,12 @@ func _home_only(st: String) -> String:
 # --- drawing ------------------------------------------------------------------------
 
 func draw_back() -> void:
-	Kit.wall(self, floor_y, Color("6a6248"), Color("524c3a"), Color("2a2620"))
-	EnvironmentArt.wall_props(self, str(name))
-	Kit.floor_tiles(self, floor_y, Color("4a4a42"), Color("3a3a34"))
-	Kit.ceiling_light(self, 420.0, floor_y, true)
-	Kit.ceiling_light(self, 900.0, floor_y, true)
-	Kit.door(self, Rect2(30, 340, 92, 310), Color("4a4038"), "SIDE")
+	Kit.wall(cv, floor_y, Color("6a6248"), Color("524c3a"), Color("2a2620"))
+	EnvironmentArt.wall_props(cv, str(name))
+	Kit.floor_tiles(cv, floor_y, Color("4a4a42"), Color("3a3a34"))
+	Kit.ceiling_light(cv, 420.0, floor_y, true)
+	Kit.ceiling_light(cv, 900.0, floor_y, true)
+	Kit.door(cv, Rect2(30, 340, 92, 310), Color("4a4038"), "SIDE")
 	_board_art()
 	_calendar()
 	_radio_art()
@@ -200,22 +204,22 @@ func draw_back() -> void:
 
 func _board_art() -> void:
 	var r := Rect2(160, 240, 270, 200)
-	draw_rect(r.grow(6), Color("5a4430"))
-	draw_rect(r, Color("b89a6a"))
-	draw_rect(Rect2(178, 256, 80, 60), Color("e8e4dc"))
-	draw_rect(Rect2(184, 262, 68, 40), Color("2a2c30"))
-	draw_rect(Rect2(196, 286, 46, 10), Color("c8c8c8"))
-	draw_rect(Rect2(290, 252, 70, 86), Color("f0ece0"))
-	draw_circle(Vector2(325, 284), 14.0, Color("8a8a8a"), false, 2.0)
-	draw_line(Vector2(310, 300), Vector2(340, 300), Color("8a8a8a"), 2.0)
-	draw_rect(Rect2(372, 262, 46, 34), Color("f0ece0"))
-	draw_rect(Rect2(196, 350, 90, 60), Color("f0ece0"))
+	cv.draw_rect(r.grow(6), Color("5a4430"))
+	cv.draw_rect(r, Color("b89a6a"))
+	cv.draw_rect(Rect2(178, 256, 80, 60), Color("e8e4dc"))
+	cv.draw_rect(Rect2(184, 262, 68, 40), Color("2a2c30"))
+	cv.draw_rect(Rect2(196, 286, 46, 10), Color("c8c8c8"))
+	cv.draw_rect(Rect2(290, 252, 70, 86), Color("f0ece0"))
+	cv.draw_circle(Vector2(325, 284), 14.0, Color("8a8a8a"), false, 2.0)
+	cv.draw_line(Vector2(310, 300), Vector2(340, 300), Color("8a8a8a"), 2.0)
+	cv.draw_rect(Rect2(372, 262, 46, 34), Color("f0ece0"))
+	cv.draw_rect(Rect2(196, 350, 90, 60), Color("f0ece0"))
 	draw_ellipse_outline(Vector2(240, 380), 36, 14)
-	draw_line(Vector2(218, 286), Vector2(325, 300), Color("b8322c"), 2.0)
-	draw_line(Vector2(325, 300), Vector2(240, 380), Color("b8322c"), 2.0)
-	draw_line(Vector2(395, 280), Vector2(325, 300), Color("b8322c"), 2.0)
+	cv.draw_line(Vector2(218, 286), Vector2(325, 300), Color("b8322c"), 2.0)
+	cv.draw_line(Vector2(325, 300), Vector2(240, 380), Color("b8322c"), 2.0)
+	cv.draw_line(Vector2(395, 280), Vector2(325, 300), Color("b8322c"), 2.0)
 	for p in [Vector2(218, 258), Vector2(325, 254), Vector2(395, 264), Vector2(240, 352)]:
-		draw_circle(p, 4.0, Color("b8322c"))
+		cv.draw_circle(p, 4.0, Color("b8322c"))
 
 
 func draw_ellipse_outline(c: Vector2, rx: float, ry: float) -> void:
@@ -223,55 +227,55 @@ func draw_ellipse_outline(c: Vector2, rx: float, ry: float) -> void:
 	for i in 25:
 		var a := TAU * i / 24.0
 		pts.append(c + Vector2(cos(a) * rx, sin(a) * ry))
-	draw_polyline(pts, Color("b8322c"), 2.0)
+	cv.draw_polyline(pts, Color("b8322c"), 2.0)
 
 
 func _calendar() -> void:
-	draw_rect(Rect2(450, 270, 70, 80), Color("f0ece0"))
-	draw_rect(Rect2(450, 270, 70, 18), Color("8a1d1d"))
-	Kit.text(self, Vector2(450, 284), "OCT 1983", 11, Color("f0ece0"), HORIZONTAL_ALIGNMENT_CENTER, 70)
+	cv.draw_rect(Rect2(450, 270, 70, 80), Color("f0ece0"))
+	cv.draw_rect(Rect2(450, 270, 70, 18), Color("8a1d1d"))
+	Kit.text(cv, Vector2(450, 284), "OCT 1983", 11, Color("f0ece0"), HORIZONTAL_ALIGNMENT_CENTER, 70)
 	for i in 17:
 		var x := 456.0 + (i % 7) * 9.0
 		var y := 296.0 + (i / 7) * 12.0
-		draw_line(Vector2(x, y), Vector2(x + 6, y + 8), Color("3a3a3a"), 1.5)
+		cv.draw_line(Vector2(x, y), Vector2(x + 6, y + 8), Color("3a3a3a"), 1.5)
 
 
 func _radio_art() -> void:
-	draw_rect(Rect2(850, 530, 140, 120), Color("4a3a2a"))
-	draw_rect(Rect2(860, 452, 120, 78), Color("3a3c40"))
+	cv.draw_rect(Rect2(850, 530, 140, 120), Color("4a3a2a"))
+	cv.draw_rect(Rect2(860, 452, 120, 78), Color("3a3c40"))
 	var on := not GameState.has("unplugged")
-	draw_rect(Rect2(872, 464, 60, 22), Color(1.0, 0.7, 0.3) if on else Color("2a2a2a"))
-	draw_circle(Vector2(956, 476), 12.0, Color("1a1a1a"))
+	cv.draw_rect(Rect2(872, 464, 60, 22), Color(1.0, 0.7, 0.3) if on else Color("2a2a2a"))
+	cv.draw_circle(Vector2(956, 476), 12.0, Color("1a1a1a"))
 	for k in 5:
-		draw_line(Vector2(872, 496 + k * 6), Vector2(940, 496 + k * 6), Color("1a1a1a"), 2.0)
+		cv.draw_line(Vector2(872, 496 + k * 6), Vector2(940, 496 + k * 6), Color("1a1a1a"), 2.0)
 	if GameState.has("crystal_taken"):
-		draw_rect(Rect2(950, 498, 26, 26), Color("15161a"))
+		cv.draw_rect(Rect2(950, 498, 26, 26), Color("15161a"))
 	# The power cord, down behind the cabinet.
-	draw_line(Vector2(980, 520), Vector2(1000, 540), Color("1a1a1a"), 3.0)
-	draw_line(Vector2(1000, 540), Vector2(1030, 584), Color("1a1a1a"), 3.0)
+	cv.draw_line(Vector2(980, 520), Vector2(1000, 540), Color("1a1a1a"), 3.0)
+	cv.draw_line(Vector2(1000, 540), Vector2(1030, 584), Color("1a1a1a"), 3.0)
 
 
 func _cabinet_art() -> void:
 	var x := 1000.0 if not GameState.has("cabinet_moved") else 1074.0
 	# Wall socket, hidden behind the cabinet until it moves.
-	draw_rect(Rect2(1022, 568, 30, 34), Color("e8e4dc"))
+	cv.draw_rect(Rect2(1022, 568, 30, 34), Color("e8e4dc"))
 	if not GameState.has("unplugged"):
-		draw_rect(Rect2(1028, 578, 18, 14), Color("1a1a1a"))
+		cv.draw_rect(Rect2(1028, 578, 18, 14), Color("1a1a1a"))
 	else:
-		draw_rect(Rect2(1000, 626, 18, 12), Color("1a1a1a"))
-	draw_rect(Rect2(x, 384, 76, 266), Color("7a8288"))
+		cv.draw_rect(Rect2(1000, 626, 18, 12), Color("1a1a1a"))
+	cv.draw_rect(Rect2(x, 384, 76, 266), Color("7a8288"))
 	for k in 4:
-		draw_rect(Rect2(x + 6, 394 + k * 64, 64, 56), Color("6a7278"))
-		draw_rect(Rect2(x + 28, 416 + k * 64, 20, 6), Color("c8ccd0"))
+		cv.draw_rect(Rect2(x + 6, 394 + k * 64, 64, 56), Color("6a7278"))
+		cv.draw_rect(Rect2(x + 28, 416 + k * 64, 20, 6), Color("c8ccd0"))
 	if GameState.has("cabinet_moved"):
-		draw_rect(Rect2(x - 6, 644, 90, 8), Color("5a4430"))
+		cv.draw_rect(Rect2(x - 6, 644, 90, 8), Color("5a4430"))
 
 
 func _front_door() -> void:
-	Kit.door(self, Rect2(1160, 340, 92, 300), Color("3a2e24"), "FRONT")
+	Kit.door(cv, Rect2(1160, 340, 92, 300), Color("3a2e24"), "FRONT")
 	if not GameState.has("doormat_taken"):
-		draw_rect(Rect2(1112, 638, 116, 16), Color("5a4430"))
-		Kit.text(self, Vector2(1112, 651), "WELCOME", 11, Color("c9b48a"), HORIZONTAL_ALIGNMENT_CENTER, 116)
+		cv.draw_rect(Rect2(1112, 638, 116, 16), Color("5a4430"))
+		Kit.text(cv, Vector2(1112, 651), "WELCOME", 11, Color("c9b48a"), HORIZONTAL_ALIGNMENT_CENTER, 116)
 
 
 func _draw_desk(ci: CanvasItem) -> void:
