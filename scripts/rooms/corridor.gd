@@ -107,10 +107,14 @@ func on_hotspot(id: String) -> void:
 		"radio":
 			await _radio()
 		"note":
-			await narrate("\"Mara — receiver 2 fuse blew again. Spares are in the cabinet. H.S.\"")
+			await narrate("\"Mara — Rx-2 enable fuse open again. Same rating only. Spares in cabinet. H.S.\"")
 			if not GameState.has("read_note"):
 				GameState.set_flag("read_note")
+				# Anders's label under Sollen's note: the fuse is meant to break (3.1, 3.5).
 				await mara("Of course it did.")
+				await narrate("Behind the note, an older label: \"5 A FAST. ENABLE LINK. DO NOT UPRATE. A.L., 1979.\" The first A has the shape of a Greek lambda.")
+				await mara("Dad's capitals. Henrik never throws a label away.")
+				GameState.set_flag("fuse_label")
 				if not GameState.has("fuse_installed"):
 					GameState.set_objective("Replace the fuse in receiver 2. Spares are in the Receiver Room cabinet.")
 		"vending":
@@ -190,10 +194,6 @@ func _take_batteries() -> void:
 
 
 func _east_wing_door() -> void:
-	var g := GameState
-	if g.has("dish_parked") and not g.has("dish_released") and not g.has("crossed_parked"):
-		await _experiment_crossings()
-		return
 	if not GameState.has("called_observatory"):
 		await mara("Still out. That's facilities ticket number four.")
 		return
@@ -257,12 +257,16 @@ func _vending() -> void:
 		await mara("Nobody's bought anything from this thing since August. It just glows, day and night, on its own little fuse.")
 		GameState.set_flag("vending_seen")
 	else:
-		await mara("Wait. The display light runs on a 5-amp glass fuse. Same as the receiver.")
+		await mara("Wait. The display light runs on a 5-amp fast fuse. Same rating, same size.")
 		Audio.sfx("click", -4.0)
 		GameState.set_flag("fuse_taken")
 		GameState.add_item("fuse")
 		hud.toast("Got: 5-amp fuse")
 		await mara("Sorry, pal.")
+		# The machine's glow goes out, and the corridor radio drops one note.
+		Audio.gap("radio_music", 0.4)
+		Audio.gap("song_radio", 0.4)
+		await narrate("The machine's glow goes out. For half a second, the little radio down the corridor loses a note of its tune. Mara is looking into the fuse holder and misses it.")
 		if not GameState.has("fuse_installed"):
 			GameState.set_objective("Put the fuse in receiver 2.")
 
@@ -283,6 +287,10 @@ func draw_back() -> void:
 	Kit.door(cv, Rect2(462, 340, 96, 310), DOOR, "RECEIVER ROOM")
 	_radio_table()
 	Kit.door(cv, Rect2(768, 340, 96, 310), DOOR, "CONTROL")
+	# Anders's old label, yellowed, half under Sollen's note.
+	cv.draw_rect(Rect2(794, 452, 44, 13), Color("d8c88a"))
+	cv.draw_rect(Rect2(794, 452, 44, 13), Color("8a7a4a"), false, 1.0)
+	Kit.text(cv, Vector2(794, 453), "5A FAST", 8, Color("3a2a1a"), HORIZONTAL_ALIGNMENT_CENTER, 44)
 	cv.draw_rect(Rect2(798, 424, 34, 38), Color("e6dfc8"))
 	for i in 4:
 		cv.draw_line(Vector2(803, 433 + i * 7), Vector2(826, 433 + i * 7), Color("6a6a70"), 1.5)

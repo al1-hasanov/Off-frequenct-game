@@ -93,8 +93,7 @@ func on_hotspot(id: String) -> void:
 		"gauze":
 			GameState.set_flag("saw_gauze")
 			await narrate("A strip of yellowed burn gauze, the kind from a first-aid kit. It smells of smoke.")
-			await mara("The voice said don't let her in. It didn't say she had a key.")
-			await mara("Or my boots. Or a burned hand.")
+			await mara("The voice said don't let her in. It didn't say she had a key. Or my boots. Or a burned hand.")
 		"board":
 			await mara("Visitors welcome, nine to five. Nobody's visited since summer.")
 		"bench":
@@ -124,6 +123,9 @@ func use_item(id: String, item: String) -> bool:
 			await mara("Strip, twist, wrap. Wrap again.")
 			GameState.set_flag("phone_fixed")
 			await mara("Red tape. Not pretty, but it'll hold.")
+			await narrate("A metal plate inside the box reads: \"BUILDING SERVICE ONLY. DISH DRIVE ON SEPARATE SUPPLY.\"")
+			await mara("Of course Henrik gets two power bills.")
+			GameState.set_flag("saw_feed_plate")
 			GameState.set_objective("Try the phone again.")
 		return true
 	if id == "phone" and item == "note":
@@ -146,6 +148,11 @@ func _booth_door() -> void:
 	await wait(0.5)
 	Audio.sfx("lock", -8.0)
 	GameState.set_flag("booth_open")
+	# What the east wing taught her, written down before she trusts it.
+	await narrate("Under the lobby lamp she opens her work notebook.")
+	await hud.read_doc("MY NOTEBOOK", ["Dark corridor changed. Lamp on: no change. Try again only with a way back.\n\nWHY?"])
+	await narrate("She leaves the next line empty except for one word: WHY?")
+	GameState.set_flag("obs_corridor")
 	await mara("Third key on the ring. There.")
 	await mara("The booth flashlight. Heavy, steel, older than me.")
 	Audio.sfx("click", -8.0)
@@ -165,7 +172,10 @@ func _junction() -> void:
 	else:
 		GameState.set_flag("junction_open")
 		Audio.sfx("click", -6.0)
-		await mara("One pair's been cut. Clean, like somebody used snips.")
+		# Folded apart on purpose: a person did this (Act 4 names who, and why).
+		await narrate("The cut ends have been folded apart, carefully, so they cannot touch by accident.")
+		await mara("One pair's been cut. Clean, like somebody used snips. And folded back.")
+		await mara("That's not a fault. That's somebody who knows how I'd fix it.")
 		await mara("I could splice it if I had something to hold it together.")
 		GameState.set_objective("Splice the cut wire: tap your red tape, then the junction box.")
 

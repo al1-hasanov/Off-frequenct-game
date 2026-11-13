@@ -5,6 +5,8 @@ extends Room
 
 var june: Actor
 var tomas: Actor
+## Act 3.5: Ruth, brought down from the diner by June.
+var ruth: Actor
 
 
 func setup() -> void:
@@ -18,6 +20,8 @@ func setup() -> void:
 	tomas = add_actor("tomas", 1130.0, -1)
 	tomas.seated = true
 	tomas.visible = _tomas_here()
+	ruth = add_actor("ruth", 260.0, 1)
+	ruth.visible = false
 	add_layer(1, _draw_counter)
 	add_hotspot("door", Rect2(26, 330, 100, 320), "Door", 110.0, -1)
 	add_hotspot("shelves", Rect2(150, 240, 330, 260), "Shelves", 320.0)
@@ -35,6 +39,10 @@ func enter(entry: String) -> void:
 	entered_from = entry
 	player.position.x = 140.0
 	player.face(1)
+	if entry == "reunion":
+		# Over the radio: Mara is at the console, up the mountain.
+		player.visible = false
+		place_name = "Pike Radio  ·  over the Tuner"
 
 
 func ambience() -> void:
@@ -49,8 +57,14 @@ func ambience() -> void:
 
 func on_arrive() -> void:
 	ambience()
+	if entered_from == "reunion":
+		await _reunion()
+		return
 	if entered_from == "with_tomas":
 		await _with_tomas()
+		await _door_scene()
+	elif GameState.has("dish_turning") and not GameState.has("june_door"):
+		await _door_scene()
 	elif not GameState.has("met_june"):
 		GameState.set_flag("met_june")
 		await wait(0.4)
@@ -98,8 +112,10 @@ func _june() -> void:
 	elif not GameState.has("tuner_repaired"):
 		await say("JUNE", "The sheriff's base radio, honey. Same crystal. Cal won't miss it till Monday.")
 		await say("JUNE", "And stay out of the dark. If you can't, know where you're going.")
-	elif GameState.story.get("SWITCH") == "conceal":
-		await _maybe_confide()
+	elif not GameState.has("june_door") and GameState.has("dish_turning"):
+		await _door_scene()
+	elif GameState.story.get("JUNE") == "trusted":
+		await say("JUNE", "Which dog, honey? I'll ask it. Whoever comes up on my set.")
 	elif _tomas_here():
 		await say("JUNE", "He's fine. He ate two sandwiches and asked about my rig. I'll keep him in the light.")
 	elif GameState.has("swapped"):
@@ -109,23 +125,45 @@ func _june() -> void:
 		await say("JUNE", "Some of those stations are quiet. Don't go to the quiet ones.")
 
 
-## After the kitchen, if Mara kept quiet there: she can tell June instead.
-func _maybe_confide() -> void:
-	var pick: int = await hud.choose(["Tell June what happened in the dark.", "\"Just checking on you.\""])
-	if pick != 0:
-		await say("JUNE", "I'm fine, honey. I've got a cot and a pot of coffee and every station in creation.")
-		return
-	GameState.set_story("SWITCH", "confide")
-	GameState.set_flag("told_june")
-	await mara("June. Something happened to me tonight, in the dark. I don't think I'm who I was an hour ago.")
-	await say("JUNE", "Honey, nobody is. Not tonight.")
+## Act 2.6, both paths: June walks her to the shop door. She wants something
+## to know Mara by that isn't her voice (story JUNE: "trusted" or "check").
+func _door_scene() -> void:
+	GameState.set_flag("june_door")
 	await wait(0.4)
-	await say("JUNE", "...You told me that already, you know. Tuesday.")
-	await mara("I wasn't here Tuesday.")
-	await say("JUNE", "Somebody with your face was. Asked me if a person could be in two places on the dial at once.")
-	await say("JUNE", "Had her hand all bandaged up. I thought you'd burned yourself on the boiler again.")
-	await say("JUNE", "I'll tell you what I told her. A station's only as real as whoever's listening.")
-	await say("JUNE", "I'm listening, Mara. Whichever one you are.")
+	if _tomas_here():
+		await narrate("June walks her to the shop door. Tomas is at the bench under the lamp, taking a sandwich apart to see what is in it. June has rigged a car battery to keep the shop lit.")
+	else:
+		await narrate("June walks her to the shop door. Under the lamp, the stool at the bench is empty. June has rigged a car battery to keep the shop lit.")
+	await player.walk_to(220.0)
+	june.walk_to(330.0)
+	await say("JUNE", "I've put a spare on the aerial. If you're going back up there, give me something I can know you by that isn't your voice.")
+	await say("JUNE", "Everybody's got your voice tonight.")
+	var pick: int = await hud.choose(["Tell June about the kitchen", "Ask only for a radio check"])
+	if pick == 0:
+		GameState.set_story("JUNE", "trusted")
+		GameState.set_flag("told_june")
+		await mara("June. Something happened to me tonight, in the dark. There was a woman with my face, and the match went out. I don't think I'm where I was an hour ago.")
+		await say("JUNE", "Honey, nobody is. Not tonight.")
+		await wait(0.4)
+		await say("JUNE", "...You told me that already, you know. Tuesday.")
+		await mara("I wasn't here Tuesday.")
+		await say("JUNE", "Somebody with your face was. Asked me if a person could be in two places on the dial at once.")
+		await say("JUNE", "Had her hand all bandaged up. I thought you'd burned yourself on the boiler again.")
+		await say("JUNE", "I'll tell you what I told her. A station's only as real as whoever's listening.")
+		await say("JUNE", "I'm listening, Mara. Whichever one you are.")
+		await narrate("She takes a card and a pencil.")
+		await say("JUNE", "Now give me the wrong things. All of them.")
+		await mara("The dog. Ma calls him Pepper. He's supposed to be Biscuit.")
+		await mara("And I was at the door. Then I was standing by the table.")
+		GameState.set_flag("june_card")
+		await narrate("June writes PEPPER / BISCUIT / ASH STREET and props the card against the receiver.")
+		await say("JUNE", "If somebody comes up on my set, I'll ask which dog. Then I'll ask her something only right now knows.")
+		await say("JUNE", "A voice can copy a name. I want to hear a person answer.")
+	else:
+		GameState.set_story("JUNE", "check")
+		await mara("Just tell me you can hear this set.")
+		await say("JUNE", "Five by nine, honey. I'll leave the other receiver open too. There's more voices on there tonight than yours.")
+	objective()
 
 
 func _diagnose() -> void:
@@ -136,13 +174,35 @@ func _diagnose() -> void:
 	await narrate("Mara sets Tomas's radio on the counter.")
 	await say("JUNE", "Well. That's a field radio somebody gutted with love.")
 	await say("JUNE", "Tomas built this? Thirteen years old.")
-	await narrate("June unscrews the back, holds a crystal up to her lamp.")
+	await narrate("June unscrews the back and holds a crystal up to her lamp.")
 	await say("JUNE", "There's your trouble. Cracked crystal. That's why your dial dies above 09.")
 	await say("JUNE", "You're a station, honey. Somebody knocked your dial.")
-	await mara("Can you fix it?")
+	# Her bench test: the warning is a tape, and someone live is under it.
+	Audio.sfx("click", -8.0)
+	Audio.play_loop("static", -20.0, 0.2)
+	await narrate("She clips a bench lead to the set. On her receiver the warning comes round: the scrape, the clicks, the breath.")
+	Audio.sfx("scrape", -18.0)
+	await wait(0.5)
+	Audio.sfx("click", -14.0)
+	await wait(0.28)
+	Audio.sfx("click", -14.0, 0.78)
+	await wait(0.4)
+	Audio.sfx("breath", -16.0, 1.1)
+	await wait(0.6)
+	await say("JUNE", "Hear that? Same breath, same scrape, every time round. That's a tape.")
+	await say("JUNE", "But under it... there.")
+	Audio.sfx("voice_short", -24.0, 0.9)
+	await narrate("A woman begins a different word under it, and is drowned out.")
+	await say("JUNE", "That's somebody live, trying to get a word in. Two signals sat on one frequency.")
+	await say("JUNE", "I can pull hiss off a voice, honey. I can't tell you whose voice it is.")
+	Audio.stop_loop("static", 0.4)
+	GameState.set_flag("june_tape_test")
+	await mara("Can you fix the set?")
 	await say("JUNE", "Not with anything I've got. The only crystal in town that'd fit is in the sheriff's base radio.")
 	await say("JUNE", "Cal won't miss it till Monday. But it's locked up tight, and Cal's out on calls.")
-	await say("JUNE", "Stay out of the dark, Mara. If you can't, know where you're going.")
+	await narrate("She pushes the set back across the counter.")
+	await say("JUNE", "A customer walked into my storeroom tonight with the bulb out. Came back with a different wedding ring.")
+	await say("JUNE", "That's all I know, and it's plenty. Stay out of the dark, Mara. If you can't, know where you're going.")
 	GameState.set_flag("june_diag")
 	objective()
 
@@ -156,6 +216,7 @@ func _repair() -> void:
 	GameState.set_flag("tuner_repaired")
 	hud.toast("Tomas's radio now reaches 00–99 (use −10 / +10)")
 	await say("JUNE", "There. All the way to 99.")
+	await say("JUNE", "And that gap you call home, that's a carrier you've learnt by ear, not a number. Go by the hum, not the paint.")
 	await say("JUNE", "Some of those stations are going to be quiet. Don't go to the quiet ones.")
 	await mara("Quiet how?")
 	await say("JUNE", "Quiet like nobody's left to make a sound.")
@@ -171,13 +232,91 @@ func _with_tomas() -> void:
 	await mara("June. Keep him in the light. Whatever happens, keep him in the light.")
 	await say("JUNE", "Sit down, sweetheart. There's sandwiches.")
 	await say("TOMAS", "Mara? You're coming back, right?")
-	await mara("I'm coming back.")
+	await mara("I'm coming back. %s" % Story.blue_signoff())
+	await say("TOMAS", "Is it really 1983? Do I still have my room?")
+	await mara("You still have your room.")
 	GameState.set_flag("dish_turning")
 	await wait(0.4)
 	Audio.sfx("powerup", -10.0)
 	await say("JUNE", "Honey. Look out the window. The dish up on the mountain. It's turning.")
 	await say("JUNE", "Whole band's lit up. Whoever's up there, it's for you.")
 	await mara("The road's eleven miles. But the old mine runs right under the mountain. Halvard Number 2.")
+
+
+## Act 3.5: June has called Ruth down from the diner. Mara hears it over the
+## Tuner, at the console. Taken: Ruth and the boy who isn't hers. Sent back:
+## the empty stool, two sandwiches, the microphone in both hands.
+func _reunion() -> void:
+	var g := GameState
+	g.set_flag("reunion_done")
+	await hud.fade_in(0.8)
+	await wait(0.3)
+	if _tomas_here():
+		ruth.visible = true
+		ruth.position.x = 300.0
+		ruth.prop = "bag"
+		tomas.seated = false
+		await narrate("June's shop, through the Tuner. Ruth stands in the doorway holding the paper bag she brought for Mara. June has called her down from the diner.")
+		Audio.sfx("thunk", -18.0, 1.6)
+		await narrate("Tomas has stood up too fast and knocked the teaspoon off the receiver.")
+		await say("RUTH", "No.")
+		await say("TOMAS", "Mom?")
+		ruth.prop = "none"
+		Audio.sfx("thunk", -16.0, 0.9)
+		await narrate("Ruth does not cross the room. She puts the bag on the nearest surface, misses it, and lets it fall. She is looking at his collar.")
+		await say("RUTH", "I buttoned that.")
+		await narrate("Tomas looks down at the crooked top button.")
+		await say("TOMAS", "You said I'd grow into it.")
+		ruth.walk_to(1040.0)
+		await tomas.walk_to(1080.0)
+		ruth.arm_pose = [[1.55, 1.2], [1.45, 1.3]]
+		await narrate("Ruth reaches him before he finishes. One hand behind his head, one between his shoulders. She holds him so tightly he has to move his chin to breathe.")
+		await say("TOMAS", "I only went up the mountain.")
+		await say("RUTH", "I know.")
+		await say("TOMAS", "I was coming back.")
+		await say("RUTH", "I know, baby.")
+		await narrate("Up the mountain, Mara takes her hand off the talk button. They should not have to hear her crying.")
+		await wait(0.6)
+		await narrate("After a while Ruth eases the top button through its hole. Tomas catches her wrist.")
+		await say("TOMAS", "She's still there. My mom. I left her in the diner.")
+		ruth.arm_pose = []
+		await narrate("Ruth's hands stop. She looks at June; June does not pretend otherwise.")
+		await say("RUTH", "The one who buttoned this.")
+		await narrate("Tomas nods. Ruth finishes undoing the button.")
+		await say("RUTH", "Then we mustn't leave her waiting.")
+		await narrate("He leans into her again. She holds him, knowing that.")
+		await say("MARA (TUNER)", "June. Keep him in the light.")
+		await wait(0.4)
+		await say("MARA (TUNER)", "No. Wait. If the white comes, don't stay there for the lamp. Take him. Take both of them.")
+		await say("JUNE", "A lamp's an anchor, honey. It isn't a roof. I've got a battery lantern and Ruth's got the truck. We'll move together.")
+		await say("TOMAS", "Mara? I want to go back to her. When you can.")
+		await say("MARA (TUNER)", "I heard you.")
+		await narrate("He waits for a promise. She cannot make him one. He picks up the teaspoon and puts it back against the contact.")
+		g.set_flag("tomas_wants_home")
+	else:
+		ruth.visible = true
+		ruth.position.x = 520.0
+		await narrate("June's shop, through the Tuner. Ruth has brought the paper bag down to June's. She stops by the bench, where a lamp lights an empty stool. June turns the set toward her.")
+		await say("RUTH", "June says you found him.")
+		await say("MARA (TUNER)", "A Tomas. In 1980. There was someone waiting for him. His sister. She came into the snow and called him.")
+		await narrate("Ruth looks at the stool.")
+		await say("RUTH", "You left him there.")
+		await say("MARA (TUNER)", "Yes.")
+		await narrate("Ruth sets the bag beside the lamp. Two sandwiches. She made them before she knew why June had called.")
+		await say("RUTH", "Was he cold?")
+		await say("MARA (TUNER)", "Not when I left.")
+		await narrate("Ruth nods once. She puts one sandwich away, changes her mind, and leaves both out.")
+		await say("RUTH", "Good.")
+		await say("MARA (TUNER)", "Mom—")
+		await narrate("The word surprises Mara. She has borrowed it without thinking.")
+		await say("RUTH", "I'm here.")
+		await say("MARA (TUNER)", "I'm sorry I couldn't bring him to you.")
+		await say("RUTH", "I don't know what to do with that yet.")
+		await narrate("She sits on the empty stool and holds the microphone in both hands.")
+		await say("RUTH", "But I know you're still up there. Let June help you come down.")
+	await wait(0.6)
+	await hud.fade_out(0.8)
+	main.change_room("control_room", "from_corridor")
 
 
 # --- drawing ------------------------------------------------------------------------

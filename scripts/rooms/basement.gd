@@ -19,7 +19,7 @@ func setup() -> void:
 	add_hotspot("walkman", Rect2(644, 500, 44, 54), "Walkman", 660.0, 0, func() -> bool: return GameState.has("crate_open"))
 	add_hotspot("gap", Rect2(688, 500, 44, 54), "Dust", 690.0, 0, func() -> bool: return GameState.has("crate_open"))
 	add_hotspot("boiler", Rect2(770, 300, 160, 350), "Boiler", 850.0)
-	add_hotspot("plaster", Rect2(938, 326, 82, 140), "Wall", 960.0, 1)
+	add_hotspot("plaster", Rect2(938, 326, 82, 140), "Fresh plaster", 960.0, 1)
 	add_hotspot("delivery_door", Rect2(1050, 330, 140, 320), "Delivery door", 1010.0, 1)
 
 
@@ -44,6 +44,16 @@ func on_arrive() -> void:
 	if entered_from == "from_tunnel":
 		await _from_tunnel()
 		return
+	if GameState.has("chalk_2009") and not GameState.has("plaster_split"):
+		GameState.set_flag("plaster_split")
+		await wait(0.3)
+		Audio.sfx("thunk", -12.0, 0.7)
+		await wait(0.4)
+		Audio.sfx("thunk", -14.0, 0.75)
+		await narrate("In the basement, the boiler knocks. The fresh plaster beside it has split along one edge.")
+		await mara("Whoever hid his notebook didn't even wait for this to dry.")
+		objective()
+		return
 	if not GameState.has("basement_seen"):
 		GameState.set_flag("basement_seen")
 		await wait(0.3)
@@ -57,51 +67,60 @@ func _from_tunnel() -> void:
 	Audio.play_loop("dish_motor", -22.0)
 	await wait(0.8)
 	await mara("The utility shaft. The basement. Behind the boiler.")
-	await mara("Back where I started. Tomas's box. The dust where his notebook used to be.")
-	await mara("And over my head, through three floors of concrete, the dish is turning.")
+	await mara("A box with Tomas's name on it. A rectangle in the dust where a notebook used to be.")
+	await mara("That patch behind the boiler's still damp. And over my head, through three floors of concrete, the dish is turning.")
 	GameState.set_flag("act2_done")
 	GameState.set_flag("act3")
+	GameState.set_flag("saw_plaster")
+	GameState.set_flag("saw_gap")
 	await hud.card("ACT 3", "The futures", 2.0)
-	await mara("And my flashlight's dead again. The batteries froze in the mine.")
+	await mara("My flashlight's dead again. The batteries froze in the mine.")
 	await mara("The boiler's warm. Cold batteries come back if you warm them. Dad used to say that.")
 	objective()
 
 
-## Act 3.5: the wall behind the boiler, the tin, Tomas's notebook.
-func _break_wall() -> void:
+## Act 3.5: the split patch behind the boiler. A screwdriver opens it: the
+## biscuit tin, Tomas's notebook, Dad's service card, a pencil shaved to nothing.
+func _open_patch() -> void:
 	var g := GameState
-	await mara("This plaster's still wet. Somebody sealed this tonight.")
-	for i in 3:
-		Audio.sfx("crack", -6.0 - i)
-		hud.glitch(0.15)
-		await wait(0.45)
+	await narrate("She takes a screwdriver from her belt and opens the shallow patch.")
+	for i in 2:
+		Audio.sfx("crack", -10.0 - i * 2)
+		await wait(0.4)
 	g.set_flag("wall_broken")
-	await narrate("Behind the plaster, in the cavity: a biscuit tin. \"T.L.\" scratched in the lid. Not rusted. Not yet.")
-	await mara("Twenty-six years from rusting shut.")
 	Audio.sfx("thunk", -8.0)
+	await narrate("A biscuit tin comes out with white plaster along its lid. Inside: Tomas's missing notebook, a folded service card in Dad's handwriting, and a pencil shaved almost to nothing.")
 	g.add_item("station_log")
-	hud.toast("Got: Tomas's notebook")
-	await narrate("Inside, wrapped in a bread bag: a notebook. STATION LOG, in Tomas's handwriting.")
-	await _read_notebook()
+	g.add_item("service_card")
+	hud.toast("Got: Tomas's notebook · Dad's service card")
+	await hud.read_doc("TOMAS'S NOTEBOOK", [
+		"Day 42. The lady says the big dish can hear me even when this set is off. I tried it. Took the batteries OUT. Heard myself counting in the wall.",
+		"Below it, a drawing of the dish. Arrows from all the numbered stations lead through its centre.\n\nTomas has drawn a small radio at the end of each arrow.",
+	])
+	await mara("Every trip I took rode the dish.")
+	await hud.read_doc("SERVICE CARD  ·  OCTOBER 1979", [
+		"REPLACE FAILED LINK  [printed]\n\nAcross it, in Dad's capitals:\nLEFT OPEN ON PURPOSE. PARK BEFORE RESTORING. DON'T LET THE AUTO RUN PICK IT UP AGAIN.\n\nUnderneath, in Sollen's smaller hand:\nProgramme requires an uninterrupted sample.",
+	])
+	await narrate("Mara thinks of the bright replacement fuse in its old ceramic holder.")
+	await mara("I thought I was fixing it.")
+	await narrate("The date on the remaining notebook pages changes from September to October 1980. One page has been torn out. Its pencil has marked the sheet underneath: HOLD IT STILL.")
+	g.set_flag("tin_open")
+	g.set_flag("hold_it_still")
+	await narrate("She does not trace the rest. June calls.")
+	Audio.play_loop("static", -26.0, 0.3)
+	await say("JUNE (TUNER)", "Before you go anywhere else, honey. Somebody's here.")
+	Audio.stop_loop("static", 0.4)
+	await wait(0.4)
+	await hud.fade_out(0.8)
+	main.change_room("pike_radio", "reunion")
 
 
 func _read_notebook() -> void:
-	var g := GameState
-	await hud.read_doc("STATION LOG  ·  T. LIND", [
-		"Day 1. Found Dad's field set behind his coats in the basement. Ma says leave it.\n\nInside the lid, in Dad's writing:  Λ   LIGHT = BALLAST.\n\nGot it working.\n\nOn 2.14 there's a whistle. Two notes, down then up. Dad's.",
-		"Day 12. Every station has a Mara. Some are sad. Some are angry.",
-		"Day 17. Henrik's away, dish parked all night. Crossed six times through the coal cellar. Chart flat.\n\n[A strip of chart paper, taped in. Flat.]\n\nDay 18. Henrik's 2.14 run, dish listening one till three. Didn't cross once. Chart climbing.\n\n[A second strip. Climbing.]\n\nIt's not us crossing. It's the dish listening.",
-		"Day 30. The 2.14 voice isn't Mara. It sounds like her. It's from AFTER. Way after. It learned to talk from us.\n\nDay 38. HOME = 00. Our station isn't 00. None of them are. There's no Mara in 00.",
-		"Oct 14, 1980. It's talking back. It says if I go to the trees, she'll come for me.\n\nI'm going to answer it.",
-		"Mara —\n\nI'm not lost. I'm looking for Dad, and for you.\n\n%s\n\n— T." % Story.signoff_reply(),
+	await hud.read_doc("TOMAS'S NOTEBOOK", [
+		"Day 42. The lady says the big dish can hear me even when this set is off. I tried it. Took the batteries OUT. Heard myself counting in the wall.",
+		"A drawing of the dish. Arrows from all the numbered stations lead through its centre. A small radio at the end of each arrow.",
+		"One page torn out. Its pencil has marked the sheet underneath:\n\nHOLD IT STILL.",
 	])
-	if g.has("notebook_read"):
-		return
-	g.set_flag("notebook_read")
-	await mara("The notebook missing from his crate. Somebody walled it up behind the boiler. Tonight.")
-	await mara("Dad's field set. The Tuner was Dad's. Tomas didn't build it. He found it.")
-	await mara("Day 17 and Day 18. I can do that. The control room has a chart recorder of its own.")
-	objective()
 
 
 func on_hotspot(id: String) -> void:
@@ -130,8 +149,10 @@ func on_hotspot(id: String) -> void:
 			GameState.set_flag("saw_plaster")
 			if GameState.has("wall_broken"):
 				await mara("The hole I made. Wet plaster on the floor.")
-			elif GameState.has("knows_tin"):
-				await mara("Behind the boiler. Fresh plaster, still damp, and the tin's in there. I need something to break it with.")
+			elif GameState.has("plaster_split"):
+				await _open_patch()
+			elif GameState.has("act3"):
+				await mara("Fresh plaster, still damp. Somebody did this tonight. I'm not digging into a wall on a feeling.")
 			else:
 				await mara("Fresh plaster. The edges are still damp.")
 				await mara("Facilities hasn't fixed anything in this building since summer.")
@@ -154,14 +175,6 @@ func use_item(id: String, item: String) -> bool:
 		await mara("The dish is turning. Whatever's happening, it's happening in the control room.")
 		objective()
 		return true
-	if id == "plaster" and item == "fire_axe":
-		if not GameState.has("knows_tin"):
-			await mara("Break open a wall because it's damp? Not without a reason.")
-		elif GameState.has("wall_broken"):
-			await mara("It's open.")
-		else:
-			await _break_wall()
-		return true
 	if id == "crate" and item == "station_log":
 		await mara("Not yet. I'm keeping it with me.")
 		return true
@@ -180,7 +193,7 @@ func _crate() -> void:
 	Audio.sfx("thunk", -6.0)
 	GameState.set_flag("crate_open")
 	await wait(0.4)
-	await mara("His radio. His Walkman. The blanket from his bed.")
+	await mara("His radio. His Walkman. The blanket from his bed. Cal's evidence bag, folded flat.")
 
 
 func _walkman() -> void:
@@ -192,8 +205,10 @@ func _walkman() -> void:
 	Audio.play_loop("tape_hiss", -16.0, 0.3)
 	await wait(0.7)
 	await say("TOMAS (TAPE)", "Day 41.")
-	await say("TOMAS (TAPE)", "Station 12 has a version of me where nothing happened. Mara's there too. She looks happier.")
-	await say("TOMAS (TAPE)", "And the lady on 2.14 is back. She says she's stuck somewhere dark. She sounds like Mara.")
+	await say("TOMAS (TAPE)", "At twelve I saw me, through the kitchen window. Coat buttoned right up to the top.")
+	await say("TOMAS (TAPE)", "Mara was there too. She looked less tired than ours.")
+	await say("TOMAS (TAPE)", "The lady on 2.14 called again. She says she's stuck somewhere dark. She sounds like Mara.")
+	await say("TOMAS (TAPE)", "There's a breath before she says my name. On the other recording there's no breath.")
 	await say("TOMAS (TAPE)", "Going to check something tonight.")
 	Audio.stop_loop("tape_hiss", 0.4)
 	Audio.sfx("click", -6.0)
@@ -230,7 +245,7 @@ func _knock() -> void:
 	if GameState.story.get("ANSWERED") == true:
 		await say("HER", "She told you not to let me in. She tells everyone that.")
 	else:
-		await say("HER", "You cut the power on me. Smart. It didn't help.")
+		await say("HER", "You shut the room up. Smart. It didn't stop me knocking.")
 	await mara("That's my voice. Why is that my voice?")
 	await mara("I'm not opening that door. Not a chance.")
 	await say("HER", "Ash Street. Your mother's house. I'll be in the one with the lights off.")
@@ -242,7 +257,6 @@ func _knock() -> void:
 	create_tween().tween_property(self, "her_glass", 0.0, 1.5)
 	await wait(1.0)
 	GameState.set_flag("knock_done")
-	await mara("Her wrist was bandaged. Right where...")
 	await mara("The one with the lights off. Mom never turns her lights off. She leaves the porch light on for Tomas. Every night, three years.")
 	await mara("I have to get down there before she does.")
 	objective()

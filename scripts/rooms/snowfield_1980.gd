@@ -99,15 +99,25 @@ func on_arrive() -> void:
 	await player.walk_to(700.0)
 	await mara("Please tell me that isn't improving reception.")
 	await say("TOMAS", "It was. Then you started talking.")
+	# A phrase arrives before Mara says it (Act 3.7 pays this off).
+	Audio.sfx("voice_short", -27.0, 1.25)
+	await narrate("A thin sound in the headphones: three words. Tomas presses one cup against his ear.")
+	await say("TOMAS", "What?")
+	await mara("Hold it still.")
+	await narrate("Tomas looks at her, then at the radio.")
+	await say("TOMAS", "...You already said that.")
+	GameState.set_flag("early_phrase")
+	await mara("I was thinking it very loudly.")
+	await narrate("He gives her a small, uncertain smile. The moment passes.")
 	tomas.prop = "radio"
 	Audio.loop_volume("static", -18.0)
 	await wait(0.35)
 	Audio.stop_loop("static", 0.08)
-	await narrate("He lowers it. The speaker crackles, and cuts out.")
+	await narrate("The speaker crackles, and cuts out.")
 	await say("TOMAS", "Hold this?")
 	Audio.sfx("click", -12.0)
 	player.holding_light = true
-	await narrate("He gives her his flashlight, and turns the radio round. Its back is off.")
+	await narrate("He gives her his flashlight and turns the radio round. Its back is off.")
 	await player.walk_to(TOMAS_X + 72.0)
 	player.face(-1)
 	GameState.set_objective("Hold the light for Tomas.")
@@ -127,12 +137,20 @@ func on_arrive() -> void:
 	Audio.play_loop("song_clear", -60.0, 0.0)
 	hud.caption("Music, out of the little speaker. A few clear notes.", 3.0)
 	await wait(2.6)
-	await narrate("Tomas freezes. Then he turns to her, delighted.")
+	await narrate("Tomas freezes, then turns to her, delighted.")
 	await say("TOMAS", "There.")
 	await narrate("He holds out one side of his headphones.")
 	await hud.choose(["Listen"])
 	await _share(true)
-	await wait(4.0)
+	await wait(1.8)
+	# One clean gap in the tune: not static, an absence (2.1, 2009 again).
+	Audio.gap("song_clear", 0.34)
+	Audio.gap("song_radio", 0.34)
+	await wait(0.6)
+	await narrate("One note of the tune is missing. Not buried under static: a small, clean absence. Then the next note arrives.")
+	await say("TOMAS", "Loose contact. Probably.")
+	await narrate("Mara presses the back of the case. The song continues.")
+	await wait(1.6)
 	await mara("You built that.")
 	await say("TOMAS", "Mostly.")
 	await mara("That means yes.")
@@ -152,7 +170,7 @@ func on_arrive() -> void:
 	await mara("Two minutes. I'm locking the gate.")
 	# The goodbye the two of them always say when he goes off to listen
 	# (story SIGNOFF): it comes back all through the night in 1983.
-	await narrate("And what she always says when he goes off to listen:")
+	await narrate("And what she always says when he goes off to listen. The game remembers it all night.")
 	var pick: int = await hud.choose([
 		"\"%s\"" % Story.SIGNOFFS.over[0], "\"%s\"" % Story.SIGNOFFS.light[0], "\"%s\"" % Story.SIGNOFFS.dial[0]])
 	var key: String = Story.SIGNOFF_ORDER[pick]
@@ -271,7 +289,8 @@ func _vanish() -> void:
 	await wait(1.0)
 	player.face(1)
 	await wait(0.7)
-	await narrate("The radio has stopped. The flashlight is lying in the snow.")
+	await narrate("The radio has stopped. The flashlight is lying in the snow. The field set lies beside it, its battery cover loose.")
+	await narrate("The beam points back toward the truck. Beyond its edge, the snowfield is dark.")
 	await mara("Tomas?")
 	GameState.set_flag("p1_vanished")
 
@@ -306,7 +325,8 @@ func draw_back() -> void:
 		"snow": 0.55, "vapour": false})
 	IntroArt.gate(cv)
 	if dropped != Vector2.ZERO:
-		IntroArt.dropped_flashlight(cv, dropped, 0.0)
+		IntroArt.dropped_set(cv, dropped + Vector2(30, 2))
+		IntroArt.dropped_flashlight(cv, dropped, 0.0, -1.0)
 
 
 ## The masts blink, the truck's exhaust drifts, and for one song the two of
@@ -329,7 +349,7 @@ func draw_glow(ci: CanvasItem) -> void:
 	if freq != "H":
 		return
 	if dropped != Vector2.ZERO:
-		IntroArt.dropped_flashlight(ci, dropped, 1.0)
+		IntroArt.dropped_flashlight(ci, dropped, 1.0, -1.0)
 	elif tomas.visible and tomas.prop == "radio_light":
 		var hand := tomas.position + Vector2(tomas.facing * 34.0, -78.0)
 		var warm := Color(1.0, 0.94, 0.72)
@@ -429,10 +449,9 @@ func _choice2() -> void:
 		await mara("Go to your sister. Get in the truck.")
 		await mara("And turn that radio off.")
 		await say("TOMAS", "...Okay.")
-		# Their goodbye. His answer isn't hers: this Tomas belongs to someone else.
-		await mara(Story.signoff_line())
-		await say("TOMAS", "...%s" % Story.signoff_reply(1))
-		await mara("That's not what we said. That's theirs.")
+		# Blue's goodbye, spoken naturally; nobody corrects it (1991 does).
+		await mara(Story.blue_signoff())
+		await say("TOMAS", "...Okay. Bye.")
 		GameState.set_flag("tomas12_goodbye")
 		Audio.stop_loop("static", 0.6)
 		mara80.walk_to(620.0)
@@ -444,7 +463,7 @@ func _choice2() -> void:
 		await narrate("Over her shoulder, Tomas looks back at the trees. The woman there is gone.")
 		player.walk_to(1300.0)
 		await wait(0.8)
-		await narrate("In frequency 12, Tomas Lind never vanishes.")
+		await narrate("In station 12, Tomas Lind never vanishes.")
 	await hud.fade_out(1.2)
 	await narrate("Down the access road to Ma's truck. Down the mountain. In by the diner's back door.")
 	main.change_room("diner", "return")

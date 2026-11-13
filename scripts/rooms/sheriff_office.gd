@@ -1,6 +1,6 @@
 extends Room
 ## Act 2.3 — the sheriff's office in frequency 05, where it is already
-## October 17. Cal is asleep at his desk beside his board for the murder of
+## October 21, a week ahead. Cal is asleep at his desk beside his board for the murder of
 ## Mara Lind. The crystal is in his base radio, which is switched on: Mara has
 ## to pull its plug from behind a steel filing cabinet without waking him.
 
@@ -9,7 +9,7 @@ var cal: Actor
 
 func setup() -> void:
 	animated_back = false
-	place_name = "County Sheriff · October 17, 1983"
+	place_name = "County Sheriff · October 21, 1983"
 	base_tint = Color(0.92, 0.9, 0.82)
 	walk_min = 110.0
 	walk_max = 1170.0
@@ -51,7 +51,16 @@ func on_arrive() -> void:
 		await wait(0.6)
 		await mara("Lights on. Heat on. And Cal, asleep at his desk.")
 		await mara("Don't wake him. Whatever this version of him knows, I don't want to hear it.")
+		await _calendar_beat()
 	objective()
+
+
+## A week ahead: Friday the 21st, and the funeral notice for Tuesday.
+func _calendar_beat() -> void:
+	GameState.set_flag("saw_week_ahead")
+	await narrate("His desk calendar reads FRIDAY, OCTOBER 21, 1983. A funeral notice is tucked behind it: Tuesday the eighteenth.")
+	await mara("A week. This one's a week ahead. 'I buried her Tuesday.'")
+	await narrate("Her own watch still shivers at 2:14. Cal's desk clock moves on to 2:37.")
 
 
 func on_hotspot(id: String) -> void:
@@ -61,7 +70,10 @@ func on_hotspot(id: String) -> void:
 		"board":
 			await _board()
 		"calendar":
-			await mara("October 17th. Three days after. In this one, time kept going.")
+			if GameState.has("saw_week_ahead"):
+				await mara("Friday the twenty-first. A week after. In this one, time kept going.")
+			else:
+				await _calendar_beat()
 		"cal":
 			await mara("Cal. Twenty-five years of being my friend, asleep in his uniform.")
 			if GameState.has("read_board"):
@@ -81,7 +93,7 @@ func on_hotspot(id: String) -> void:
 			await mara("WELCOME, mostly. Rubber underneath. Nice and soft.")
 			objective()
 		"front_door":
-			await mara("Not out there. It's three days later out there. Somebody's me is dead.")
+			await mara("Not out there. It's a week later out there. Somebody's me is dead.")
 
 
 func use_item(id: String, item: String) -> bool:
@@ -231,10 +243,15 @@ func draw_ellipse_outline(c: Vector2, rx: float, ry: float) -> void:
 
 
 func _calendar() -> void:
+	# The funeral notice, tucked behind: a black-edged card.
+	cv.draw_rect(Rect2(504, 258, 30, 40), Color("f4f0e6"))
+	cv.draw_rect(Rect2(504, 258, 30, 40), Color("1a1a1a"), false, 1.5)
+	cv.draw_line(Vector2(522, 264), Vector2(530, 264), Color("3a3a3a"), 1.0)
+	cv.draw_line(Vector2(522, 269), Vector2(529, 269), Color("3a3a3a"), 1.0)
 	cv.draw_rect(Rect2(450, 270, 70, 80), Color("f0ece0"))
 	cv.draw_rect(Rect2(450, 270, 70, 18), Color("8a1d1d"))
 	Kit.text(cv, Vector2(450, 284), "OCT 1983", 11, Color("f0ece0"), HORIZONTAL_ALIGNMENT_CENTER, 70)
-	for i in 17:
+	for i in 20:
 		var x := 456.0 + (i % 7) * 9.0
 		var y := 296.0 + (i / 7) * 12.0
 		cv.draw_line(Vector2(x, y), Vector2(x + 6, y + 8), Color("3a3a3a"), 1.5)

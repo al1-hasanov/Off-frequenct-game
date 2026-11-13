@@ -146,6 +146,13 @@ func _install_fuse() -> void:
 	_scratching = true
 	Audio.play_loop("scratch", -12.0)
 	await wait(0.8)
+	# Two relay clicks behind the panel, the second slower: the same two the
+	# recording carries (and the 2031 museum, and Act 4).
+	Audio.sfx("click", -13.0)
+	await wait(0.3)
+	Audio.sfx("click", -13.0, 0.78)
+	await wait(0.5)
+	await narrate("Behind the panel, two relay clicks. The second is slower. The chart recorder's pen starts to move on its own.")
 	await mara("...That's not me.")
 	GameState.set_objective("Check the chart recorder.")
 
@@ -160,8 +167,8 @@ func _chart() -> void:
 	else:
 		GameState.set_flag("chart_checked")
 		await mara("It's writing by itself.")
-		await mara("2.14 megahertz. Nothing's licensed down there. Nothing at all.")
-		await mara("Somebody's transmitting.")
+		await mara("2.14 megahertz. We don't have a transmission scheduled there.")
+		await mara("Somebody's on it.")
 		GameState.set_objective("Listen on the headphones.")
 
 
@@ -171,17 +178,33 @@ func _transmission() -> void:
 	Audio.sfx("click", -8.0)
 	Audio.stop_loop("radio_music", 0.4)
 	Audio.play_loop("static", -7.0, 0.3)
+	# Every clock in the building reads 2:14.
+	GameState.set_clock("2:14", true)
+	snow.frozen = 1.0
 	await wait(1.0)
 	await say("VOICE", "Don't let her in. Whatever happens, don't open the door—")
+	# Its signature, in the same places every time: a chair foot, two relay
+	# clicks, a clipped breath.
+	Audio.sfx("scrape", -17.0)
+	await wait(0.55)
+	Audio.sfx("click", -13.0)
+	await wait(0.28)
+	Audio.sfx("click", -13.0, 0.78)
+	await wait(0.45)
+	Audio.sfx("breath", -15.0, 1.1)
+	await wait(0.7)
+	for i in 2:
+		Audio.sfx("knock", -16.0)
+		await wait(0.9)
+	await narrate("Under the voice: a chair foot dragging, two relay clicks, then a clipped breath. Knocking, far off, on the front door.")
+	GameState.set_flag("heard_signature")
 	Audio.stop_loop("static", 0.02)
 	Audio.stop_loop("scratch", 0.02)
 	Audio.stop_loop("hum", 0.02)
 	_scratching = false
 	Audio.sfx("click", -4.0)
 	GameState.set_flag("radio_on", false)
-	GameState.set_clock("2:14", true)
-	snow.frozen = 1.0
-	await wait(1.6)
+	await wait(1.0)
 	for i in 3:
 		Audio.sfx("knock", -8.0)
 		await wait(0.9)
@@ -190,7 +213,8 @@ func _transmission() -> void:
 	Audio.play_loop("hum", -24.0, 1.5)
 	await mara("...Somebody's knocking on the front door.")
 	await mara("At two in the morning. Up a mountain.")
-	await narrate("In the headphones the voice starts again, looping. The knocking doesn't stop.")
+	Audio.sfx("scrape", -24.0)
+	await narrate("In the headphones the voice starts again, looping. The same scrape, the same clicks, the same breath, in exactly the same places. The knocking doesn't stop.")
 	GameState.set_flag("heard_transmission")
 	_knock_t = 5.0
 	Audio.play_loop("static", -22.0)
@@ -202,6 +226,7 @@ func _answer() -> void:
 	player.headphones = true
 	Audio.sfx("click", -6.0)
 	Audio.play_loop("static", -10.0, 0.2)
+	await narrate("She keys the microphone. The repeated warning stops in the middle of a breath. The woman who answers is breathing differently.")
 	await mara("Who is this?")
 	await say("VOICE", "Oh God. Which one are you?")
 	await say("VOICE", "Prove it. What did you say to Tomas? Last thing, every night.")
@@ -216,6 +241,9 @@ func _answer() -> void:
 	player.headphones = false
 	await mara("Hello? ...Hello?")
 	await mara("...The knocking's stopped.")
+	# Each clear burst of speech sits over a narrow rise in the trace (3.5).
+	await narrate("The recorder has caught both voices. On its paper, the trace takes a small step up under each burst of speech, and does not come back down. Mara tears off the strip and folds it into her work notebook without knowing why.")
+	GameState.set_flag("strip_1983")
 	GameState.set_story("ANSWERED", true)
 	GameState.set_flag("choice1")
 	GameState.set_objective("Check the control room.")

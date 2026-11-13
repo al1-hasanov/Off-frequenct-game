@@ -168,7 +168,7 @@ func _check_stuck() -> void:
 		return
 	GameState.set_flag("garage_checked")
 	await mara("No fuel. No road. Eleven miles on foot, in this.")
-	await mara("...Tomas's radio. 'It's not static out there. It's other us.'")
+	await mara("...Tomas's radio. 'Same tins. Different labels.'")
 	await mara("Somewhere out there, the road's clear and the tank's full.")
 	objective()
 
@@ -193,9 +193,22 @@ func tune() -> void:
 		GameState.set_flag("wrist_tape")
 		player.wrist_tape = Color("b8322c")
 		await mara("If there's going to be more than one of me, I want to know which one is me.")
-		await narrate("A band of red tape, tight around her left wrist.")
-	await mara("Tomas said it only works in the dark. Light off.")
+		# The flashlight rides on the Tuner's strap from here (2.4: they go together).
+		await narrate("She winds a band of red tape tight around her left wrist, then clips the flashlight loop to the Tuner's carry strap to free a hand for the snowcat keys.")
+		GameState.set_flag("light_on_strap")
+	await mara("It changed for him in the dark. His lamp stopped it. So: light off.")
 	await mara("Somewhere out there, the road's clear. Listen for a plow.")
+	if not GameState.has("saw_detent"):
+		GameState.set_flag("saw_detent")
+		# The dial is printed to 99 but the wheel won't go past 9 (June frees it in 2.2).
+		await narrate("The thumbwheel stops short of ten. A hairline crack catches the garage light inside the set.")
+		await mara("Numbers printed to ninety-nine. Nine's as far as it will turn tonight.")
+	if not GameState.has("pencil_h"):
+		# The red pencil H under the strap (Blue finds it in 1991).
+		GameState.set_flag("pencil_h")
+		await narrate("In the unmarked gap between six and seven, a hum.")
+		await mara("That hum is the one I'm standing in. I'm already home. Call it H.")
+		await narrate("She pencils H beneath the carry strap, beside the unmarked part of the dial.")
 	var st: String = await tuner_session(_garage_refusal, 1.4)
 	if st == "03":
 		await mara("A plow. Okay. Okay. Step into the dark...")

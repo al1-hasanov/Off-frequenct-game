@@ -72,11 +72,12 @@ func on_arrive() -> void:
 		await mara("That streetlight's been broken since summer. It's the only dark spot on the street.")
 	elif freq == "14" and entered_from == "tuned":
 		await wait(0.5)
-		await mara("Dark. Empty. For sale.")
-		await mara("Mom doesn't live here, in this one. Maybe nobody does.")
-	elif freq == "14" and entered_from == "from_house" and GameState.has("swapped") and not GameState.has("left_14"):
+		await narrate("The Lind house, dark. A FOR SALE sign leans in the snow. The porch light has been taken out of its socket.")
+		await mara("Dark. Empty. For sale. Mom wouldn't leave it like that.")
+	elif freq == "H" and entered_from == "back_home" and not GameState.has("home_after_14"):
+		GameState.set_flag("home_after_14")
 		await wait(0.4)
-		await mara("Ma's house, for sale. I need to get home.")
+		await mara("There. Home.")
 	objective()
 
 
@@ -135,7 +136,7 @@ func _front_door() -> void:
 	if GameState.has("swapped"):
 		await mara("No. I'm not going back in there.")
 		return
-	Audio.sfx("door", -10.0)
+	await narrate("The front door is open.")
 	main.change_room("ash_kitchen", "from_street")
 
 
@@ -145,7 +146,7 @@ func _streetlight() -> void:
 		if not GameState.has("swapped"):
 			await mara("She's in there. I came all this way.")
 			return
-		await mara("The streetlight. Dark. Find home.")
+		await mara("Back under the streetlight. Light off. Find the hum on the set she left me.")
 		var st: String = await tuner_session(_home_refusal, 6.0)
 		if st == "H":
 			GameState.set_flag("left_14")
@@ -154,11 +155,15 @@ func _streetlight() -> void:
 	if GameState.has("swapped"):
 		await mara("I've done Ash Street. Tomas is in 12, three years back. I need somewhere dark... and Ma's truck keys.")
 		return
-	await mara("Dark enough. Light off. Find the one with the lights off.")
+	if GameState.has("tuner_repaired"):
+		await narrate("Under the broken streetlight, Mara switches off her flashlight. The Tuner picks up fragments of houses: a kettle, a television, someone asleep.")
+		await mara("Dark enough. Find the one with the lights off.")
+	else:
+		await mara("Dark enough. Light off. Find the one with the lights off.")
 	var band := 1 if GameState.has("tuner_repaired") else 0
 	var st2: String = await tuner_session(_house_refusal, 0.0, band)
 	if st2 == "14":
-		await mara("Dark. Every window. And a sign in the yard.")
+		await mara("A shutter, tapping. No hum at all.")
 		main.cross("14", "ash_street", "tuned")
 	elif not GameState.has("tuner_repaired"):
 		GameState.set_flag("ash_tried")
@@ -175,7 +180,7 @@ func _house_refusal(st: String) -> String:
 	var e := Env.of(st)
 	match e.state:
 		"gone":
-			return "No house at all on that one. No street. Nothing."
+			return "Nothing on that one. No house. No street. No hiss."
 		"derelict":
 			return "Boarded up. Nobody's lived there in years. Not that one."
 	if e.day():

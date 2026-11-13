@@ -63,12 +63,12 @@ func on_arrive() -> void:
 	await narrate("The engine's dead. The headlights are dead. Under the bridge it's the darkest dark she has ever seen.")
 	await mara("I can feel it. Like the floor's tilting. I'm sliding.")
 	await mara("Tomas's radio. Find the hum. Find home.")
-	await mara("There's no number for home on his dial. It's in the gap between six and seven, where the dial says nothing.")
 	var st := ""
 	while st != "H":
 		st = await tuner_session(_home_refusal, 2.0)
 		if st == "":
 			await mara("No. I can't just sit here in the dark, sliding. Find home.")
+			await mara("There's no number for it on his dial. It's in the gap between six and seven, where the dial says nothing.")
 	await mara("That hum. That's mine.")
 	Audio.sfx("crossing", -4.0)
 	hud.glitch(1.4)
@@ -102,6 +102,9 @@ func _home_refusal(st: String) -> String:
 		"H":
 			return ""
 		"00":
+			if not GameState.has("saw_stencil"):
+				GameState.set_flag("saw_stencil")
+				return "Nothing there. 'HOME = 00,' Tomas wrote. Then why does home sound like nothing?|NARR|Under his masking tape, an older stencil on the case is almost rubbed away. A word, then two zeros. Tomas copied a label that was already there."
 			return "Nothing there. 'HOME = 00,' Tomas wrote. Then why does home sound like nothing?"
 		"03":
 			return "The plow. That's where I just came from. That's not home."

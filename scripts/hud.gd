@@ -671,6 +671,13 @@ func combine(a: String, b: String) -> void:
 
 ## Shows one line and waits for a tap. An empty speaker means narration.
 func say(speaker: String, text: String) -> void:
+	# The playable Mara is named only once the story earns it: RED when control
+	# returns to her in the dark (3.7), BLUE after June's roster (3.6).
+	if speaker == "MARA":
+		if GameState.has("playing_red"):
+			speaker = "RED"
+		elif GameState.has("named_blue"):
+			speaker = "BLUE"
 	_pending_close = false
 	_open_dialog()
 	var voice := speaker == "VOICE"
@@ -1001,7 +1008,11 @@ func tune(refuse: Callable, start: float = 0.0, start_band: int = 0) -> String:
 		if line == "":
 			result = st
 			break
-		await say("MARA", line)
+		# "Mara's line|NARR|a narration line" speaks both, in that order.
+		var parts := line.split("|NARR|")
+		await say("MARA", parts[0])
+		if parts.size() > 1:
+			await say("", parts[1])
 	tuner.close()
 	if result == "" and main != null and main.room != null:
 		main.room.ambience()
@@ -1415,6 +1426,17 @@ class ItemSlot extends Button:
 				draw_rect(Rect2(c.x - 20, c.y - 24, 6, 48), Color("2a3448"))
 				draw_rect(Rect2(c.x - 10, c.y - 12, 26, 12), Color("e6dfc8"))
 				Kit.text(self, c + Vector2(-9, -3), "LOG", 9, Color("2a2a2a"))
+			"blue_set":
+				draw_rect(Rect2(c.x - 24, c.y - 16, 48, 32), Color("4a5a3a"))
+				draw_rect(Rect2(c.x - 16, c.y - 10, 22, 10), Color(0.6, 0.85, 0.95, 0.9))
+				draw_line(Vector2(c.x - 24, c.y - 16), Vector2(c.x + 24, c.y - 22), Color("2f63c9"), 3.0)
+			"service_card":
+				draw_rect(Rect2(c.x - 24, c.y - 16, 48, 32), Color("efe6c8"))
+				draw_rect(Rect2(c.x - 24, c.y - 16, 48, 32), Color("8a7a50"), false, 1.5)
+				draw_line(Vector2(c.x - 18, c.y - 6), Vector2(c.x + 18, c.y - 6), Color("3a3a3a"), 1.5)
+				draw_line(Vector2(c.x - 20, c.y - 9), Vector2(c.x + 20, c.y - 3), Color("b8322c"), 2.0)
+				for i in 3:
+					draw_line(Vector2(c.x - 18, c.y + 3 + i * 5), Vector2(c.x + 14 - i * 6, c.y + 3 + i * 5), Color("2a3a6a"), 1.5)
 			"chart_strips":
 				draw_rect(Rect2(c.x - 26, c.y - 20, 52, 14), Color("ece6d0"))
 				draw_rect(Rect2(c.x - 26, c.y + 4, 52, 14), Color("ece6d0"))

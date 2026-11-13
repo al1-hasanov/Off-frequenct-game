@@ -10,13 +10,14 @@ extends RefCounted
 ## comes down, and she wakes on the cabin floor at 2:14, 1983. Nothing comes
 ## back from a future: it hasn't happened yet.
 ##
-## Every future she acts on changes. When she has seen one and done what it
-## told her, the next year turns up on the control room's chalkboard, in her
-## own handwriting, while she's out of the room.
+## Every future she acts on changes. After 2031 and the key, the next year
+## turns up on the control room's chalkboard, in her own handwriting, while
+## she's out of the room; she writes it herself when she's back from it. After
+## the PARK test (3.5) she takes the screwdriver out for one more: 1991.
 
 const YEARS := {
 	"2031": {"sub": "October 14  ·  an afternoon", "clock": "2:06 PM", "room": "dish"},
-	"2009": {"sub": "October 14  ·  a little before two in the morning", "clock": "1:49", "room": "dish"},
+	"2009": {"sub": "October 14  ·  a wet afternoon", "clock": "1:52 PM", "room": "dish"},
 	"1991": {"sub": "October 14  ·  half past one in the morning", "clock": "1:31", "room": "shop_1991"},
 }
 
@@ -81,8 +82,6 @@ static func board_lines() -> Array:
 		out.append("2009")
 	if g.has("board_1991"):
 		out.append("1991")
-	if g.has("board_tonight"):
-		out.append("TONIGHT")
 	return out
 
 
@@ -109,8 +108,8 @@ static func become_blue() -> void:
 	g.inventory_changed.emit()
 
 
-## Which Tomas the dish found in 1991: H's (he was taken, he's 21 and runs the
-## shop with June) or 12's (he was sent home, he's 24 and Lise is expecting).
+## Which Tomas the dish found in 1991: taken (moved to 1983 at thirteen, he's
+## twenty-one) or sent back (three more years at home, he's twenty-four).
 static func tomas_1991() -> String:
 	return "tomas_21" if GameState.story.get("TOMAS") == "taken" else "tomas_24"
 

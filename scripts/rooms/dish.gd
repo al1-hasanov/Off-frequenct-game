@@ -9,10 +9,11 @@ extends Room
 ## Center. A glass entrance, solar panels, an electric car on charge, a
 ## driverless shuttle, wind turbines on the far ridge, visitors talking in
 ## whispers. The dish is painted white and parked at the zenith behind a fence.
-## 2009, a winter night: the concrete building is a roofless shell full of
-## snow, the stone wing is lit in every window and ringed by the lamp line. Two
-## cars abandoned in the lot, the dish rusted fast, Tomas's hut at its foot,
-## and on the far ridge, the white.
+## 2009, a wet October afternoon: the concrete building is a roofless shell,
+## the town below has lost half its roofs. A rope across the path with
+## hand-painted boards, Mrs. Lund at the gate beside an empty chair, a
+## digital-TV poster and a pile of dead aerials; under the dish, Tomas at the
+## coupling handle. On the far ridge, the white.
 
 ## Everything here is drawn to the people's scale, about 110 px to the metre
 ## on the line they walk: doors two and a quarter metres tall, the stone wing's
@@ -22,12 +23,13 @@ extends Room
 var snow: Snowfall
 var tomas: Actor
 var lund_w: Actor
-var lund_h: Actor
 var visitor_a: Actor
 var visitor_b: Actor
-var tomas_lamp: PointLight2D
-## 2009, at 2:14: the coupling glowing in Tomas's hands (0..1).
-var coupling := 0.0
+## 2009: the coupling handle, 0 = home in its socket (the dish listening),
+## 1 = pulled clear. It creeps back by itself: the pawl is worn smooth.
+var handle := 0.0
+## 2009: the rope across the path, lifted once Mrs. Lund lets Mara through.
+var rope_up := false
 var shot := ""
 
 
@@ -87,21 +89,28 @@ func _setup_2031() -> void:
 
 
 func _setup_2009() -> void:
-	walk_min = 570.0
-	lund_h = add_actor("lund_h_2009", 380.0, 1)
-	lund_w = add_actor("lund_w_2009", 452.0, 1)
-	tomas = add_actor("tomas_2009", 1196.0, -1)
-	tomas.prop = "lamp"
-	tomas_lamp = add_lamp(Vector2(1150, 520), 2.6, Color(1.0, 0.78, 0.45), 0.9)
-	add_hotspot("lunds", Rect2(330, 440, 170, 210), "The lamp line", 600.0, -1)
-	add_hotspot("tomas", Rect2(1152, 440, 90, 210), "The man with the lamp", 1130.0, 1)
-	add_hotspot("chute", Rect2(570, 600, 70, 50), "Coal chute", 620.0, -1, func() -> bool: return GameState.has("tomas09_met"))
-	add_hotspot("graffiti", Rect2(0, 400, 236, 140), "Spray paint", 600.0, -1)
-	add_hotspot("suv", Rect2(660, 450, 400, 150), "Abandoned cars", 800.0)
-	add_hotspot("padlock", Rect2(1066, 474, 54, 70), "Main disconnect", 1050.0, 1)
+	walk_min = 90.0
+	walk_max = 1060.0 if GameState.has("lund_gate") else 540.0
+	rope_up = GameState.has("lund_gate")
+	lund_w = add_actor("lund_w_2009", 600.0, -1)
+	lund_w.seated = true
+	lund_w.seat_y = 46.0
+	tomas = add_actor("tomas_2009", 1156.0, -1)
+	tomas.arm_pose = PUSH
+	add_hotspot("lund", Rect2(560, 470, 84, 180), "Mrs. Lund", 520.0, 1)
+	add_hotspot("chair", Rect2(470, 560, 70, 90), "Empty chair", 450.0, 1)
+	add_hotspot("rope", Rect2(650, 470, 120, 110), "The rope", 520.0, 1)
+	add_hotspot("poster", Rect2(792, 430, 82, 112), "Poster", NAN)
+	add_hotspot("aerials", Rect2(880, 520, 120, 124), "Aerials", NAN)
+	add_hotspot("tomas", Rect2(1110, 440, 92, 210), "The man at the dish", 1050.0, 1, func() -> bool: return GameState.has("lund_gate"))
+	add_hotspot("graffiti", Rect2(0, 400, 236, 140), "The old lobby", NAN)
 	add_hotspot("white", Rect2(1240, 160, 300, 160), "The far ridge", NAN)
-	add_hotspot("ladder", Rect2(830, 60, 340, 360), "The dish", 1090.0, 1)
-	add_hotspot("hut_papers", Rect2(1254, 462, 52, 74), "Papers on his door", 1240.0, 1)
+	add_hotspot("ladder", Rect2(830, 60, 340, 360), "The dish", NAN)
+
+
+## Tomas's shoulder against the handle; both hands on it, pulling.
+const PUSH := [[1.45, 0.55], [1.35, 0.7]]
+const PULL := [[0.95, 0.35], [0.85, 0.4]]
 
 
 func enter(entry: String) -> void:
@@ -110,22 +119,13 @@ func enter(entry: String) -> void:
 		"from_lobby", "from_center":
 			player.position.x = 170.0
 			player.face(1)
-		"from_chute":
-			player.position.x = 640.0
-			player.face(1)
-			if tomas != null:
-				tomas.position.x = 720.0
-				tomas.face(1)
 		_:
-			player.position.x = {"2009": 1010.0, "2031": 1100.0}.get(_era(), 1150.0)
-			player.face(-1)
-
-
-func _process(delta: float) -> void:
-	super(delta)
-	if tomas != null and tomas_lamp != null:
-		tomas_lamp.position = tomas.position + Vector2(26.0 * tomas.facing, -110.0)
-		tomas_lamp.visible = tomas.visible
+			if _era() == "2009":
+				player.position.x = 150.0
+				player.face(1)
+			else:
+				player.position.x = {"2031": 1100.0}.get(_era(), 1150.0)
+				player.face(-1)
 
 
 func ambience() -> void:
@@ -135,11 +135,12 @@ func ambience() -> void:
 			Audio.play_loop("wind", -32.0)
 			Audio.play_loop("street_air", -30.0)
 		"2009":
-			Audio.play_loop("wind", -18.0)
-			Audio.play_loop("drone", -32.0)
+			Audio.play_loop("wind", -24.0)
+			Audio.play_loop("rain", -30.0)
+			Audio.play_loop("drone", -34.0)
 		_:
 			Audio.play_loop("wind", -18.0)
-			if not GameState.has("dish_parked") or GameState.has("dish_released"):
+			if not GameState.has("dish_parked"):
 				Audio.play_loop("dish_motor", -30.0)
 	Audio.set_environment(str(name), freq)
 
@@ -151,15 +152,12 @@ func on_arrive() -> void:
 			await _arrive()
 		"wake":
 			await _wake()
-		"from_chute":
-			await _two_fourteen_2009()
-			return
 		_:
 			if _era() == "" and not GameState.has("dish_seen"):
 				GameState.set_flag("dish_seen")
 				await wait(0.3)
 				await mara("Snow on everything. And the dish...")
-				await mara("It's swung right round to the horizon. Sollen parks it at the top every night. Nobody's touched the drive.")
+				await mara("It's swung right round to the horizon. Nobody's touched the drive.")
 	objective()
 
 
@@ -167,16 +165,18 @@ func _arrive() -> void:
 	await wait(0.5)
 	match _era():
 		"2031":
-			await mara("Daylight.")
-			await mara("Leaves. October, and no snow, and the sun's out.")
+			await mara("Daylight. Leaves. October, and no snow, and the sun's out.")
 			await mara("The dish is white. Somebody painted it. There's a fence round it.")
-			await say("VISITOR", "(whispering) ...still nothing on mine. Not even static.")
-			await mara("Everybody's whispering.")
+			await narrate("Visitors walk the path, speaking in whispers. In the trees, birds open their beaks. Mara cannot hear them.")
+			await narrate("One visitor is tapping a small black rectangle of glass. Mara takes it for a pocket radio.")
+			await say("VISITOR", "(whispering) ...still nothing on mine. Not even static. Months, now. My grandmother says it's like the war.")
+			await say("VISITOR", "(whispering) They say the dish heard it first. Back in the eighties.")
+			await mara("They're whispering because nothing else makes a sound.")
+			GameState.set_flag("heard_visitors")
 		"2009":
-			await mara("No roof. Snow inside the walls.")
-			await mara("Nobody down in Halvard. Not a light in the valley.")
-			await mara("Only up here: lamps in every window of the old stone wing, and a ring of them round it.")
-			await mara("And on the far ridge... white. Like the edge of a page.")
+			await narrate("The feed cabin opens onto wet October grass. The dish is still there. The town below it has lost half its roofs.")
+			await mara("Twenty-six years. It looks like somebody left the window open for twenty-six years.")
+			await narrate("A rope crosses the path. On it, hand-painted boards: ONE AT A TIME. SHOW YOUR HANDS. KEEP A LIGHT.")
 
 
 ## Back from a future: Mara wakes on the floor of the feed cabin and climbs down.
@@ -189,9 +189,8 @@ func _wake() -> void:
 	var g := GameState
 	if g.has("been_2031") and not g.has("woke_2031"):
 		g.set_flag("woke_2031")
-		await mara("The cabin floor. Snow. Two-fourteen. 1983.")
+		await mara("The cabin floor. Snow. Two-fourteen. 1983. And Ma's tape, still in my hand.")
 		if g.has_item("cassette_2031"):
-			await mara("And Ma's tape, still in my hand.")
 			Audio.play_loop("tape_hiss", -20.0, 0.2)
 			await narrate("As she climbs down, the label goes pale, then the cassette, like a station drifting out of tune.")
 			Audio.stop_loop("tape_hiss", 1.4)
@@ -200,22 +199,30 @@ func _wake() -> void:
 			await wait(0.6)
 			await mara("Gone.")
 		await say("JUNE (TUNER)", "A future's a signal, honey, not a station. You can listen to it. You can't take it home.")
-		await mara("Nothing comes back from a future. It hasn't happened yet.")
-		await mara("But I can remember. The hollow left rear leg of Sollen's desk.")
-		await mara("And I'm putting that year on the chalkboard before I forget it.")
+		await mara("My notebook's still here. What I drew in it.")
+		await say("JUNE (TUNER)", "Well, that's not from there. That's from you. Write the rest down while you've got it.")
+		await hud.read_doc("MY NOTEBOOK", ["The numbered stations let me bring things across.\n\nA thing from one of the dish's years faded when I left.\n\nDon't count on a person from there staying either."])
+		g.set_flag("note_futures")
 	elif g.has("been_2009") and not g.has("woke_2009"):
 		g.set_flag("woke_2009")
-		await mara("He's still up there. In 2009. With his hands on it.")
-		await mara("The tin behind the boiler. T.L. In the stone wing's basement.")
-		await mara("Our basement. The fresh plaster.")
-	elif g.has("red_done") and not g.has("woke_red"):
-		g.set_flag("woke_red")
-		await mara("The cabin floor. 1983.")
-		await mara("My hand's still warm where he held it.")
-		await mara("Blue. Zero-seven. Doesn't know.")
-		await wait(0.4)
-		await mara("I know.")
-		await mara("And somebody's calling on 2.14. From the dark. I can hear her in my teeth.")
+		await narrate("1983. The cabin floor. Mara is still gripping something that is not there.")
+		await say("JUNE (TUNER)", "There you are. I had you for a second. Sounded like you were lifting a piano.")
+		await mara("I found him.")
+		await narrate("June gives her room to say the rest.")
+		await mara("Older. Alone. He'd been listening for us all his life.")
+		if g.story.get("TOMAS") == "taken":
+			await say("TOMAS (TUNER)", "How old?")
+			await narrate("Mara closes her eyes. She had forgotten that he could hear her.")
+			await mara("Older than me.")
+			await say("TOMAS (TUNER)", "Was I any good at fixing things?")
+			await mara("Very.")
+			await say("TOMAS (TUNER)", "Well. That's something.")
+			await narrate("At June's bench, the boy turns the spare receiver around so its weak speaker faces him. He has been holding a loose contact in place with a teaspoon.")
+			await say("JUNE (TUNER)", "This one's been fixing mine. I was going to buy a new one. Don't tell him that.")
+	elif g.has("been_1991") and not g.has("woke_1991"):
+		g.set_flag("woke_1991")
+		await narrate("1983. She comes out of the feed cabin on her knees.")
+		await mara("The control room. The chart.")
 	else:
 		await mara("Pitch black. Nothing. Just me, frayed at the edges.")
 
@@ -227,7 +234,7 @@ func on_hotspot(id: String) -> void:
 		"ladder":
 			await _ladder()
 		"dish":
-			if GameState.has("dish_parked") and not GameState.has("dish_released"):
+			if GameState.has("dish_parked"):
 				await mara("Parked, straight up at the zenith. Not listening to anything.")
 			else:
 				await mara("Twenty-six metres of steel, pointing at the horizon. Listening on 2.14, all by itself.")
@@ -251,40 +258,25 @@ func on_hotspot(id: String) -> void:
 			await mara("A bus with no driver's seat. HALVARD SIGNAL  ·  SHUTTLE.")
 		"turbines":
 			await mara("Windmills on the far ridge, as tall as the dish. Sollen would hate them.")
-		"lunds":
-			await _lunds()
+		"lund":
+			await _lund_gate()
+		"chair":
+			if GameState.has("lund_gate"):
+				await mara("The second coat, folded on the empty chair. She smoothed its collar before she let me through.")
+			else:
+				await narrate("Beside the gate is an empty chair. A second coat lies folded on it.")
+		"rope":
+			await narrate("Hand-painted boards on the rope: ONE AT A TIME. SHOW YOUR HANDS. KEEP A LIGHT.")
+		"poster":
+			await narrate("Behind the gate, a rain-soaked poster announces the switch to digital television on June 12, 2009. Someone has crossed out ARE YOU READY? and written TOO LATE.")
+		"aerials":
+			await narrate("A pile of discarded aerials leans against the fence. Rabbit ears, a rooftop yagi, a coat hanger somebody bent into hope.")
 		"tomas":
 			await _tomas()
-		"chute":
-			await _chute()
 		"graffiti":
-			await narrate("Spray paint across what's left of the lobby wall: THEY CAME OUT OF THE DARK. Beneath it, smaller: COUNT YOURSELF.")
-		"suv":
-			await mara("Cars in the lot, snowed in, rusting. Nobody's driven down in years.")
-			await mara("The plates say 2008. Tags never renewed.")
-		"padlock":
-			GameState.set_flag("padlock_seen")
-			await mara("The main disconnect. U.S. AIR FORCE on the padlock. The same one. Twenty-six more years of rust.")
+			await mara("The old lobby. No doors, no roof. Grass growing where Sollen's bench was.")
 		"white":
 			await mara("White, on the ridge. It doesn't move when I look at it. It's nearer when I look back.")
-		"hut_papers":
-			await _hut_papers()
-
-
-## 2009: what Tomas keeps on his door, in plastic sleeves against the weather.
-func _hut_papers() -> void:
-	var g := GameState
-	await narrate("Tacked to his door in plastic sleeves: a newspaper clipping gone yellow, and a printout.")
-	await hud.read_doc("ON TOMAS'S DOOR", [
-		"HALVARD COURIER, MARCH 1999\n\nUNIVERSE IS FLYING APART, FASTER AND FASTER\n\nAstronomers watching distant exploding stars say the expansion of the universe is speeding up. Something in empty space is pushing. They are calling it \"dark energy.\"\n\nAcross the top, in marker: DAD WAS RIGHT.",
-		"PHANTOM ENERGY AND COSMIC DOOMSDAY\nR. R. Caldwell, M. Kamionkowski, N. N. Weinberg, 2003\n\n[Printed out, and folded many times.]\n\nIf dark energy keeps getting stronger, it ends in a Big Rip: galaxies first, then stars and planets, then atoms, pulled apart.\n\nIn the margin, in Tomas's hand: \"Here it's small. Here it's the white.\"",
-	])
-	if g.has("big_rip"):
-		return
-	g.set_flag("big_rip")
-	await mara("Dark energy. 'Dad was right.' Twenty years after the road.")
-	await mara("Space pulled apart until nothing can cross it. Not light. Not sound. That's the white.")
-	objective()
 
 
 func _doors() -> void:
@@ -293,7 +285,7 @@ func _doors() -> void:
 			Audio.sfx("door", -14.0)
 			main.change_room("visitor_center", "from_dish")
 		"2009":
-			await mara("No doors, no roof. Snow in the lobby, up to the bench.")
+			await mara("No doors, no roof. Grass in the lobby, up to the bench.")
 		_:
 			Audio.sfx("door", -10.0)
 			main.change_room("lobby", "from_dish")
@@ -306,7 +298,10 @@ func _ladder() -> void:
 			await mara("I can't climb back. It'll let me go when it's ready.")
 			return
 		"2009":
-			await mara("Tomas climbs it at two-fourteen. Not me. Not tonight.")
+			if GameState.has("lund_gate"):
+				await mara("Not without him. He's right there, under it.")
+			else:
+				await mara("I came down that. The rope's between me and it now.")
 			return
 	if not GameState.has("patched"):
 		await mara("The ladder up the yoke to the feed cabin. Pitch black up there.")
@@ -330,13 +325,11 @@ func _ladder() -> void:
 		return
 	match year:
 		"2031":
-			await mara("The needle's on 2031. The loudest future it can hear.")
-			await mara("Twenty-six metres up, in a steel box with no windows. Whatever you're doing, don't do it twice.")
+			await mara("The needle's on 2031. Twenty-six metres up, in a steel box with no windows. Whatever you're doing, don't do it twice.")
 		"2009":
 			await mara("2009. In my own handwriting.")
 		"1991":
-			await mara("1991. He's calling. I'm coming.")
-			await mara("One more. Then I park it for good.")
+			await mara("The display's still on 1991.")
 	await _climb_up()
 	await Act3.go(self, year)
 
@@ -349,94 +342,154 @@ func _climb_up() -> void:
 
 # --- 2009 -----------------------------------------------------------------------------
 
-func _lunds() -> void:
+## Mrs. Lund at the gate: name, hands, and the empty chair. Then she lifts the rope.
+func _lund_gate() -> void:
 	var g := GameState
-	if g.has("lund_count"):
-		await say("MRS. LUND", "Outside the line, dear. It's nothing personal. It's the Rules.")
+	if g.has("lund_gate"):
+		await say("MRS. LUND", "Don't bring anyone back through here. I don't care how much you miss them.")
 		return
-	await say("MRS. LUND", "Stop there, dear. That's the line.")
-	await say("MRS. LUND", "Lamps in every window, all night. Any room that won't stay lit, we brick up.")
-	await say("MRS. LUND", "And every night at the line, everyone counts themselves. Name, house, and one thing only you would know.")
-	await mara("Why?")
-	await say("MRS. LUND", "The winter it went, two of everyone came out of the dark. Somebody had to choose.")
-	await say("MRS. LUND", "One of them went upstairs for the spare coat and came down in March. By then there were Rules, and I had to say which one was mine.")
-	await say("MR. LUND", "She chose right.")
-	await say("MRS. LUND", "You've the Lind girl's face. Anders's girl. You can try the count, if you like.")
-	await say("MRS. LUND", "What did Anders whistle, calling the two of you in?")
-	await wait(0.3)
-	Audio.sfx("whistle_rev", -6.0)
-	await narrate("Mara whistles two notes. Up, then down.")
-	await wait(0.4)
-	await say("MRS. LUND", "Down, then up, dear. Close isn't the same.")
-	await say("MRS. LUND", "You stay outside the line.")
-	g.set_flag("lund_count")
-	await mara("Up, then down. That's how he did it. I'd swear it.")
+	await narrate("Mrs. Lund sits at the gate in a green coat. The darn on its sleeve has been darned again.")
+	lund_w.face(-1)
+	await say("MRS. LUND", "Name.")
+	await mara("Mara Lind.")
+	await narrate("Mrs. Lund's hand closes around the gate rope.")
+	await say("MRS. LUND", "No. Try another.")
+	await mara("You knew my mother.")
+	await say("MRS. LUND", "I knew a great many people. Show your hands.")
+	player.arm_pose = [[1.4, 0.3], [1.3, 0.35]]
+	await narrate("Mara shows her the tape. Mrs. Lund looks past her, counting.")
+	player.arm_pose = []
+	await mara("There's only me.")
+	await say("MRS. LUND", "That's what Arne said.")
+	await narrate("Beside the gate is an empty chair. A second coat lies folded on it. Mrs. Lund smooths the collar before she lifts the rope.")
+	Audio.sfx("scrape", -20.0, 1.4)
+	rope_up = true
+	g.set_flag("lund_gate")
+	walk_max = 1060.0
+	await say("MRS. LUND", "Don't bring anyone back through here. I don't care how much you miss them.")
 	objective()
 
 
+## Tomas at the coupling: the handle, the park, the drawing, and the whistle.
 func _tomas() -> void:
 	var g := GameState
-	if g.has("knows_tin"):
-		await say("TOMAS", "Nearly time.")
+	if g.has("held_handle"):
+		await say("TOMAS", "Hold it. Don't let it run back.")
 		return
-	if g.has("tomas09_met"):
-		await say("TOMAS", "Round the line, not through it. The coal chute, by the wall. Keep in my light.")
-		return
-	await narrate("A man of about forty in a patched parka. He holds his lamp out between them, the way you'd hold it out to a stray.")
-	await say("TOMAS", "You're outside the line too.")
-	await mara("...Tomas?")
-	await say("TOMAS", "Everyone up here was somebody's. I came through the dark at thirteen, looking for my sister. Found this Halvard instead.")
-	await say("TOMAS", "They let me stay, as long as I stay out here.")
-	await narrate("His palms are shiny with old burns.")
-	await say("TOMAS", "Every October fourteenth, at two-fourteen, I climb the dish and pull the coupling in the feed cabin. By hand.")
-	await say("TOMAS", "The main disconnect's had an Air Force padlock on it since November '79. So: by hand.")
-	await mara("Since November '79. Dad.")
-	await say("TOMAS", "There's something you should see before I go up. Not through the line. Round it.")
-	await say("TOMAS", "The coal chute. Stay in my light. Light holds you where you are.")
 	g.set_flag("tomas09_met")
-	objective()
-
-
-func _chute() -> void:
-	await say("TOMAS", "After you. No, wait. After me. Keep in the light.")
-	Audio.sfx("scrape", -8.0)
-	main.change_room("basement_2009", "chute")
-
-
-## 2:14 in 2009: Tomas climbs to the coupling, and tonight it glows in his hands.
-func _two_fourteen_2009() -> void:
-	await wait(0.4)
-	await say("TOMAS", "Two-fourteen.")
-	if GameState.story.get("TOMAS") == "taken":
-		await say("TOMAS", "Did you bring one of us across?")
-		await mara("...Yes.")
-		await say("TOMAS", "Then stay with him. Nobody stayed with me.")
-	else:
-		await say("TOMAS", "Go home, if you've got one.")
-	await tomas.walk_to(1420.0)
-	tomas.visible = false
-	await wait(1.2)
-	await narrate("He climbs to the coupling. Tonight it won't pull.")
-	Audio.play_loop("carrier", -20.0, 1.0)
-	shot = "coupling"
-	var glow_tw := create_tween()
-	glow_tw.tween_property(self, "coupling", 1.0, 2.0)
-	await glow_tw.finished
-	await narrate("It glows in his hands.")
-	Audio.stop_loop("carrier", 0.2)
+	await narrate("A man is working under the dish, one shoulder pressed against a heavy handle. His sleeves are rolled above white scars on both palms. A small radio sits on the concrete at his feet.")
+	await mara("Tomas?")
+	await narrate("He does not look up.")
+	await say("TOMAS", "If you're here to sell batteries, you're twenty years late.")
+	await mara("Tomas.")
+	tomas.face(-1)
+	tomas.arm_pose = []
+	Audio.sfx("voice", -10.0, 0.85)
+	Audio.play_loop("dish_motor", -24.0, 0.2)
+	await narrate("He looks. His shoulder slips from the handle. The radio gives a short, enormous burst of voices.")
+	await say("TOMAS", "Take that. Both hands. Don't let it run back.")
+	await hud.choose(["Take the handle"])
+	await player.walk_to(1060.0)
+	player.face(1)
+	player.arm_pose = PUSH
+	await tomas.walk_to(1196.0)
+	tomas.face(-1)
+	tomas.arm_pose = [[1.25, 0.6], [0.3, 0.2]]
+	await narrate("Mara catches it. Tomas holds PARK on the maintenance box until the dish settles.")
+	Audio.stop_loop("dish_motor", 1.2)
+	await wait(0.8)
+	tomas.arm_pose = PULL
+	player.arm_pose = PULL
+	var tw := create_tween()
+	tw.tween_property(self, "handle", 1.0, 1.2)
+	Audio.sfx("thunk", -10.0, 0.8)
+	await narrate("Then they pull the handle down until a wide metal coupling comes clear of its socket. He releases PARK. The radio gives only hiss and a distant weather report.")
+	Audio.play_loop("static", -30.0, 0.4)
+	tomas.arm_pose = []
+	player.arm_pose = []
+	await narrate("Tomas sits on the concrete. He keeps looking at her shoes.")
+	await say("TOMAS", "I remembered you taller.")
+	await mara("I remembered you with your coat done up wrong.")
+	await say("TOMAS", "It wasn't wrong. I was leaving room to grow.")
+	await narrate("She kneels. He lets her put a hand against his cheek, but shuts his eyes before she can see him cry.")
+	await mara("What happened to you?")
+	await say("TOMAS", "I stayed.")
+	await narrate("He folds her hand between his damaged ones.")
+	await say("TOMAS", "Come on. It'll pull itself back in if we leave it.")
+	tomas.arm_pose = PULL
+	player.arm_pose = PULL
+	var creep := create_tween()
+	creep.tween_property(self, "handle", 0.82, 1.6)
+	await narrate("They brace the handle together. The coupling is spring-loaded; when they ease their weight, it creeps toward the socket. A worn pawl should hold it out. Its teeth have been ground smooth.")
+	creep.kill()
+	handle = 1.0
+	await mara("You've been doing this by hand?")
+	await say("TOMAS", "Since '83. The latch still worked then. You won't need two people. Not yet.")
+	await mara("The cable in the control room—")
+	await say("TOMAS", "That's a voice on a desk. This is the ear on the mountain. House power won't stop it. The drive's got its own supply.")
+	await say("TOMAS", "Dad didn't trust a winter outage with something that big moving over people's heads.")
+	await narrate("Mara looks from the handle to the stopped dish. She draws the coupling and its latch in her notebook. Nothing else: one handle, one catch.")
+	g.set_flag("coupling_drawn")
+	hud.toast("In my notebook: the coupling and its latch")
+	await mara("Park it. Pull this clear. Latch it.")
+	await say("TOMAS", "In that order. You try it while the dish is moving, it'll take your hands with it.")
+	await mara("You could have left it out. Before the latch wore away.")
+	await narrate("Tomas looks at the radio.")
+	await say("TOMAS", "Every night I did.")
+	await mara("And in the morning?")
+	await say("TOMAS", "Sometimes she'd be setting the plates out. You could hear the forks. Then she'd call us in.")
+	await narrate("He rubs the old dent in the radio's speaker grille with his thumb.")
+	await say("TOMAS", "I told myself I'd only listen till she said my name.")
+	await narrate("Mara stops drawing.")
+	await say("TOMAS", "Once it was Dad. The whistle. Down, then up. He used to do it from the bottom of the garden when he didn't want to shout.")
+	await mara("Ma still does.")
+	await say("TOMAS", "Does she?")
+	await narrate("His face changes. He is thirteen for one second, waiting for her to go on.")
+	await mara("When she thinks I'm not listening.")
+	await say("TOMAS", "Good.")
+	if g.story.get("TOMAS") != "taken":
+		await mara("I left you with your sister. You were safe.")
+		await say("TOMAS", "I was. For three years. Then I found that station again. I thought I'd find you. That bit was my doing, Mara.")
+		await narrate("He looks at the rope across the path.")
+		await say("TOMAS", "They let me through once. A boy with a radio. I thought that meant I belonged here.")
+	# One note of the whistle gets through, and the coupling creeps home.
+	Audio.sfx("whistle", -16.0)
+	var back := create_tween()
+	back.tween_property(self, "handle", 0.55, 1.4)
+	await narrate("From the little radio, one note of the whistle gets through. The coupling has crept toward the socket while they talked.")
+	tomas.arm_pose = PUSH
+	await narrate("Tomas reaches to push the handle back in.")
+	await hud.choose(["Catch his wrist"])
+	back.kill()
+	await narrate("Mara catches his wrist. For a moment he hates her for it. Then he helps her pull it clear.")
+	tomas.arm_pose = PULL
+	var clear := create_tween()
+	clear.tween_property(self, "handle", 1.0, 0.8)
+	await mara("Is anyone here with you?")
+	await say("TOMAS", "Don't spend the time you've got asking me about the time I wasted.")
+	g.set_flag("white_houses")
+	await narrate("Beyond Mrs. Lund's gate, the white has begun taking the houses. Their windows remain for a moment after their walls are gone.")
+	await say("TOMAS", "You'll go back. You'll have a good latch and your hands won't hurt. You'll think that makes it easy.")
+	await mara("Come with me.")
+	await narrate("He looks at her notebook, then the radio.")
+	await say("TOMAS", "Take what you wrote. Remember what it does to you when it's quiet.")
+	Audio.stop_all(0.6)
+	await wait(0.6)
+	await narrate("His voice is lost first. Mara holds the handle with him until she can no longer feel his hand beside hers.")
+	g.set_flag("held_handle")
 	await Act3.silence(self)
 
 
 # --- drawing ----------------------------------------------------------------------------
 
 func static_key() -> String:
-	return "%s|%d" % [_era(), _white_steps()]
+	return "%s|%d|%s|%s" % [_era(), _white_steps(), rope_up, GameState.has("dish_parked")]
 
 
 ## How near the white is in 2009: it comes on as the visit goes.
 func _white_steps() -> int:
 	var n := 0
-	for f in ["lund_count", "tomas09_met", "knows_tin"]:
+	for f in ["lund_gate", "tomas09_met", "white_houses"]:
 		if GameState.has(f):
 			n += 1
 	return n
@@ -448,7 +501,7 @@ func _aim() -> float:
 			return -PI / 2 + 0.1
 		"2009":
 			return -0.95
-	if GameState.has("dish_parked") and not GameState.has("dish_released"):
+	if GameState.has("dish_parked"):
 		return -PI / 2
 	return -0.16
 
@@ -655,7 +708,7 @@ const WING := Rect2(236, -100, 404, 750)
 
 
 func _stone_wing(era: String) -> void:
-	var night := era != "2031"
+	var night := era == "1983"
 	var stone := Color("4a4c50") if night else Color("8e8a80")
 	Townscape.wall(cv, WING, stone, "stone")
 	cv.draw_rect(Rect2(WING.position.x, 282, WING.size.x, 12), stone.lightened(0.1))
@@ -670,12 +723,14 @@ func _stone_wing(era: String) -> void:
 		var up := Rect2(x, 112, 92, 142)
 		match era:
 			"2009":
-				_lamp_window(low, true)
+				# Glass long gone; one room bricked up.
+				cv.draw_rect(low, Color("2a2c2e"))
+				cv.draw_rect(low, Color("3a3a36"), false, 4.0)
 				if x > 400.0:
-					EnvironmentArt.brick(cv, up, Color("5a4a40"))  # a dark room, bricked up
+					EnvironmentArt.brick(cv, up, Color("6a5a50"))
 				else:
-					_lamp_window(up, true)
-				Townscape.snow_ledge(cv, x - 6, x + 98, 561, 5.0, int(x))
+					cv.draw_rect(up, Color("2a2c2e"))
+					cv.draw_rect(up, Color("3a3a36"), false, 4.0)
 			"2031":
 				Townscape.window(cv, low, false, Color("25221f"), true, false)
 				Townscape.window(cv, up, false, Color("25221f"), true, false)
@@ -693,7 +748,9 @@ func _stone_wing(era: String) -> void:
 	Kit.text(cv, Vector2(376, 401), "WEATHER POST 1931", 9, stone.darkened(0.4), HORIZONTAL_ALIGNMENT_CENTER, 116)
 	if night:
 		Townscape.snow_ledge(cv, 374, 494, 380, 5.0, 17)
-	# The coal chute's iron hatch at the foot of the wall.
+	# The coal chute's iron hatch at the foot of the wall (in 2009 Mrs. Lund's chair stands there).
+	if era == "2009":
+		return
 	var h := Rect2(574, 606, 62, 42)
 	cv.draw_rect(h, Color("26282c") if night else Color("4a4c50"))
 	cv.draw_rect(h, Color("15171a"), false, 3.0)
@@ -934,22 +991,136 @@ func _turbines_static() -> void:
 func _back_2009(e: Env) -> void:
 	var sk: Array = e.sky()
 	Kit.vgrad(cv, Rect2(Kit.L, -100, Kit.R - Kit.L, 560), sk[0], sk[1])
-	cv.draw_colored_polygon(_ridge(400.0, 70.0, 3), Color("0b0e16"))
+	cv.draw_colored_polygon(_ridge(400.0, 70.0, 3), Color("4a525c"))
 	_white_wall()
-	cv.draw_colored_polygon(_ridge(470.0, 36.0, 7), Color("0e121c"))
-	# Halvard below: dark. Not one light.
-	_summit(Color("3c4454"), Color("5a6476"))
-	_far_fence(Color("12151c"))
+	cv.draw_colored_polygon(_ridge(470.0, 36.0, 7), Color("525a60"))
+	_valley_2009()
+	# Wet October grass on the summit.
+	_summit(Color("4e5a44"), Color("6a7458"))
+	_far_fence(Color("2a3028"))
 	_dish(e, "2009")
-	# Two cars abandoned in the lot, further back, snowed in for years.
-	EraVehicles.sedan_2009(cv, Vector2(1110, 583), 0.73, 0.0, {"snow": 0.9})
-	EraVehicles.suv_2009(cv, Vector2(860, 604), 0.85, 0.0, {"snow": 1.0})
 	_ruin()
 	_stone_wing("2009")
-	_hut()
-	_gate_box("2009")
-	_lamp_line()
-	_snow_ground()
+	_chairs_2009()
+	_gate_2009()
+	_poster_2009()
+	_aerials_2009()
+	_box_2009()
+	for i in 30:
+		var p := Vector2(Kit.L + 40.0 + i * 70.0, 660 + (i % 3) * 9.0)
+		cv.draw_line(p, p + Vector2(22, 0), Color(0.75, 0.82, 0.9, 0.18), 2.0)
+
+
+## Halvard below, half its roofs gone: walls and window holes, a few roofs left.
+func _valley_2009() -> void:
+	for i in 26:
+		var x := 300.0 + Townscape.h(i * 7 + 3) * 1300.0
+		var y := 486.0 + Townscape.h(i * 13) * 34.0
+		var w := 18.0 + Townscape.h(i * 5) * 16.0
+		var h := 12.0 + Townscape.h(i * 3) * 8.0
+		var wall := Color("6a6a66").darkened(0.15 * Townscape.h(i * 9))
+		cv.draw_rect(Rect2(x, y - h, w, h), wall)
+		if i % 2 == 0:
+			cv.draw_colored_polygon(PackedVector2Array([Vector2(x - 2, y - h), Vector2(x + w * 0.5, y - h - 8), Vector2(x + w + 2, y - h)]), Color("4a3e38"))
+		else:
+			cv.draw_line(Vector2(x, y - h), Vector2(x + w, y - h + 3), Color("3a3a38"), 1.5)
+		cv.draw_rect(Rect2(x + 3, y - h + 4, 4, 4), Color("2a2c30"))
+		if w > 24.0:
+			cv.draw_rect(Rect2(x + w - 8, y - h + 4, 4, 4), Color("2a2c30"))
+
+
+## Mrs. Lund's chair at the gate, and beside it the empty one with the second coat folded on it.
+func _chairs_2009() -> void:
+	for cx in [600.0, 504.0]:
+		cv.draw_rect(Rect2(cx - 26, 598, 56, 7), Color("5a4232"))
+		cv.draw_line(Vector2(cx + 27, 598), Vector2(cx + 32, 520), Color("5a4232"), 5.0)
+		cv.draw_line(Vector2(cx + 20, 530), Vector2(cx + 31, 528), Color("5a4232"), 4.0)
+		cv.draw_line(Vector2(cx - 22, 605), Vector2(cx - 22, 650), Color("4a3428"), 4.0)
+		cv.draw_line(Vector2(cx + 24, 605), Vector2(cx + 24, 650), Color("4a3428"), 4.0)
+	# The second coat, folded square, collar up.
+	cv.draw_rect(Rect2(482, 584, 48, 15), Color("3a3c44"))
+	cv.draw_rect(Rect2(482, 584, 48, 4), Color("4a4c56"))
+	cv.draw_colored_polygon(PackedVector2Array([Vector2(486, 584), Vector2(498, 576), Vector2(512, 584)]), Color("2e3038"))
+
+
+## The rope across the path between two posts, and its hand-painted boards.
+func _gate_2009() -> void:
+	var pc := Color("4a3a2c")
+	for x in [660.0, 764.0]:
+		cv.draw_rect(Rect2(x - 5, 486, 10, 166), pc)
+		cv.draw_rect(Rect2(x - 7, 482, 14, 6), pc.darkened(0.3))
+	var sag := 18.0 if not rope_up else -8.0
+	var pts := PackedVector2Array()
+	for k in 11:
+		var u := k / 10.0
+		pts.append(Vector2(lerpf(660, 764, u), (500.0 if not rope_up else 486.0) + sin(u * PI) * sag))
+	if rope_up:
+		# Lifted off the far post and hung back along the near one.
+		pts = PackedVector2Array([Vector2(660, 496), Vector2(652, 560), Vector2(664, 610)])
+	cv.draw_polyline(pts, Color("8a7a5a"), 3.0, true)
+	var boards := ["ONE AT A TIME", "SHOW YOUR HANDS", "KEEP A LIGHT"]
+	for k in 3:
+		var r := Rect2(670 + k * 30, 512 + (k % 2) * 4, 28, 40)
+		if rope_up:
+			r = Rect2(632, 540 + k * 30, 40, 26)
+		cv.draw_rect(r, Color("c8bca0"))
+		cv.draw_rect(r, Color("5a4a36"), false, 1.5)
+		for line in 2:
+			cv.draw_line(r.position + Vector2(4, 8 + line * 9), r.position + Vector2(r.size.x - 4, 8 + line * 9), Color(0.55, 0.15, 0.12, 0.8), 2.0)
+	if not rope_up:
+		Kit.text(cv, Vector2(640, 470), "SHOW YOUR HANDS", 9, Color("e8dcc0"), HORIZONTAL_ALIGNMENT_CENTER, 150)
+
+
+## The digital-TV poster on a fence panel, rain-soaked, with its graffiti.
+func _poster_2009() -> void:
+	cv.draw_rect(Rect2(780, 430, 108, 222), Color("3a3e3a"))
+	for k in 6:
+		cv.draw_line(Vector2(784 + k * 18, 430), Vector2(784 + k * 18, 652), Color("2a2e2a"), 2.0)
+	var r := Rect2(796, 444, 76, 92)
+	cv.draw_rect(r, Color("d8dce4"))
+	cv.draw_rect(Rect2(r.position.x, r.position.y, r.size.x, 18), Color("2a5aa8"))
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 13), "DTV", 11, Color("f0f0f0"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 34), "JUNE 12, 2009", 8, Color("1a2a4a"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 50), "ARE YOU READY?", 7, Color("1a2a4a"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	cv.draw_line(r.position + Vector2(8, 47), r.position + Vector2(68, 47), Color("1a1a1a"), 2.0)
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 72), "TOO LATE", 12, Color("2a2a2a"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	# Rain streaks and a curled corner.
+	for k in 5:
+		cv.draw_line(r.position + Vector2(10 + k * 14, 20), r.position + Vector2(12 + k * 14, 88), Color(0.4, 0.45, 0.55, 0.25), 2.0)
+	cv.draw_colored_polygon(PackedVector2Array([r.end - Vector2(14, 0), r.end, r.end - Vector2(0, 14)]), Color("a8acb4"))
+
+
+## The pile of dead aerials against the fence.
+func _aerials_2009() -> void:
+	var c := Color("8a8e94")
+	cv.draw_line(Vector2(880, 646), Vector2(996, 646), Color("3a3a36"), 6.0)
+	for k in 7:
+		var b := Vector2(890 + k * 15, 646)
+		var a := -1.2 + 0.35 * sin(k * 2.1)
+		var tip := b + Vector2(cos(a), sin(a)) * (70.0 + 20.0 * Townscape.h(k))
+		cv.draw_line(b, tip, c, 2.0)
+		for r in 4:
+			var q := b.lerp(tip, 0.3 + r * 0.17)
+			cv.draw_line(q - Vector2(10, -4), q + Vector2(10, 4), c, 1.5)
+	# Rabbit ears on a box.
+	cv.draw_rect(Rect2(950, 628, 30, 14), Color("2a2a2c"))
+	cv.draw_line(Vector2(958, 628), Vector2(940, 574), c, 1.5)
+	cv.draw_line(Vector2(972, 628), Vector2(992, 572), c, 1.5)
+
+
+## The maintenance box at the foot of the dish: PARK, and the coupling's socket.
+func _box_2009() -> void:
+	# The cable conduit back to the pedestal.
+	cv.draw_line(Vector2(1128, 640), Vector2(1060, 560), Color("2a2c30"), 6.0)
+	var r := Rect2(1104, 520, 60, 128)
+	cv.draw_rect(r, Color("4a4e46"))
+	cv.draw_rect(r, Color("1e2220"), false, 2.0)
+	Kit.text(cv, Vector2(r.position.x, r.position.y + 14), "DRIVE", 8, Color("d8d8c8"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	cv.draw_rect(Rect2(r.end.x - 20, r.position.y + 26, 14, 12), Color("c8a030"))
+	Kit.text(cv, Vector2(r.end.x - 30, r.position.y + 50), "PARK", 7, Color("d8d8c8"))
+	# The socket the coupling seats in.
+	cv.draw_circle(Vector2(r.position.x - 2, r.position.y + 70), 14.0, Color("1a1c1e"))
+	cv.draw_circle(Vector2(r.position.x - 2, r.position.y + 70), 14.0, Color("6a6e70"), false, 2.0)
 
 
 ## The white on the far ridge: a wall of static where the next valley was. It
@@ -981,10 +1152,9 @@ func _white_wall() -> void:
 
 
 ## The roofless shell of the control building: walls broken off at every
-## height, empty windows, and through the fallen front, the lobby's back wall
-## with the spray paint on it.
+## height, empty windows, and through the fallen front, the lobby's back wall.
 func _ruin() -> void:
-	var conc := Color("2e3238")
+	var conc := Color("6a6c6a")
 	var top := PackedVector2Array([Vector2(Kit.L, 650), Vector2(Kit.L, 190)])
 	var xs := [-380.0, -300.0, -230.0, -170.0, -120.0, -60.0, -30.0, 40.0, 130.0, 190.0, 236.0]
 	var ys := [176.0, 214.0, 168.0, 246.0, 222.0, 330.0, 372.0, 352.0, 300.0, 250.0, 262.0]
@@ -992,85 +1162,19 @@ func _ruin() -> void:
 		top.append(Vector2(xs[i], ys[i]))
 	top.append(Vector2(236, 650))
 	cv.draw_colored_polygon(top, conc)
-	# Through the gap: the lobby's back wall, the paint, snow on the floor.
+	# Through the gap: the lobby's back wall, stained, grass on the floor.
 	cv.draw_colored_polygon(PackedVector2Array([Vector2(-60, 650), Vector2(-60, 330), Vector2(-30, 372), Vector2(40, 352),
-		Vector2(130, 300), Vector2(236, 330), Vector2(236, 650)]), Color("24262a"))
-	cv.draw_rect(Rect2(-50, 390, 286, 260), Color("2b2d31"))
-	var red := Color(0.66, 0.15, 0.12, 0.92)
-	Kit.text(cv, Vector2(6, 440), "THEY CAME OUT", 28, red)
-	Kit.text(cv, Vector2(26, 478), "OF THE DARK", 28, red)
-	Kit.text(cv, Vector2(34, 516), "COUNT YOURSELF", 17, Color(0.86, 0.86, 0.8, 0.78))
-	for i in 6:
-		cv.draw_line(Vector2(16 + i * 36, 446), Vector2(17 + i * 36, 456 + Townscape.h(i) * 18), Color(red, 0.6), 3.0)
-	# Window holes, snow on their sills and drifted in.
+		Vector2(130, 300), Vector2(236, 330), Vector2(236, 650)]), Color("4e504e"))
+	cv.draw_rect(Rect2(-50, 390, 286, 260), Color("565856"))
+	for i in 9:
+		cv.draw_line(Vector2(-40 + i * 32, 390), Vector2(-36 + i * 32, 470 + Townscape.h(i) * 60), Color(0.3, 0.32, 0.28, 0.4), 4.0)
 	for i in 3:
 		var w := Rect2(-420 + i * 124, 410, 108, 134)
-		cv.draw_rect(w, Color("07080b"))
-		Townscape.snow_ledge(cv, w.position.x - 2, w.end.x + 2, w.end.y, 6.0, i)
-	Townscape.snowbank(cv, -70, 236, 650, 46.0, 14)
+		cv.draw_rect(w, Color("2a2c2e"))
 	cv.draw_colored_polygon(PackedVector2Array([Vector2(120, 650), Vector2(170, 560), Vector2(236, 600), Vector2(236, 650)]), conc.lightened(0.06))
-	for i in xs.size() - 1:
-		Townscape.snow_ledge(cv, xs[i], xs[i + 1], minf(ys[i], ys[i + 1]) + 2.0, 5.0, i)
-
-
-## The equipment hut by the path to the dish, where Tomas lives outside the
-## line: corrugated iron, a stovepipe, a lamp in the window, a woodpile.
-func _hut() -> void:
-	var r := Rect2(1176, 380, 340, 270)
-	cv.draw_rect(r, Color("3a3e44"))
-	for i in 25:
-		cv.draw_line(Vector2(r.position.x + 7 + i * 14, r.position.y), Vector2(r.position.x + 7 + i * 14, r.end.y), Color("2a2e34"), 3.0)
-	cv.draw_colored_polygon(PackedVector2Array([Vector2(1164, 386), Vector2(1528, 398), Vector2(1528, 380), Vector2(1164, 360)]), Color("2a2c30"))
-	Townscape.snow_ledge(cv, 1162, 1530, 368, 12.0, 41)
-	var door := Rect2(1210, 430, 100, 220)
-	cv.draw_rect(door, Color("2a2622"))
-	cv.draw_rect(door, Color("1a1612"), false, 3.0)
-	cv.draw_circle(Vector2(door.end.x - 14, door.position.y + 120), 4.0, Color("8a8478"))
-	# Papers in plastic sleeves, tacked to the door: a yellowed clipping
-	# over a printout folded many times.
-	var clip := Rect2(1258, 468, 36, 34)
-	var sheet := Rect2(1266, 494, 36, 44)
-	cv.draw_rect(sheet, Color("dcdad2"))
-	for k in 7:
-		cv.draw_line(sheet.position + Vector2(4, 8 + k * 5), sheet.position + Vector2(32, 8 + k * 5), Color(0.35, 0.35, 0.38, 0.55), 1.0)
-	cv.draw_line(sheet.position + Vector2(0, 22), sheet.position + Vector2(36, 22), Color(0, 0, 0, 0.12), 1.0)
-	cv.draw_rect(clip, Color("cdbd8c"))
-	cv.draw_rect(Rect2(clip.position + Vector2(3, 4), Vector2(30, 4)), Color("3a3428"))
-	for k in 4:
-		cv.draw_line(clip.position + Vector2(3, 13 + k * 5), clip.position + Vector2(31, 13 + k * 5), Color(0.3, 0.27, 0.2, 0.6), 1.0)
-	cv.draw_line(clip.position + Vector2(2, 2), clip.position + Vector2(20, 2), Color("1a1a6a"), 2.0)
-	for sl: Rect2 in [clip, sheet]:
-		cv.draw_line(sl.position + Vector2(6, 2), sl.position + Vector2(18, sl.size.y - 2), Color(1, 1, 1, 0.18), 3.0)
-		cv.draw_circle(sl.position + Vector2(sl.size.x * 0.5, 1), 2.5, Color("9a9488"))
-	_lamp_window(Rect2(1352, 450, 96, 84), false)
-	cv.draw_line(Vector2(1480, 380), Vector2(1480, 200), Color("1a1c20"), 10.0)
-	for i in 9:
-		var p := Vector2(1352 + (i % 3) * 26, 636 - (i / 3) * 22)
-		cv.draw_circle(p, 12.0, Color("5a4030"))
-		cv.draw_circle(p, 6.0, Color("8a6a48"))
-
-
-## The lamp line: hurricane lamps on posts in front of the stone wing, a rope
-## between them. Newcomers stay outside it.
-const LINE_POSTS := [262.0, 330.0, 398.0, 466.0, 534.0]
-
-
-func _lamp_line() -> void:
-	for i in LINE_POSTS.size():
-		var x: float = LINE_POSTS[i]
-		cv.draw_line(Vector2(x, 652), Vector2(x, 534), Color("2a2622"), 6.0)
-		cv.draw_rect(Rect2(x - 9, 504, 18, 30), Color("3a3430"))
-		cv.draw_rect(Rect2(x - 11, 500, 22, 5), Color("2a2622"))
-		if i > 0:
-			var pts := PackedVector2Array()
-			for k in 9:
-				var u := k / 8.0
-				pts.append(Vector2(lerpf(LINE_POSTS[i - 1], x, u), 548.0 + sin(u * PI) * 12.0))
-			cv.draw_polyline(pts, Color("6a5a40"), 2.5, true)
-	# A string of bulbs along the string course, between the floors.
-	for k in 18:
-		var p := Vector2(250 + k * 22.0, 300 + sin(k * 0.6) * 3.0)
-		cv.draw_circle(p, 3.5, Color("6a5a40"))
+	for i in 12:
+		var x := -60.0 + i * 26.0
+		cv.draw_line(Vector2(x, 650), Vector2(x + 4, 632 - Townscape.h(i) * 10), Color("5a6a44"), 2.0)
 
 
 func draw_anim(ci: CanvasItem) -> void:
@@ -1089,21 +1193,35 @@ func draw_anim(ci: CanvasItem) -> void:
 		for i in 6:
 			var y := 300.0 + fposmod(i * 37.0 + t * 26.0, 130.0)
 			ci.draw_line(Vector2(x0 + 60, y), Vector2(Kit.R, y + 2), Color(1, 1, 1, 0.12), 2.0)
+		_handle_2009(ci)
+
+
+## The coupling handle on the maintenance box, and the coupling sliding clear of its socket.
+func _handle_2009(ci: CanvasItem) -> void:
+	var pivot := Vector2(1112, 566)
+	var a := lerpf(-2.2, -0.35, handle)  # up and back (seated) to down and forward (clear)
+	var tip := pivot + Vector2(cos(a), sin(a)) * 74.0
+	ci.draw_line(pivot, tip, Color("2a2c2e"), 7.0)
+	ci.draw_line(tip - Vector2(cos(a + PI / 2), sin(a + PI / 2)) * 10.0, tip + Vector2(cos(a + PI / 2), sin(a + PI / 2)) * 10.0, Color("8a2a24"), 8.0)
+	ci.draw_circle(pivot, 6.0, Color("5a5e60"))
+	# The wide metal coupling: home in the socket, or drawn out of it.
+	var c := Vector2(1102 - 34.0 * handle, 590)
+	ci.draw_rect(Rect2(c.x - 18, c.y - 16, 30, 32), Color("7a7e80"))
+	ci.draw_rect(Rect2(c.x - 18, c.y - 16, 30, 32), Color("3a3e40"), false, 2.0)
+	for k in 3:
+		ci.draw_line(Vector2(c.x - 14 + k * 9, c.y - 14), Vector2(c.x - 14 + k * 9, c.y + 14), Color("5a5e60"), 2.0)
+	# Tomas's little radio on the concrete, a dent in its grille.
+	if tomas != null:
+		var rp := Vector2(1196, 638)
+		ci.draw_rect(Rect2(rp.x - 16, rp.y - 12, 32, 14), Color("3a4430"))
+		ci.draw_circle(rp + Vector2(-6, -5), 4.0, Color("1a1c18"))
+		ci.draw_line(rp + Vector2(8, -12), rp + Vector2(18, -34), Color("8a8e94"), 1.5)
 
 
 func draw_glow(ci: CanvasItem) -> void:
 	match _era():
 		"2009":
-			for x in LINE_POSTS:
-				Kit.soft_glow(ci, Vector2(x, 519), 46.0, Color(1.0, 0.72, 0.38, 0.5 + 0.08 * sin(t * 5.0 + x)))
-				ci.draw_rect(Rect2(x - 5, 510, 10, 18), Color(1.0, 0.86, 0.55, 0.9))
-			for k in 18:
-				ci.draw_circle(Vector2(250 + k * 22.0, 303 + sin(k * 0.6) * 3.0), 2.5, Color(1.0, 0.85, 0.55, 0.85))
-			Kit.soft_glow(ci, Vector2(1400, 492), 70.0, Color(1.0, 0.7, 0.35, 0.3))
-			if coupling > 0.0:
-				var f := _cabin()
-				Kit.soft_glow(ci, f, 90.0 * coupling, Color(1.0, 0.95, 0.85, 0.85 * coupling))
-				Kit.soft_glow(ci, f, 30.0, Color(1, 1, 1, coupling))
+			pass
 		"2031":
 			pass
 		_:

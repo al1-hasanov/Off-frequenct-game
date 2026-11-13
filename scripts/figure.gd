@@ -1221,6 +1221,17 @@ func _prop(pose: Dictionary) -> void:
 				coil.append(rcv + Vector2(0.03 * H + sin(i * 1.7) * 0.01 * H, 0.06 * H + i * 0.022 * H))
 			ci.draw_polyline(coil, Color("1e2023"), 1.4, true)
 			_hand(near_w, (rcv - near_w).normalized(), _skin(), false)
+		"baby":
+			# A baby asleep against her shoulder, swaddled in the blue blanket.
+			var far_b := _wrist(arms[1], true)
+			var mid_b := near_w.lerp(far_b, 0.5) + Vector2(0.01 * H, -0.015 * H)
+			var bl: Color = pose.get("prop_col", Color("6a8ac8"))
+			# The bundle lies across her chest, the head up at her shoulder.
+			fill(capsule(mid_b + Vector2(0.04 * H, 0.03 * H), mid_b + Vector2(-0.03 * H, -0.045 * H), 0.045 * H, 0.04 * H), bl, 0.08, 0.12)
+			var hd := mid_b + Vector2(-0.035 * H, -0.075 * H)
+			ci.draw_circle(hd, 0.026 * H, _skin().lightened(0.08))
+			ci.draw_arc(hd, 0.03 * H, PI * 1.05, PI * 1.95, 10, bl.darkened(0.1), 0.012 * H)
+			_hand(near_w, Vector2(0.6, -0.8).normalized(), _skin(), false)
 		"bag":
 			# A paper bag from the diner, held by its rolled top.
 			var bc: Color = pose.get("prop_col", Color("b58a5a"))

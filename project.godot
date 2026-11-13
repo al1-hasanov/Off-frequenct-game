@@ -6,8 +6,8 @@ config_version=5
 [application]
 
 config/name="Off Frequency"
-config/description="A 2D sci-fi point-and-click mystery. v0.6.2: Act 3, the futures, with what Dad was listening to: Einstein's constant, dark energy, time travel and parallel worlds, hinted at in 1983, 2031, 2009 and 1991."
-config/version="0.6.2"
+config/description="A 2D sci-fi point-and-click mystery. v0.7.0: the prologue to the end of Act 3, rewritten from the author's script: the exchange in the kitchen, Mrs. Lund's gate, Ruth's reunion, June's roster, Red in the dark and the three knocks."
+config/version="0.7.0"
 run/main_scene="res://scenes/main.tscn"
 config/quit_on_go_back=false
 config/features=PackedStringArray("4.6", "GL Compatibility")

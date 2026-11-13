@@ -34,14 +34,14 @@ func draw_back() -> void:
 	var tomas: Variant = g.story.get("TOMAS")
 	var c1 := "You answered the voice." if answered == true else "You cut the power."
 	var c2 := "You took Tomas with you." if tomas == "taken" else "You left Tomas in 1980, with his sister."
-	var c3: String = {"confront": "In the dark kitchen, you confronted Eighty-One.",
-		"confide": "You told June what happened in the dark.",
-		"conceal": "You kept what happened in the dark to yourself."}.get(g.story.get("SWITCH"), "")
-	var c4: String = {"blessed": "In 1991 you let him go on with his life.",
-		"asked": "In 1991 you asked him to come with you. He held your hand until the white."}.get(g.story.get("LETGO"), "")
-	var c5: String = {"follow": "You pulled the 2.14 cable. Red stopped calling.",
-		"expose": "You showed Eighty-One the notebook. She walked into the dark.",
-		"force": "You fought her for the revolver. Dad's chain burst: no more futures."}.get(g.story.get("EIGHTY"), "")
+	var c3: String = {"confront": "In the dark kitchen, you asked Eighty-One what she did.",
+		"conceal": "In the dark kitchen, you said nothing."}.get(g.story.get("SWITCH"), "")
+	var cj: String = {"trusted": "At her shop door you told June about the kitchen. She'll ask which dog.",
+		"check": "At her shop door you asked June only for a radio check."}.get(g.story.get("JUNE"), "")
+	var c4: String = {"life": "In 1991 you asked about his life. Nobody reached for a radio.",
+		"asked": "In 1991 you asked him to come with you. He looked at Lise."}.get(g.story.get("LETGO"), "")
+	var c5: String = {"cut": "You cut Red's channel. The white stopped gaining. Red's lamp went out.",
+		"keep": "You kept Red's channel open. The white took the corner. She is not alone."}.get(g.story.get("EIGHTY"), "")
 	var fracture := int(g.story.get("FRACTURE", 0))
 	var crossings := int(g.story.get("CROSSINGS", 0))
 	var theories := 0
@@ -49,17 +49,17 @@ func draw_back() -> void:
 		if g.has("theory_" + id):
 			theories += 1
 	Kit.text(cv, Vector2(0, 92), "OFF FREQUENCY", 56, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	Kit.text(cv, Vector2(0, 136), ("End of Act 3" if act3 else "End of Act 2") + "  ·  v0.6", 28, Color("e8a54b"), HORIZONTAL_ALIGNMENT_CENTER, 1280)
-	var y := 192.0
-	for line in ["Choice 1: " + c1, "Choice 2: " + c2, c3, c4, ("Choice 3: " + c5) if c5 != "" else ""]:
+	Kit.text(cv, Vector2(0, 136), ("End of Act 3" if act3 else "End of Act 2") + "  ·  v0.7", 28, Color("e8a54b"), HORIZONTAL_ALIGNMENT_CENTER, 1280)
+	var y := 186.0
+	for line in ["Choice 1: " + c1, "Choice 2: " + c2, c3, cj, c4, ("Choice 3: " + c5) if c5 != "" else ""]:
 		if line == "":
 			continue
-		Kit.text(cv, Vector2(0, y), line, 24, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
-		y += 34.0
+		Kit.text(cv, Vector2(0, y), line, 22, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+		y += 31.0
 	Kit.text(cv, Vector2(0, y + 6), "\"%s\" - what you always said to Tomas." % Story.signoff_line(), 21, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
 	Kit.text(cv, Vector2(0, y + 40), "You crossed %d times. %d of them frayed you (FRACTURE %d)." % [crossings, fracture, fracture], 21, white, HORIZONTAL_ALIGNMENT_CENTER, 1280)
 	Kit.text(cv, Vector2(0, y + 72), "Theories you worked out in the notebook: %d of %d." % [theories, Notebook.LINKS.size()], 19, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
 	if act3:
-		Kit.text(cv, Vector2(0, y + 124), "Next: Act 4. Three knocks at the front door,", 22, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
-		Kit.text(cv, Vector2(0, y + 152), "the transmit key in your pocket, and the white on the ridge.", 22, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+		Kit.text(cv, Vector2(0, y + 116), "Next: Act 4. Three knocks at the service door,", 22, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
+		Kit.text(cv, Vector2(0, y + 144), "and on the other side, someone who is not an echo.", 22, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)
 	Kit.text(cv, Vector2(0, 690), "Thanks for playing.", 22, dim, HORIZONTAL_ALIGNMENT_CENTER, 1280)

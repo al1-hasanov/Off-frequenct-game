@@ -10,6 +10,9 @@ var couple_h: Actor
 ## The other Mr. Lund, from another frequency. Gone after 1980.
 var couple_h2: Actor
 var townsman: Actor
+## Act 2.6: the dish stops for one clean song.
+var dish_paused := false
+var _dish_ang := 0.0
 
 
 func setup() -> void:
@@ -22,6 +25,7 @@ func setup() -> void:
 	make_player(560.0, 1)
 	couple_w = add_actor("townswoman", 214.0, 1)
 	couple_h = add_actor("husband", 272.0, -1)
+	couple_h.visible = not GameState.has("choice2")
 	couple_h2 = add_actor("husband", 152.0, 1)
 	couple_h2.visible = not GameState.has("choice2")
 	townsman = add_actor("townsman", 1000.0, -1)
@@ -53,7 +57,7 @@ func on_tuning() -> void:
 	snow.follow(env())
 	var away := tuning != "" and tuning != freq
 	couple_w.visible = not away
-	couple_h.visible = not away
+	couple_h.visible = not away and not GameState.has("choice2")
 	couple_h2.visible = not away and not GameState.has("choice2")
 	townsman.visible = not away
 
@@ -98,6 +102,8 @@ func on_arrive() -> void:
 		await mara("'Ash Street. I'll be in the one with the lights off.' Mom's house is up the hill.")
 	elif _needs_call():
 		await _june_calls()
+	elif GameState.has("june_door") and not GameState.has("lund_gone"):
+		await _lund_alone()
 	objective()
 
 
@@ -114,14 +120,38 @@ func _june_calls() -> void:
 	await mara("...The dish. Up on the mountain. It's turning.")
 	await mara("Nobody's up there to turn it.")
 	Audio.play_loop("static", -26.0, 0.3)
-	await say("JUNE (RADIO)", "Mara? Mara, honey, it's June. Pick up.")
-	await say("JUNE (RADIO)", "The dish is calling. The whole band's lit up. Whoever's up there, it's for you.")
+	await say("JUNE (TUNER)", "Mara? Mara, honey, it's June. Pick up.")
+	await say("JUNE (TUNER)", "The dish is calling. The whole band's lit up. Whoever's up there, it's for you. Stop by the shop first.")
 	await mara("The road's eleven miles. I'd never make it in time.")
 	await mara("But the old mine runs right under the mountain. Halvard Number 2. It comes out at the observatory.")
 	Audio.stop_loop("static", 0.4)
+
+
+## After June's door: Mrs. Lund alone with the spare coat. The dish stops for
+## a moment, and a windowsill radio plays clean, every note. Then it turns again.
+func _lund_alone() -> void:
+	GameState.set_flag("lund_gone")
 	await wait(0.4)
-	hud.toast("[The church bell is swinging. No sound.]")
-	await mara("St. Olaf's bell is swinging. I can't hear it. I can't hear it at all.")
+	await player.walk_to(330.0)
+	player.face(-1)
+	await say("MRS. LUND", "They were both standing here. Arne went upstairs for the other coat. Twenty minutes ago.")
+	await say("MRS. LUND", "The kitchen light's on. He's not in it. The other one's gone up to look.")
+	await mara("One of them's gone quiet. Just... gone quiet.")
+	dish_paused = true
+	Audio.stop_loop("dish_motor", 0.6)
+	Audio.play_loop("song_radio", -18.0, 0.8)
+	await narrate("Up on the mountain the dish stops turning. On a windowsill, a radio finds its station: clean music, every note.")
+	await say("MRS. LUND", "It sounds better. Why does it sound better?")
+	await wait(0.6)
+	dish_paused = false
+	Audio.play_loop("dish_motor", -26.0, 0.6)
+	Audio.play_loop("static", -24.0, 0.3)
+	Audio.gap("song_radio", 0.4)
+	await narrate("The dish starts moving again. The music breaks apart.")
+	Audio.stop_loop("song_radio", 1.2)
+	Audio.stop_loop("static", 1.6)
+	await wait(0.4)
+	await mara("St. Olaf's bell. Swinging hard, and not a sound. Like the air forgot how.")
 
 
 func on_hotspot(id: String) -> void:
@@ -148,6 +178,14 @@ func on_hotspot(id: String) -> void:
 				await mara("St. Olaf's bell. Swinging hard, and not a sound. Like the air forgot how.")
 			else:
 				await mara("St. Olaf's. That bell hasn't rung since the parish stopped paying the ringer.")
+				if not GameState.has("bell_note"):
+					GameState.set_flag("bell_note")
+					Audio.play_loop("song_radio", -24.0, 0.3)
+					await wait(1.2)
+					Audio.gap("song_radio", 0.35)
+					await wait(0.5)
+					await narrate("Its clapper moves once in the wind. A radio on a neighbour's windowsill loses one note of its song in the same instant. Mara looks from the bell to the mountain.")
+					Audio.stop_loop("song_radio", 1.0)
 		"pike_door":
 			Audio.sfx("shopbell", -12.0)
 			main.change_room("pike_radio", "from_main")
@@ -179,10 +217,11 @@ func on_hotspot(id: String) -> void:
 ## The Lunds: two Mr. Lunds, one spare coat. After 1980, one of them is gone.
 func _lunds() -> void:
 	if GameState.has("choice2"):
-		await say("MRS. LUND", "Arne went upstairs for the other coat. Twenty minutes ago.")
-		await say("MRS. LUND", "The kitchen light's on. He's not in it.")
-		await mara("One of them's gone quiet. Just... gone quiet.")
-		GameState.set_flag("lund_gone")
+		if GameState.has("lund_gone"):
+			await say("MRS. LUND", "The other one's still upstairs, looking. I'll hold the coat.")
+		else:
+			await say("MRS. LUND", "Arne went upstairs for the other coat. Twenty minutes ago.")
+			await say("MRS. LUND", "The kitchen light's on. He's not in it.")
 		return
 	if not GameState.has("met_lunds"):
 		GameState.set_flag("met_lunds")
@@ -192,6 +231,12 @@ func _lunds() -> void:
 		await say("MRS. LUND", "The one with the cold feet gets it. That's how it's always been.")
 		await narrate("Both Mr. Lunds raise a hand.")
 		await say("MRS. LUND", "Well. That's no help at all.")
+		# The darn on the cuff: two men, one memory each (2009 again).
+		await narrate("She pulls the coat across both their shoulders. One cuff has a neat green darn. The man on her left touches it.")
+		await say("MR. LUND", "You did that after the fishing trip.")
+		await say("MR. LUND", "She did it before.")
+		await say("MRS. LUND", "Arne. You both got it wet.")
+		GameState.set_flag("lund_darn")
 		return
 	await say("MRS. LUND", "Forty-one years, and now I have to share him with himself.")
 
@@ -326,7 +371,9 @@ func draw_anim(ci: CanvasItem) -> void:
 		ci.draw_rect(Rect2(159.5 + k * 24.0, 365.5, 5, 5), Color("ffd890") if on else Color("a86a3a"))
 	Townscape.snow_ledge(ci, 148, 442, 372, 5.0, 23)
 	if GameState.has("dish_turning"):
-		_dish(ci, Vector2(920, 184), sin(t * 0.25) * 0.5)
+		if not dish_paused:
+			_dish_ang = sin(t * 0.25) * 0.5
+		_dish(ci, Vector2(920, 184), _dish_ang)
 		Townscape.church_bell(ci, CHURCH, sin(t * 2.4) * 0.5)
 
 

@@ -1,19 +1,23 @@
-# Off Frequency — v0.6.2: The Futures
+# Off Frequency — v0.7.0: The script through Act 3
 
 A 2D sci-fi point-and-click mystery for Android (iOS later), built in **Godot 4.6.3** with GDScript.
 The full story is in the *Off Frequency — Story Bible* doc; this build covers the prologue and Acts 1 to 3.
 
 ![Preview](docs/preview.png)
 
-## New in v0.6.2: what Dad was listening to
+## New in v0.7.0: the script through Act 3
 
-Dark energy is now the science under the story. Dad's Air Force study, code name LAMBDA, was measuring the energy of empty space twenty years before anyone called it dark energy, and every year Mara visits hints at it with something that existed then: his *Gravitation* and LAMBDA notes on Sollen's shelf (Einstein's Λ, the Einstein–Rosen bridge, Everett's branches, Gödel's loop), a Λ that won't rub off the control-room chalkboard, Λ.L. on his diagram, Einstein's equation on the 2031 museum wall with a timeline from 1917 to DESI in 2025, the Big Rip on Tomas's door in 2009, and the 1988 wormhole time-machine paper in his 1991 workshop. Four new notebook theories (twelve in all). The ? button points to each optional clue while it's unread. Red's turnings now show each sound's name in its rings, and the ? button knows which turning you're at. See [UPDATE_v0.6.2.md](UPDATE_v0.6.2.md).
+The prologue and Acts 1 to 3 now follow the author's script, *Off Frequency: Story Through Act 3*. The kitchen exchange is rebuilt (a match in a saucer, a second Mara at the back door, a click in the dark, and nothing on screen to say who's standing there after). There's a new choice at June's door, and Mrs. Lund alone while the dish stops for one clean song. Act 3 is largely new: Mrs. Lund's gate and Tomas at the coupling in 2009; the tin behind the boiler, Ruth's reunion (or the empty stool) and the PARK test (HELD HERE); Pike and Lind Radio in 1991 with Lise, the baby and June's roster, which names the player Blue; the 07 cupboard; Red finding her way by sound to the mesh, the lamp and the door; and Eighty-One's confession beside the body. **Choice 3** is now *cut Red's channel* or *keep it open and stay with her*, and the act ends on three knocks at the service door. See [UPDATE_v0.7.0.md](UPDATE_v0.7.0.md).
+
+## Previous update, v0.6.2: what Dad was listening to
+
+Dark energy is now the science under the story. Dad's Air Force study, code name LAMBDA, was measuring the energy of empty space twenty years before anyone called it dark energy, and every year Mara visits hints at it with something that existed then: his *Gravitation* and LAMBDA notes on Sollen's shelf (Einstein's Λ, the Einstein–Rosen bridge, Everett's branches, Gödel's loop), a Λ that won't rub off the control-room chalkboard, Λ.L. on his diagram, Einstein's equation on the 2031 museum wall with a timeline from 1917 to DESI in 2025, the Big Rip on Tomas's door in 2009, and the 1988 wormhole time-machine paper in his 1991 workshop. Four new notebook theories (twelve in all). The ? button points to each optional clue while it's unread. Red's turnings now show each sound's name in its rings, and the ? button knows which turning you're at. See [UPDATE_v0.6.2.md](UPDATE_v0.6.2.md). (In v0.7.0 the 2009 and 1991 papers gave way to the script's scenes; the 1983 notes and the 2031 panel remain.)
 
 ## Previous update, v0.6.1: true to scale
 
 Act 3's places are drawn to the people's scale (about 110 px to the metre): full-size cars, doors taller than the people going through them, buildings whose storeys run up out of the picture, and the dish standing well back across the summit. Main Street in 1991 is rebuilt at full scale, with his sedan and their minivan parked at the kerb in front of you; the shop's desks and benches are at real heights. See [UPDATE_v0.6.1.md](UPDATE_v0.6.1.md).
 
-## New in v0.6.0
+## v0.6.0 (Act 3's first version; v0.7.0 rewrote much of it to the script)
 
 **Act 3 is playable**, about 40 minutes after the mine tunnel: Dad's 2.14 chain, three futures through the dish's feed cabin, Tomas's notebook and the experiment, Red's chapter in the dark, and Eighty-One. Two new choices (LETGO and EIGHTY), and it ends on three knocks at the front door.
 
@@ -29,9 +33,9 @@ See [UPDATE_v0.6.0.md](UPDATE_v0.6.0.md) for everything new, chapter by chapter.
 
 ### Install this test build
 
-Open `OffFrequency-v0.6.2-debug.apk`. It is **Off Frequency 0.5** (`com.alihasanov.offfrequency.v05`, version code 14), signed with the same key as the v0.5.x test APKs, so it **updates them in place**. A save from v0.5.x that reached the end of Act 2 continues into Act 3 from **Chapters (debug)** → Act 3 → 3.1.
+Open `OffFrequency-v0.7.0-debug.apk`. It is **Off Frequency 0.5** (`com.alihasanov.offfrequency.v05`, version code 15), signed with the same key as the v0.5.x and v0.6.x test APKs, so it **updates them in place**. Act 3's flags changed in v0.7.0: if a v0.6.x save is already inside Act 3, start the act again from **Chapters (debug)** → Act 3 → 3.1.
 
-Your v0.4 install is still separate, because it was signed with the key on your own computer. To update that one in place, export from this project on your computer (see *Building the APK yourself*): the preset targets `com.alihasanov.offfrequency.ambience`, version code 14, signed with your local `build-support/` key.
+Your v0.4 install is still separate, because it was signed with the key on your own computer. To update that one in place, export from this project on your computer (see *Building the APK yourself*): the preset targets `com.alihasanov.offfrequency.ambience`, version code 15, signed with your local `build-support/` key.
 
 ### Previous update, v0.5.2: every station is its own world
 
@@ -208,7 +212,7 @@ func on_hotspot(id: String) -> void:
             main.change_room("receiver_room", "from_corridor")   # always the last line, never awaited
 ```
 
-- **Story variables** live in `GameState.story`: `ANSWERED`, `TOMAS`, `EIGHTY`, `FINALE`, `FRACTURE`, plus `CROSSINGS`, `SIGNOFF` and `SWITCH` since v0.5 (matching the story bible). Smaller facts are flags: `GameState.set_flag("read_note")`, `GameState.has("read_note")`.
+- **Story variables** live in `GameState.story`: `ANSWERED` (Choice 1), `TOMAS` (Choice 2: taken or left), `SWITCH` (the kitchen: confront or conceal), `JUNE` (June's door: trusted or check), `LETGO` (1991: life or asked), `EIGHTY` (Choice 3: cut or keep), `SIGNOFF` (the prologue goodbye), `FINALE`, `FRACTURE` and `CROSSINGS`. The playable woman is named in `hud.say()`: MARA, then BLUE after June's roster (`named_blue`), RED while `playing_red`. Smaller facts are flags: `GameState.set_flag("read_note")`, `GameState.has("read_note")`.
 - **Frequencies**: every room has a `freq` ("H" for home, "01", "03"...) and draws its own version. `main.cross("01", "east_corridor", "first")` plays the glitch, counts the crossing in `CROSSINGS` (and in `FRACTURE` if Mara has made that exact crossing before) and loads that room on that frequency. `GameState.FREQS` holds each frequency's tint and hum pitch.
 - **Darkness**: a room returns `true` from `is_dark()` and the world drops to near-black. With the flashlight, Mara gets a real 2D light cone (`PointLight2D`). `add_lamp()` puts other lights in a room; anything drawn in `draw_glow()` is never darkened.
 - **Hotspots**: `add_hotspot(id, rect, label, walk_x, face, condition)`. The smallest hotspot under a tap wins.
@@ -221,7 +225,7 @@ func on_hotspot(id: String) -> void:
 
 ## Testing
 
-The automated playthrough taps through the real game and checks the story state after each beat (931 checks across eight runs, and every step must have a hint):
+The automated playthrough taps through the real game and checks the story state after each beat (1,364 checks across eight runs, and every step must have a hint):
 
 ```
 godot --headless --path . -- --autotest=answer        # answer the voice, take Tomas: to the end of Act 3
@@ -270,7 +274,7 @@ Command line (after SDK configuration):
 
 ```sh
 godot --headless --path . --editor --import
-godot --headless --path . --export-debug Android build/OffFrequency-v0.5.2-debug.apk
+godot --headless --path . --export-debug Android build/OffFrequency-v0.7.0-debug.apk
 ```
 
 
@@ -286,4 +290,4 @@ There are no recordings yet: lines show as subtitles, and under the 2:14 voice t
 
 ## Later story expansion
 
-Act 4 opens on the three knocks at the front door, with the transmit key in Mara's pocket and whatever she chose in 1991 and with Eighty-One (see the story bible's *Threads for Act 4*).
+Act 4 opens seconds after the third knock at the service door: Red on the other side, on the cut path without light or guidance, on the keep path with the seam shifting. The script's *Direction for the beginning of Act 4* (the two women, the cost of closing the feed, the shared task before the climb) is the plan; Act 4 itself and the endings are not written yet.

@@ -37,6 +37,7 @@ var tape_strips := 0
 var soup := false
 var cards := 3
 var card_out := false
+var bag_out := false
 var letters := 0
 var poster_swap := 0.0
 var _sheet_t := 0.0
@@ -164,7 +165,7 @@ func _cut(s: String) -> void:
 
 
 func static_key() -> String:
-	return "%s|%d|%d|%s|%d|%s|%d|%d" % [shot, letters, tape_strips, soup, cards, card_out, int(car_x), int(sedan_x)]
+	return "%s|%d|%d|%s|%d|%s|%s|%d|%d" % [shot, letters, tape_strips, soup, cards, card_out, bag_out, int(car_x), int(sedan_x)]
 
 
 func _fade_cut(s: String, dur: float = 0.5) -> void:
@@ -451,6 +452,9 @@ func _spring() -> void:
 	card_out = false
 	cards = 4
 	await _cap("Ruth puts it with the others.", 2.2)
+	bag_out = true
+	await _cap("He has brought the field set back in a paper evidence bag. Mara keeps the bag even after the radio comes out.", 4.0)
+	bag_out = false
 	_cut("station")
 	_show(mara80, 600.0, 1)
 	mara80.seated = true
@@ -593,7 +597,7 @@ func draw_glow(ci: CanvasItem) -> void:
 			# The headlights sweeping across the field as it turns in.
 			var turn := clampf((car_target - car_x) / 500.0, 0.0, 1.0)
 			_sweep(ci, Vector2(car_x + 255.0, 578.0), -0.32 * turn + 0.02, 900.0)
-			IntroArt.dropped_flashlight(ci, FLASH, 0.35)
+			IntroArt.dropped_flashlight(ci, FLASH, 0.35, -1.0)
 		"search":
 			for k in 4:
 				var p := Vector2(180.0 + k * 300.0 + 30.0 * sin(t * 0.3 + k), 488.0)
@@ -678,7 +682,8 @@ func _draw_clearing(mood: String) -> void:
 		IntroArt.trampled(cv, 7)
 	cv.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if mood == IntroArt.NIGHT:
-		IntroArt.dropped_flashlight(cv, FLASH, 0.0)
+		IntroArt.dropped_set(cv, FLASH + Vector2(30, 2))
+		IntroArt.dropped_flashlight(cv, FLASH, 0.0, -1.0)
 	if sedan_x > -1300.0:
 		Vehicles.car(cv, Vector2(sedan_x, 640), 0.9, t, {"body": Color("8a7a5a"), "lights": mood == IntroArt.NIGHT,
 			"engine": sedan_x != sedan_target, "travel": sedan_x, "snow": 0.2})
@@ -1313,6 +1318,13 @@ func _draw_house() -> void:
 	for k in 4:
 		cv.draw_rect(Rect2(824 + k * 11, 630, 9, 16), Color("2a2a2a"))
 	cv.draw_rect(Rect2(600, 512, 40, 24), Color("4a5a3a"))
+	# Cal's paper evidence bag, folded, kept: it goes in under the blanket.
+	var bag := Rect2(650, 516, 52, 22)
+	cv.draw_rect(bag, Color("b8996a"))
+	cv.draw_rect(bag, Color("8a6e48"), false, 1.2)
+	cv.draw_line(Vector2(bag.position.x + 34, bag.position.y), Vector2(bag.position.x + 34, bag.end.y), Color("8a6e48"), 1.0)
+	cv.draw_rect(Rect2(bag.position + Vector2(4, 5), Vector2(26, 9)), Color("e8dcc0"))
+	Kit.text(cv, Vector2(bag.position.x + 4, bag.position.y + 4), "EVIDENCE", 7, Color("8a2a20"), HORIZONTAL_ALIGNMENT_CENTER, 26)
 	# A coil of aerial wire, a soldering iron, a few tubes in a shoebox lid.
 	for r in 3:
 		cv.draw_arc(Vector2(500, 640), 14.0 - r * 3.0, 0, TAU, 16, Color("8a8e92"), 2.0)
@@ -1351,3 +1363,9 @@ func _draw_counter(ci: CanvasItem) -> void:
 			ci.draw_rect(Rect2(830 - k * 1.5, 544 - k * 2, 22, 4), Color("f0ece0"))
 		if card_out:
 			ci.draw_rect(Rect2(800, 540, 24, 6), Color("f8f6ee"))
+		if bag_out:
+			# Cal's paper evidence bag, the field set's shape inside it.
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(670, 548), Vector2(674, 512), Vector2(722, 510), Vector2(726, 548)]), Color("b89a6a"))
+			ci.draw_line(Vector2(674, 512), Vector2(722, 510), Color("8a7048"), 2.0)
+			ci.draw_rect(Rect2(682, 522, 34, 9), Color("efe6cc"))
+			Kit.text(ci, Vector2(682, 523), "EVIDENCE", 7, Color("8a2a20"), HORIZONTAL_ALIGNMENT_CENTER, 34)

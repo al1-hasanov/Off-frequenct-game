@@ -60,6 +60,7 @@ func on_arrive() -> void:
 	await mara("Total dark, a mile of it. I'm going to slide.")
 	await mara("Tomas's radio. Home's between six and seven. Keep the needle on the hum, and keep walking.")
 	await _hold()
+	await narrate("Mara holds the needle where the hum should be until the hum comes back.")
 	await mara("...What was that?")
 	await mara("Everything stopped. Even my heart, I think.")
 	await wait(0.4)
@@ -107,13 +108,17 @@ func _hold() -> void:
 	tuner_glow = false
 
 
-## Two seconds of nothing at all: the Silence, passing under the mountain.
+## Halfway: a voice like her own comes up through the rails, only the
+## beginning of a word. The needle drops; then two seconds of nothing at all.
 func _silence() -> void:
 	silenced = true
 	silence_left = 2.0
 	player.walking = false
 	var drift: float = hud.tuner.drift
 	hud.tuner.drift = 0.0
+	Audio.sfx("voice_short", -20.0, 0.92)
+	hud.caption("A voice like her own comes up through the rails: only the beginning of a word. The needle drops.", 3.2)
+	await wait(0.9)
 	Audio.sfx("silence_hit", -10.0)
 	await wait(0.4)
 	var master := AudioServer.get_bus_index("Master")

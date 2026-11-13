@@ -1,30 +1,24 @@
 extends Room
-## Act 3.6 — October 14, 1991, the back room of Pike & Lind Radio, where Tomas
-## calls on 2.14 every year at 2:14. Tomas's call was the loudest thing the
-## dish could hear, so Mara comes out of the dark into the room he calls from.
+## Act 3.6 — October 14, 1991: PIKE AND LIND RADIO, the painted LIND newer
+## than the rest. June on a high stool, Tomas with both hands inside a cassette
+## deck. Lise and the baby behind the partition. Then June's box: a roster of
+## overnight radio checks from October 1983, and the note that names Blue.
 ##
-## Which Tomas depends on Choice 2. Taken: H's 1991, Tomas is 21 and runs the
-## shop with June, who's 78 and asleep in the armchair. Left: 12's 1991, he's
-## 24, Lise is expecting in December, and there's a crib in a flat box and two
-## cans of yellow paint for tomorrow.
-##
-## The room: a 1991 workshop. Fluorescent tube, pegboard, televisions with wood
-## cabinets, a beige PC with a dot-matrix printer, VHS boxes, QSL cards from
-## all over the world, a calendar, a hot plate with the coffee on, the ham rig,
-## and over it eighty strips of electrical tape, one for each name, and a blank
-## one with a question mark.
+## Which Tomas depends on Choice 2. Taken: he came to 1983 at thirteen and is
+## twenty-one. Sent back: he lived three more years at home, crossed at
+## sixteen, and is twenty-four. Same scene; the marked memories change.
 
 const RIG_X := 1010.0
 const WIN := Rect2(560, 200, 150, 150)
 
 var tomas: Actor
-var other: Actor
-## The reveal: the close-up of her wrist (0..1), and the tells flashing past.
-var closeup := 0.0
-var replay := ""
-## The white at the end of the street, then in the window (0..1).
+var june: Actor
+var lise: Actor
+## The street losing its shadows, in the window (0..1).
 var white := 0.0
 var snow: Snowfall
+## June's box down off the shelf, the roster open on the bench.
+var roster := false
 ## For screenshot runs: the moment on screen (see autotest _watch_shots).
 var shot := ""
 
@@ -39,7 +33,7 @@ func _taken() -> bool:
 
 func setup() -> void:
 	animated_back = false
-	place_name = "Pike & Lind Radio  ·  1991"
+	place_name = "Pike and Lind Radio  ·  1991"
 	base_tint = Color(1.0, 0.97, 0.9)
 	walk_min = 100.0
 	walk_max = 1140.0
@@ -48,329 +42,204 @@ func setup() -> void:
 	snow.count = 30
 	snow.wind = 10.0
 	add_child(snow)
-	other = add_actor("june_1991" if _taken() else "lise_1991", 222.0, 1)
-	other.seated = true
-	other.seat_y = 50.0
-	tomas = add_actor(Act3.tomas_1991(), 790.0, -1)
+	june = add_actor("june_1991", 640.0, -1)
+	june.seated = true
+	june.seat_y = 30.0
+	lise = add_actor("lise_1991", 1180.0, -1)
+	lise.prop = "baby"
+	lise.visible = GameState.has("lise_out")
+	tomas = add_actor(Act3.tomas_1991(), 560.0, 1)
+	tomas.arm_pose = [[0.85, 0.55], [0.75, 0.65]]
 	make_player(150.0, 1)
-	add_layer(1, _draw_armrest)
+	add_layer(1, _draw_bench_top)
 	add_hotspot("door", Rect2(26, 330, 100, 320), "Shop front", 110.0, -1)
-	add_hotspot("other", Rect2(160, 450, 130, 200), "June" if _taken() else "Lise", 320.0, -1)
-	add_hotspot("pc", Rect2(316, 440, 150, 132), "Computer", 390.0)
-	add_hotspot("bench", Rect2(486, 500, 210, 90), "Workbench", 560.0)
-	add_hotspot("photocopy", Rect2(644, 384, 54, 72), "Photocopy", 640.0)
-	add_hotspot("window", WIN, "Window", 640.0)
+	add_hotspot("photo", Rect2(318, 232, 74, 98), "Photograph", 360.0)
 	add_hotspot("shelves", Rect2(724, 220, 160, 250), "Shelves", 780.0)
-	add_hotspot("tomas", Rect2(746, 440, 90, 210), "Tomas", 700.0, 1, func() -> bool: return not GameState.has("roll_call"))
-	add_hotspot("rig", Rect2(900, 500, 230, 100), "Ham rig", 940.0, 1)
-	add_hotspot("tapes", Rect2(900, 160, 250, 270), "Tape strips", 960.0, 1)
-	if not _taken():
-		add_hotspot("crib", Rect2(1150, 430, 110, 220), "Flat box", 1120.0, 1)
+	add_hotspot("rig", Rect2(900, 500, 230, 100), "Spare receiver", 940.0, 1)
 
 
 func enter(entry: String) -> void:
 	entered_from = entry
-	if entry == "from_street":
-		player.position.x = 140.0
-		tomas.position.x = 220.0 + 80.0
-		tomas.face(1)
 
 
 func static_key() -> String:
-	return "%s|%s|%s" % [GameState.has("held_light"), GameState.has("roll_call"), GameState.has("letgo_done")]
+	return "%s|%s" % [roster, GameState.has("named_blue")]
 
 
 func ambience() -> void:
 	Audio.stop_loop("wind", 0.5)
 	Audio.play_loop("room_air", -28.0)
-	if not GameState.has("roll_call"):
-		Audio.play_loop("shortwave", -30.0)
+	Audio.play_loop("radio_music", -32.0)
 	Audio.set_environment("pike_radio", freq)
-
-
-func score_quiet() -> bool:
-	return GameState.has("roll_call")
 
 
 func on_arrive() -> void:
 	ambience()
-	match entered_from:
-		"arrive":
-			await _arrive()
-		"from_street":
-			await tomas.walk_to(790.0)
-			tomas.face(-1)
+	if entered_from == "arrive":
+		await _arrive()
 	objective()
 
 
+## Through the dark cabin, down the dry path, to the light over June's door.
 func _arrive() -> void:
 	await wait(0.5)
-	await narrate("Out of the dark, into a back room that smells of solder and coffee.")
-	await wait(0.3)
+	await narrate("The feed cabin is dark. When Mara opens it, the mountain path is dry. Down in town, the light over June's door is still on.")
+	await narrate("PIKE AND LIND RADIO. The painted LIND is newer than the rest. In the window are radios and a television playing a recording of the first anniversary of German reunification.")
+	await narrate("A cassette case beside it is marked RECORDED 3 OCTOBER 1991. Someone has taped a repair price over half the screen.")
+	await narrate("Inside, June is sitting on a high stool. Tomas has both hands inside a cassette deck.")
+	await say("JUNE", "You're covering the light.")
+	await say("TOMAS", "You're holding it in the wrong place.")
+	await say("JUNE", "Seventy-eight years I've been holding things. Now I find out.")
+	await narrate("Mara laughs before she can stop herself. Both of them turn.")
+	tomas.arm_pose = []
 	tomas.face(-1)
+	june.face(-1)
+	await narrate("Tomas puts the screwdriver down carefully.")
+	await say("TOMAS", "You took your time.")
+	await tomas.walk_to(250.0)
+	await narrate("He crosses the shop. This time he is taller. Mara is the one whose feet nearly leave the floor.")
+	await mara("You're real.")
+	await say("TOMAS", "Very annoying, according to June.")
+	await narrate("June looks down at the cassette deck and gives them the minute.")
 	if _taken():
-		await say("TOMAS", "...Mara?")
-		await say("TOMAS", "No. You can't be. You died. The night you brought me home.")
-		await mara("Tomas. You're...")
-		await say("TOMAS", "Twenty-one. Twenty-two in March. You look exactly the same.")
-		await say("JUNE", "(waking) Who's that, honey? ...Oh. Oh, my.")
-		await say("JUNE", "I'll put the kettle on. No, I won't. I'll sit right here and not say a word.")
+		await say("TOMAS", "June let me sleep behind the bench for a week. Then Ruth said if I was going to grow another inch I could do it in a bed.")
+		await mara("You stayed with her.")
+		await say("TOMAS", "For a while. I never stopped asking about the other one.")
+		await narrate("He sees Mara look at his hands.")
+		await say("TOMAS", "What's wrong with them?")
+		await mara("Nothing. They're fine.")
 	else:
-		await say("TOMAS", "...You.")
-		await say("TOMAS", "The lady at the trees. You sent me back to my sister.")
-		await mara("And you went.")
-		await say("TOMAS", "I went. I'm twenty-four. I've called you on two-fourteen every year since I was fifteen, to say thank you.")
-		await say("LISE", "(from the armchair) Tom? Who is it?")
-		await say("TOMAS", "An old friend, Lise. Go back to sleep.")
+		await say("TOMAS", "I stayed home. Got three years older. Then I went looking for the woman who'd found me.")
+		await mara("I sent you back so you'd be safe.")
+		await say("TOMAS", "You did. You didn't tell me I had to stay thirteen.")
 	GameState.set_flag("tomas91_met")
+	await player.walk_to(470.0)
+	await tomas.walk_to(760.0)
+	tomas.prop = "mug"
+	await tomas.walk_to(540.0)
+	tomas.face(-1)
+	await narrate("He puts her by the bench and brings her coffee in June's chipped mug. She watches him do each ordinary thing.")
+	tomas.prop = "none"
+	player.prop = "mug"
+	await say("TOMAS", "You keep looking at me like I'm going to do a trick.")
+	await mara("You made coffee.")
+	await say("TOMAS", "I've been practising.")
+	await narrate("Behind the partition, a woman asks whether anyone has seen the blue blanket. Tomas lifts it off June's spare receiver and passes it through.")
+	lise.visible = true
+	GameState.set_flag("lise_out")
+	await lise.walk_to(820.0)
+	await narrate("Lise appears with a baby asleep against her shoulder. She looks from him to Mara and understands enough not to ask in front of him.")
+	await say("LISE", "So you're the one.")
+	await mara("Depends who you ask.")
+	await say("LISE", "He said you'd say something like that.")
+	await tomas.walk_to(760.0)
+	tomas.face(1)
+	await narrate("Tomas touches the baby's foot with one finger. Mara has not seen him this gentle with anything except a broken radio.")
+	var pick: int = await hud.choose(["Ask about his life", "Ask him to come with you"])
+	if pick == 0:
+		GameState.set_story("LETGO", "life")
+		await mara("Tell me something I don't know.")
+		tomas.face(-1)
+		await say("TOMAS", "I hate cherry pie.")
+		await mara("No, you don't.")
+		await say("TOMAS", "I liked getting it for free. Took me years to work out those were different things.")
+		await narrate("He points to a photograph behind the till: Lise and Tomas on a windy beach, both laughing.")
+		await mara("What was funny?")
+		await say("TOMAS", "I asked if she'd marry me. She thought I asked if she'd carry me.")
+		await say("LISE", "Your boots were full of water. It seemed a fair question.")
+		await narrate("Mara laughs. Nobody reaches for a radio.")
+	else:
+		GameState.set_story("LETGO", "asked")
+		await mara("Come with me.")
+		await narrate("She already knows what happened to Ruth's cassette. She asks anyway.")
+		tomas.face(-1)
+		if _taken():
+			await say("TOMAS", "You did that once already. Let me keep it.")
+		else:
+			await say("TOMAS", "You let me go home once. Don't ask me to leave her now.")
+		tomas.face(1)
+		await narrate("He looks toward Lise. Mara does too.")
+		await mara("All right.")
+	await _roster()
+
+
+## June's box: OVERNIGHT RADIO CHECKS, OCTOBER 1983. Two rows, two dogs, two
+## goodbyes. And the note under the roster.
+func _roster() -> void:
+	var g := GameState
+	await narrate("June reaches for a box high on a shelf. Mara gets it down for her. Inside are twenty years of repair slips and a folded sheet headed OVERNIGHT RADIO CHECKS — OCTOBER 1983. June has never thrown a paper away if someone might need it again.")
+	roster = true
+	await say("JUNE", "You two used to come in on top of each other. Same voice. Different complaints. Had to keep a list.")
+	await hud.read_doc("OVERNIGHT RADIO CHECKS — OCTOBER 1983", [
+		"H  —  PEPPER  —  MOM  —  %s        [a red pencil dash]\n\n07  —  BISCUIT  —  MA  —  %s        [a blue pencil dash]\n\nThe ink has gone brown." % [Story.roster_signoff(false), Story.roster_signoff(true)],
+	])
+	player.prop = "none"
+	await narrate("Mara sets the mug down.")
+	var blue := Story.blue_signoff()
+	await mara(blue.replace(", Tomas", ""))
+	await say("TOMAS", "That's yours.")
+	await mara("Mine?")
+	await say("TOMAS", "The woman who came for me. In the snow. The other one said something else.")
+	await narrate("June unfolds the last corner. There is a short note under the roster: AFTER ASH STREET, H'S SET ANSWERED AS 07. SHE DIDN'T KNOW.")
+	# From here the script names her: Blue.
+	g.set_flag("named_blue")
+	shot = "roster"
+	await mara("I was at the back door.")
+	await narrate("She looks down at the radio. Beneath its carry strap, a red pencil H. She did not write it.")
+	await mara("There was someone beside the table. I saw her. I thought the house had changed around me.")
+	await say("JUNE", "A house can change a lot before you'll believe you're in the wrong one.")
+	await mara("The woman at the table. The one with red tape. Where did she go?")
+	await narrate("June's hand rests on the roster. She does not have that answer.")
+	await narrate("Tomas reaches for the mug before Blue can knock it over. A young man's hands. She lets him steady it.")
+	await mara("I've been trying to get back to a place I was already in.")
+	Audio.sfx("click", -10.0)
+	Audio.play_loop("static", -24.0, 0.3)
+	await narrate("The spare receiver clicks on. Eighty-One's voice, aged by distance rather than years.")
+	await say("EIGHTY-ONE (RADIO)", "I told you you'd find him. Look at him, love. Is there anything else you need to see?")
+	await narrate("Blue pulls the set toward her.")
+	await mara("What did you do to her?")
+	await say("EIGHTY-ONE (RADIO)", "Come back to the control room.")
+	Audio.stop_loop("static", 0.4)
+	await narrate("The line goes quiet. No instructions follow it.")
+	shot = "white"
+	var tw := create_tween()
+	tw.tween_property(self, "white", 0.6, 2.0)
+	lise.face(-1)
+	await narrate("Lise looks out of the window. The street has lost its shadows. June puts one hand on Tomas's shoulder and one on Blue's sleeve.")
+	await say("JUNE", "You've got a way back. Use it.")
+	await mara("I don't want this to be the last time.")
+	await say("TOMAS", "Then don't spend it looking at the door.")
+	await tomas.walk_to(520.0)
+	tomas.face(-1)
+	g.set_flag("roster_done")
+	await narrate("She holds him. He smells of solder and coffee. When the sound begins to go, she keeps her face against his coat until she cannot hear her own breathing.")
+	tw = create_tween()
+	tw.tween_property(self, "white", 1.0, 1.2)
+	await Act3.silence(self)
 
 
 func on_hotspot(id: String) -> void:
 	match id:
 		"door":
-			if GameState.has("roll_call"):
-				await mara("Not now. Not with ninety seconds left.")
-			elif GameState.has("coffee_1991"):
-				Audio.sfx("shopbell", -10.0)
-				main.change_room("main_street_1991", "from_shop")
-			else:
-				await mara("The shop's through there, dark. He's right here.")
-		"other":
-			await _other()
-		"pc":
-			await mara("A computer. Beige, with a screen like a little television. C, colon, backslash, and a cursor blinking.")
-			await mara("Tomas has a computer.")
-		"bench":
-			await _bench()
-		"window":
-			await mara("Main Street, in the snow. Eight years on.")
-			if GameState.has("roll_call"):
-				await mara("And the white, at the end of it. Coming.")
+			await mara("Not yet. He's right here.")
+		"photo":
+			await mara("Lise and Tomas on a windy beach, both laughing. His boots full of water.")
 		"shelves":
-			if _taken():
-				await mara("Radios, televisions, a stack of rental tapes somebody never took back.")
-				await mara("One radio with its battery box taped shut. A ring in there, he said. Lise's.")
-			else:
-				await mara("Radios, televisions, a stack of rental tapes somebody never took back.")
-				await mara("And a paint chart, every yellow they make. One's circled: BUTTERCUP.")
-			await mara("On the boom box, a paperback read to bits: A BRIEF HISTORY OF TIME. A page turned down at \"The Arrow of Time\".")
-		"photocopy":
-			await _photocopy()
-		"tomas":
-			await _tomas()
+			await mara("Radios, televisions, a stack of rental tapes somebody never took back. June's box of repair slips, up on top.")
 		"rig":
-			if GameState.has("roll_call"):
-				await mara("The headphones are still warm.")
-			else:
-				await mara("His rig. Headphones on the hook. He calls on 2.14 from here, every year.")
-		"tapes":
-			await _tapes()
-		"crib":
-			await mara("A crib, in a flat box. Two cans of yellow paint on top. Tomorrow.")
+			await mara("June's spare receiver. The blue blanket used to live on it.")
 
 
 func use_item(id: String, item: String) -> bool:
-	if item == "flashlight" and id == "bench":
-		await _bench()
-		return true
 	return false
 
 
 func examine_item(item: String) -> bool:
 	if item == "tuner":
-		await mara("The needle's on 1991, and it's staying there. I'm not going anywhere till this lets me.")
+		await mara("The needle's on 1991, and it's staying there. Red pencil under the strap: H.")
 		return true
 	return false
 
-
-func _other() -> void:
-	if _taken():
-		await say("JUNE", "Don't mind me, honey. I'm seventy-eight. I sleep where I sit.")
-		await say("JUNE", "He's called on two-fourteen every year since he was fifteen. I taught him how.")
-	else:
-		await say("LISE", "(half asleep) Mm. He does this every year. Two-fourteen. I bring a blanket.")
-		await narrate("One hand on the curve of her stomach.")
-
-
-func _tomas() -> void:
-	var g := GameState
-	if not g.has("coffee_1991"):
-		g.set_flag("coffee_1991")
-		await narrate("He makes coffee on a hot plate, in a percolator older than either of them.")
-		if _taken():
-			await say("TOMAS", "June made me a partner. PIKE & LIND. Televisions, video machines, the odd satellite dish. Radios, when anyone still wants one.")
-			await say("TOMAS", "Tomorrow I drive Lise to the coast. If there's still a coast.")
-		else:
-			await say("TOMAS", "I fix things for June, nights. Lise and me have the old Halloran house now. December, the baby.")
-			await say("TOMAS", "Tomorrow we paint the nursery. She wants yellow. I want yellow too, I'm just not allowed to say so first.")
-		await say("TOMAS", "Come out front. I want you to see it. All of it, while it's there.")
-		objective()
-		return
-	if not g.has("street_done"):
-		await say("TOMAS", "Out front, through the shop. Come and see.")
-		return
-	if not g.has("held_light"):
-		await say("TOMAS", "Mrs. Halloran's kitchen set, on the bench. Loose battery contact. Hold the light for me?")
-		return
-	await _talk_life()
-
-
-func _bench() -> void:
-	var g := GameState
-	if g.has("held_light"):
-		await mara("Mrs. Halloran's radio, working. She'll have the farm report in the morning.")
-		return
-	if not g.has("street_done"):
-		await mara("A customer's radio, open on the bench. A soldering iron in its stand, warming.")
-		return
-	await say("TOMAS", "Mrs. Halloran's kitchen set. Loose battery contact. Hold the light?")
-	await tomas.walk_to(620.0)
-	tomas.face(-1)
-	await player.walk_to(520.0)
-	player.face(1)
-	player.prop = "flashlight"
-	await narrate("Mara holds the light. He solders.")
-	Audio.sfx("click", -10.0)
-	await wait(0.5)
-	Audio.sfx("static", -14.0)
-	await wait(0.6)
-	Audio.sfx("powerup", -10.0)
-	Audio.play_loop("radio_music", -24.0, 0.4)
-	await wait(0.6)
-	await mara("You fixed it.")
-	await say("TOMAS", "Mostly. That means yes, I know.")
-	Audio.stop_loop("radio_music", 1.2)
-	player.prop = ""
-	g.set_flag("held_light")
-	await tomas.walk_to(790.0)
-	tomas.face(-1)
-	objective()
-
-
-## A 1988 physics paper pinned over the bench, read soft: how a wormhole
-## could be made into a time machine. Tomas's notes down the side.
-func _photocopy() -> void:
-	var g := GameState
-	await narrate("Pinned to the pegboard, a photocopy out of a physics journal, gone soft with handling.")
-	await hud.read_doc("PHYSICAL REVIEW LETTERS  ·  SEPTEMBER 1988", [
-		"WORMHOLES, TIME MACHINES, AND THE WEAK ENERGY CONDITION\n\nMichael S. Morris, Kip S. Thorne, Ulvi Yurtsever\n\n[\"Time machine\" is underlined twice.]\n\nAt the top, in Tomas's capitals: THORNE. SAME THORNE AS DAD'S BIG BLACK BOOK.",
-		"Down the margin, in Tomas's hand:\n\n\"A wormhole is a short cut through space. Move one mouth and it's a short cut through TIME.\"\n\n\"The catch: something has to hold the throat open. Exotic matter. Energy that pushes instead of pulls.\"\n\n\"Dad's thin places push.\"",
-	])
-	if g.has("wormhole_paper"):
-		return
-	g.set_flag("wormhole_paper")
-	await mara("He reads physics journals now. Of course he does.")
-	await mara("A short cut through time, if something holds it open. Something like Dad's thin places.")
-	objective()
-
-
-func _tapes() -> void:
-	if GameState.has("roll_call"):
-		await mara("Eighty strips. Eighty of me. And one blank, with a question mark.")
-		return
-	await narrate("Over the rig, eighty strips of electrical tape in rows, every colour, each labelled underneath in his handwriting. One is blank, with a question mark.")
-	await mara("Grey. Red. Green. Blue...")
-
-
-## He asks about her life; she has to invent some of it. Then it's 2:14.
-func _talk_life() -> void:
-	await say("TOMAS", "So. Tell me about you. Whatever your life is now.")
-	await narrate("She tells him. She finds she has to invent some of it.")
-	if _taken():
-		await say("TOMAS", "I call her too, some years. The other you. The one I left at the gate, in 1980.")
-		await say("TOMAS", "I don't think she can hear.")
-	else:
-		await say("TOMAS", "My sister's asleep across town. I never told her about you. About the trees.")
-	await say("TOMAS", "Somebody has to keep calling.")
-	await wait(0.3)
-	await _roll_call()
-
-
-## 2:14: the call, and what always answers it.
-func _roll_call() -> void:
-	var g := GameState
-	g.set_clock("2:14", false)
-	await say("TOMAS", "Two-fourteen.")
-	await tomas.walk_to(RIG_X)
-	tomas.face(1)
-	tomas.headphones_mode = "head"
-	await player.walk_to(880.0)
-	player.face(1)
-	Audio.stop_loop("shortwave", 0.4)
-	Audio.play_loop("static", -18.0, 0.4)
-	await say("TOMAS", "This is Tomas Lind, Halvard, on two-fourteen. Like every year. I'm still here.")
-	await wait(0.8)
-	await say("TOMAS", "It's you. Older. Every year at two-fourteen she reads them out.")
-	await say("TOMAS", "I used to think you were counting the dead.")
-	tomas.face(-1)
-	await say("EIGHTY-ONE (SPEAKER)", "...Grey. Thirty-one. Stopped at the dish.")
-	await say("EIGHTY-ONE (SPEAKER)", "Red. H. Alive. Lost in the dark at Ash Street.")
-	await say("EIGHTY-ONE (SPEAKER)", "Blue. Zero-seven. Alive. Took Red's place at Ash Street. Doesn't know.")
-	await say("EIGHTY-ONE (SPEAKER)", "Control room, H...")
-	await narrate("She stops where a word should be.")
-	g.set_flag("roll_call")
-	await _reveal()
-
-
-## The camera on her wrist, for the first time. The music drops out.
-func _reveal() -> void:
-	Audio.stop_all(0.2)
-	shot = "wrist"
-	var tw := create_tween()
-	tw.tween_property(self, "closeup", 1.0, 0.6)
-	await tw.finished
-	Audio.sfx("sting", -6.0)
-	await wait(1.6)
-	for line in ["The match going out.", "\"Ma.\"", "Biscuit.", "Up, then down.", "\"Her girl used red tape.\""]:
-		replay = line
-		Audio.sfx("click", -8.0)
-		await wait(0.75)
-	replay = ""
-	await wait(0.6)
-	tw = create_tween()
-	tw.tween_property(self, "closeup", 0.0, 0.6)
-	await tw.finished
-	await mara("When did I—")
-	await narrate("Tomas sees the tape and understands before she does. He doesn't let go of her hand.")
-	await _letgo()
-
-
-func _letgo() -> void:
-	var g := GameState
-	Audio.play_loop("static", -22.0, 2.0)
-	var tw := create_tween()
-	tw.tween_property(self, "white", 0.5, 2.0)
-	shot = "white"
-	await narrate("The white is at the end of the street. About ninety seconds.")
-	var bless := "\"Go to the coast. Ask her.\"" if _taken() else "\"Paint the nursery. Something yellow.\""
-	var pick: int = await hud.choose([bless, "\"Come with me. Right now.\""])
-	if pick == 0:
-		g.set_story("LETGO", "blessed")
-		await mara(bless.trim_prefix("\"").trim_suffix("\""))
-		await say("TOMAS", Story.signoff_reply(1))
-	else:
-		g.set_story("LETGO", "asked")
-		await mara("Come with me. Right now.")
-		if _taken():
-			await say("TOMAS", "You did that once already. Let me keep it.")
-		else:
-			await say("TOMAS", "You told me to go home once. I went.")
-		await narrate("He holds her hand until the white.")
-	g.set_flag("letgo_done")
-	tw = create_tween()
-	tw.tween_property(self, "white", 1.0, 1.6)
-	await narrate("The white takes the street. Then the shop.")
-	Audio.stop_all(0.3)
-	Audio.sfx("silence_hit", -3.0)
-	await hud.whiteout(1.6)
-	# ...and cuts to black. The black doesn't end.
-	hud.fade_rect.color = Color(0, 0, 0, 1)
-	await wait(1.8)
-	Act3.become_red()
-	main.change_room("red_dark", "start")
-
-
-# --- drawing --------------------------------------------------------------------------------
 
 func draw_back() -> void:
 	# Walls: wood panelling to the dado, pegboard and paint above.
@@ -400,9 +269,8 @@ func draw_back() -> void:
 	_shelves_art()
 	_hot_plate()
 	_rig_art()
-	_tape_wall()
-	if not _taken():
-		_nursery_things()
+	_photo_wall()
+	_stool()
 
 
 func _armchair() -> void:
@@ -582,42 +450,42 @@ func _rig_art() -> void:
 		cv.draw_circle(Vector2(1132, 474), 6.0, Color("1a1a1c"))
 
 
-func _tape_wall() -> void:
-	var cols := [Color("2f63c9"), Color("b8322c"), Color("8a8e92"), Color("3a8a4a"), Color("e0c040"), Color("e8e8e0"),
-		Color("1a1a1c"), Color("c86a2a"), Color("7a4a9a"), Color("5ab0c8")]
-	for i in 81:
-		var row := i / 10
-		var c := i % 10
-		var p := Vector2(904 + c * 24, 168 + row * 30)
-		if i == 80:
-			p = Vector2(904 + 10 * 24, 168)
-			cv.draw_rect(Rect2(p, Vector2(18, 7)), Color("f2efe6"))
-			Kit.text(cv, p + Vector2(4, 20), "?", 11, Color("2a2a2a"))
-			continue
-		cv.draw_rect(Rect2(p, Vector2(18, 7)), cols[int(Townscape.h(i * 13) * 10.0) % 10])
-		cv.draw_line(p + Vector2(2, 14), p + Vector2(16, 14), Color(0.15, 0.15, 0.15, 0.6), 1.0)
+## Over the rig: QSL cards, and behind the till a photograph of Lise and Tomas on a windy beach.
+func _photo_wall() -> void:
+	for k in 9:
+		var p := Vector2(904 + (k % 5) * 46, 176 + (k / 5) * 60)
+		cv.draw_rect(Rect2(p, Vector2(38, 50)), [Color("e8d8a0"), Color("a8c8e8"), Color("e8b0a0"), Color("c8e0b0")][k % 4])
+		cv.draw_rect(Rect2(p + Vector2(5, 8), Vector2(28, 7)), Color("4a4a4a"))
+	cv.draw_rect(Rect2(1150, 300, 64, 48), Color("f2efe6"))
+	Kit.vgrad(cv, Rect2(1154, 304, 56, 24), Color("8ab0d0"), Color("c8d8e0"))
+	cv.draw_rect(Rect2(1154, 328, 56, 16), Color("d8c8a0"))
+	cv.draw_circle(Vector2(1172, 330), 4.0, Color("e8bfa4"))
+	cv.draw_circle(Vector2(1192, 328), 4.0, Color("dfb093"))
 
 
-func _nursery_things() -> void:
-	# A crib in a flat box against the wall; two cans of yellow paint on top; a roller.
-	cv.draw_colored_polygon(PackedVector2Array([Vector2(1160, 650), Vector2(1258, 650), Vector2(1272, 440), Vector2(1186, 432)]), Color("c8b088"))
-	Kit.text(cv, Vector2(1186, 540), "CRIB", 16, Color("5a4a30"))
-	for k in 2:
-		cv.draw_rect(Rect2(1170 + k * 34, 614, 28, 34), Color("e8e4dc"))
-		cv.draw_rect(Rect2(1170 + k * 34, 622, 28, 12), Color("f0c830"))
-	cv.draw_line(Vector2(1240, 648), Vector2(1240, 610), Color("6a6a6a"), 2.0)
-	cv.draw_rect(Rect2(1230, 600, 24, 10), Color("f0c830"))
+## June's high stool by the bench.
+func _stool() -> void:
+	cv.draw_rect(Rect2(614, 596, 52, 8), Color("6a4a2e"))
+	cv.draw_line(Vector2(620, 604), Vector2(612, 650), Color("3a2a1c"), 4.0)
+	cv.draw_line(Vector2(660, 604), Vector2(668, 650), Color("3a2a1c"), 4.0)
+	cv.draw_line(Vector2(616, 628), Vector2(664, 628), Color("3a2a1c"), 3.0)
+
+
+## The cassette deck open on the bench, and later June's box and the roster.
+func _draw_bench_top(ci: CanvasItem) -> void:
+	ci.draw_rect(Rect2(496, 532, 40, 18), Color("2a2a2e"))
+	ci.draw_rect(Rect2(502, 536, 18, 8), Color("8a8e92"))
+	if roster:
+		ci.draw_rect(Rect2(600, 520, 60, 30), Color("b89a6a"))
+		ci.draw_rect(Rect2(540, 540, 46, 10), Color("f0e8d4"))
+		ci.draw_line(Vector2(544, 543), Vector2(560, 543), Color("b8322c"), 1.5)
+		ci.draw_line(Vector2(544, 547), Vector2(560, 547), Color("2f63c9"), 1.5)
 
 
 func draw_glow(ci: CanvasItem) -> void:
-	if not GameState.has("roll_call"):
-		Kit.soft_glow(ci, Vector2(975, 528), 40.0, Color(0.4, 1.0, 0.6, 0.18))
+	Kit.soft_glow(ci, Vector2(975, 528), 40.0, Color(0.4, 1.0, 0.6, 0.18))
 	if white > 0.0:
 		var r := WIN
 		ci.draw_rect(Rect2(r.end.x - r.size.x * white, r.position.y, r.size.x * white, r.size.y), Color(0.96, 0.97, 1.0, 0.95))
 		Kit.soft_glow(ci, r.get_center(), 200.0 * white, Color(1, 1, 1, 0.35 * white))
-	Act3.draw_wrist(ci, Color("2f63c9"), closeup)
-	if replay != "":
-		ci.draw_rect(Rect2(Kit.L, -100, Kit.R - Kit.L, 920), Color(0.01, 0.01, 0.02, 0.9))
-		var a := 0.8 + 0.2 * sin(t * 40.0)
-		Kit.text(ci, Vector2(0, 380), replay, 44, Color(0.93, 0.92, 0.88, a), HORIZONTAL_ALIGNMENT_CENTER, 1280)
+

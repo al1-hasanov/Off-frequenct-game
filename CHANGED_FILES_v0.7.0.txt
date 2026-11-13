@@ -1,0 +1,63 @@
+Off Frequency v0.7.0: files changed since the v0.6.2 source
+Paths are relative to the project root. Overlay the changed-files zip on the v0.6.2 source,
+then delete the files listed under Removed. Godot regenerates .godot on import.
+
+Added (14)
+  UPDATE_v0.7.0.md
+  docs/VALIDATION_v0.7.0.md
+  docs/screenshots/60_kitchen_match_saucer.png
+  docs/screenshots/61_june_door.png
+  docs/screenshots/62_mrs_lund_gate_2009.png
+  docs/screenshots/63_coupling_2009.png
+  docs/screenshots/64_empty_stool.png
+  docs/screenshots/65_held_here.png
+  docs/screenshots/66_roster_1991.png
+  docs/screenshots/67_lise_and_the_baby_1991.png
+  docs/screenshots/68_cupboard_07.png
+  docs/screenshots/69_red_mesh_door.png
+  docs/screenshots/70_eighty_one_floor.png
+  docs/screenshots/71_three_knocks.png
+
+Changed (40)
+  README.md
+  export_presets.cfg
+  project.godot
+  scripts/act3.gd
+  scripts/actor.gd
+  scripts/audio_manager.gd
+  scripts/autotest.gd
+  scripts/chapter_states.gd
+  scripts/chapters.gd
+  scripts/env.gd
+  scripts/figure.gd
+  scripts/game_state.gd
+  scripts/hud.gd
+  scripts/intro_art.gd
+  scripts/looks.gd
+  scripts/notebook.gd
+  scripts/rooms/ash_kitchen.gd
+  scripts/rooms/ash_street.gd
+  scripts/rooms/basement.gd
+  scripts/rooms/control_room.gd
+  scripts/rooms/corridor.gd
+  scripts/rooms/diner.gd
+  scripts/rooms/dish.gd
+  scripts/rooms/end_card.gd
+  scripts/rooms/garage.gd
+  scripts/rooms/intro_after.gd
+  scripts/rooms/intro_diner.gd
+  scripts/rooms/lobby.gd
+  scripts/rooms/main_street.gd
+  scripts/rooms/mine_tunnel.gd
+  scripts/rooms/pike_radio.gd
+  scripts/rooms/receiver_room.gd
+  scripts/rooms/red_dark.gd
+  scripts/rooms/road_down.gd
+  scripts/rooms/sheriff_office.gd
+  scripts/rooms/shop_1991.gd
+  scripts/rooms/snowfield_1980.gd
+  scripts/rooms/sollen_office.gd
+  scripts/rooms/visitor_center.gd
+  scripts/story.gd
+
+Removed (0): delete these

@@ -162,7 +162,7 @@ func on_hotspot(id: String) -> void:
 		"keys":
 			GameState.add_item("truck_keys")
 			hud.toast("Got: Truck keys")
-			await mara("Mom's truck keys. The rabbit's foot still has fur on it, in this one.")
+			await mara("Ma's truck keys. The rabbit's foot still has fur on it, in this one.")
 			objective()
 		"back_door":
 			await _back_door()
@@ -191,11 +191,9 @@ func _talk_ma(at_pie: bool) -> void:
 		await say("RUTH", "Tonight I'd believe him.")
 		await mara("Ma... who's feeding Biscuit?")
 		await say("RUTH", "Pepper's fine, honey. He's got the heater.")
-		await say("RUTH", "What was it you two always said? When he went off with that radio of his.")
-		await mara("\"%s\"" % Story.signoff_line(2))
-		await say("RUTH", "No, honey. \"%s\" Every night. I could hear you from the kitchen." % Story.signoff_line())
-		await mara("...Right. That's what I meant.")
-		GameState.set_flag("signoff_wrong")
+		# The one spoken mismatch before 1991: the dog. No music sting.
+		GameState.set_flag("dog_wrong")
+		await narrate("Mara waits a beat, then looks toward the pantry.")
 	if GameState.has("in_12"):
 		if not GameState.has("ate_pie"):
 			GameState.set_flag("ate_pie")
@@ -205,14 +203,13 @@ func _talk_ma(at_pie: bool) -> void:
 		else:
 			await say("RUTH", "More coffee, honey?")
 		return
-	var pick: int = await hud.choose(["Can I get a slice of pie?", "Never mind."])
-	if pick == 0:
-		await say("RUTH", "Cherry. Sit down, I'll bring it.")
-		GameState.set_flag("pie_sent")
-		ruth.walk_to(620.0)
-		await wait(0.5)
-		await mara("She's at the front. The pantry's right behind me.")
-		objective()
+	await mara("Can I get a slice of pie?")
+	await say("RUTH", "Cherry. Sit down, I'll bring it.")
+	GameState.set_flag("pie_sent")
+	ruth.walk_to(620.0)
+	await wait(0.5)
+	await mara("She's at the front. The pantry's right behind me.")
+	objective()
 
 
 func _pantry() -> void:
@@ -331,13 +328,37 @@ func _back_in_1983() -> void:
 	ruth.position.x = 880.0
 	await wait(0.5)
 	if tomas.visible:
-		await mara("Out the back. June's is two doors down. Come on.")
+		Audio.play_loop("radio_music", -26.0, 0.4)
+		await narrate("Through the pantry door, 1983: a jukebox, a coffee pot, Ruth's voice at the counter.")
+		await say("TOMAS", "That's Mom again.")
+		await mara("That one's left a porch light on for you for three years.")
+		await say("TOMAS", "Can I—")
+		await mara("Not yet. Not like this. Out the back. June's is two doors down.")
 		Audio.sfx("door", -10.0)
 		main.change_room("pike_radio", "with_tomas")
 		return
 	await say("RUTH", "Mara? Where'd you go? Your pie's getting cold.")
 	await mara("Sorry, Ma.")
 	await mara("I left him. I left him with her. With me.")
+	await mara("Mr. Dahl's booth is empty. His coffee's still steaming.")
+	await say("RUTH", "He went to wash his hands. That was an hour ago, I think. Was it an hour?")
+	await say("RUTH", "Sit. Eat. I mean it, Mara. You're not leaving here on an empty stomach.")
+	GameState.set_flag("ate_pie")
+	await player.walk_to(700.0)
+	await narrate("Mara sits at the counter and eats the pie. It's the first thing she's eaten since yesterday. It's very good.")
+	await say("RUTH", "There. Now you look like somebody's daughter.")
+	# Outside, the dish on the mountain is turning; June calls on the Tuner.
+	GameState.set_flag("dish_turning")
+	Audio.sfx("powerup", -10.0)
+	await wait(0.4)
+	await narrate("Outside, the dish on the mountain is turning.")
+	await mara("...The dish. Up on the mountain. It's turning. Nobody's up there to turn it.")
+	Audio.play_loop("static", -26.0, 0.3)
+	await say("JUNE (TUNER)", "Mara? Mara, honey, it's June. Pick up. The dish is calling. The whole band's lit up.")
+	await say("JUNE (TUNER)", "Whoever's up there, it's for you. Stop by the shop first.")
+	Audio.stop_loop("static", 0.4)
+	await mara("The road's eleven miles. I'd never make it in time.")
+	await mara("But the old mine runs right under the mountain. Halvard Number 2. It comes out at the observatory.")
 	objective()
 
 

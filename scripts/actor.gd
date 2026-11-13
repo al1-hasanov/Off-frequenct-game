@@ -292,6 +292,8 @@ func _pose(fig: Figure) -> Dictionary:
 			arms[0] = [0.55, 2.35]
 		"bag":
 			arms[0] = [0.08, 0.06]
+		"baby":
+			arms = [[0.4, 2.05], [0.25, 2.25]]
 		"poster":
 			arms = [[1.95, 0.25], [2.05, 0.2]]
 		"headphones":

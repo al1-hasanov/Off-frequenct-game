@@ -1,10 +1,10 @@
 extends Room
 ## Act 2.4 — the dark kitchen of the Lind house in frequency 14. Eighty-One
-## at the table, lit by one match and the glow of her Tuner's dial. The act's
-## centerpiece conversation, then the switch: a third Mara at the back door,
-## the match goes out, and three seconds later the player is Blue Mara.
-## Nothing on screen says so, but the player gets to answer it: confront
-## Eighty-One here, or say nothing (and maybe tell June later). Story SWITCH.
+## at the table, lit by one match in a saucer and the glow of her Tuner's dial.
+## The act's centrepiece conversation, then the exchange: a second Mara (Blue,
+## from 07) at the back door, the match goes out, and when it's relit the
+## player is Blue. Nothing on screen says so; only the tape at the edge of the
+## frame is blue. Ask Eighty-One what she did, or say nothing (story SWITCH).
 
 var e81: Actor
 var other: Actor
@@ -25,7 +25,7 @@ func setup() -> void:
 	e81 = add_actor("eighty_one", 760.0, -1)
 	e81.seated = true
 	e81.seat_y = 52.0
-	e81.arm_pose = [[1.05, 0.95], [0.95, 0.75]]  # forearms on the table, a match in her fingers
+	e81.arm_pose = [[1.05, 0.95], [0.95, 0.75]]  # forearms on the table, either side of the saucer
 	e81.visible = not GameState.has("swapped")
 	other = add_actor("mara", 1180.0, -1)
 	other.wrist_tape = Color("2f63c9")
@@ -72,20 +72,24 @@ func on_arrive() -> void:
 	objective()
 	if GameState.has("met_81"):
 		return
-	await wait(0.6)
-	await mara("Hello?")
-	await wait(0.6)
-	Audio.sfx("match", -4.0)
-	create_tween().tween_property(self, "match_light", 1.0, 0.4)
+	# One match burns in a saucer. She has Mara's face, older.
+	match_light = 1.0
 	light_off = true
-	await wait(0.8)
+	await wait(0.6)
+	await narrate("In the kitchen, one match burns in a saucer. A woman sits behind it. She has Mara's face, older. Burn gauze covers her left hand. A tally counter is taped to her radio.")
+	GameState.set_flag("e81_gauze")
+	await say("HER", "Shut the door gently. It doesn't take much.")
+	Audio.sfx("door", -18.0, 0.9)
+	match_light = 0.75
+	await wait(0.3)
+	create_tween().tween_property(self, "match_light", 1.0, 0.6)
+	await narrate("Mara closes it. The match steadies.")
 	await say("HER", "There are a lot of us. Fewer than there were.")
 	await player.walk_to(520.0)
-	await mara("You. From the basement door.")
-	await mara("Her left hand's wrapped in gauze. Burn gauze.")
-	GameState.set_flag("e81_gauze")
-	await mara("What's your name?")
-	await say("HER", "Eighty-One. That's how many stations I've stood in.")
+	await mara("You. From the basement door. What's your name?")
+	await say("HER", "Eighty-One.")
+	await narrate("She touches the counter without pressing it.")
+	await say("EIGHTY-ONE", "Stations I've stood in. I started counting when the names stopped helping.")
 	await _questions()
 	await _switch()
 
@@ -95,13 +99,13 @@ func _questions() -> void:
 	var asked := {}
 	var labels := {
 		"world": "What's happening to Halvard?",
-		"body": "There's a body in the control room. It's me.",
+		"body": "There's a body in the control room. She looks like me.",
 		"tomas": "Where's my brother?",
 		"early": "A plow driver heard the warning at 2:05. Before it was sent.",
 	}
 	var topics := ["world", "body", "tomas"]
-	# Only a Mara who connected Cal's board to the 2:14 transmission can ask this.
-	if GameState.has("theory_loop"):
+	# Only a Mara who has read Cal's board can ask this.
+	if GameState.has("read_board"):
 		topics.append("early")
 	while asked.size() < topics.size():
 		var opts: Array[String] = []
@@ -115,21 +119,26 @@ func _questions() -> void:
 		asked[k] = true
 		match k:
 			"world":
-				await say("EIGHTY-ONE", "Every time one of us walks through the dark, the world frays a little.")
-				await say("EIGHTY-ONE", "The fraying has an end. It's called the Silence. I've seen it, through the dish.")
+				await say("EIGHTY-ONE", "Two of everything. Then one less. Then none. It has an end. I call it the Silence.")
+				await say("EIGHTY-ONE", "I've watched it come down a street while a man was still deciding which front door was his.")
+				await mara("Because we cross?")
+				await say("EIGHTY-ONE", "Every station I've seen go quiet had one too many of somebody. That's what I know.")
 			"body":
-				await say("EIGHTY-ONE", "One of us who went wrong.")
-				await say("EIGHTY-ONE", "I got there too late.")
+				await say("EIGHTY-ONE", "I know.")
+				await mara("Did you see who did it?")
+				await say("EIGHTY-ONE", "I saw what came after.")
 			"tomas":
 				await say("EIGHTY-ONE", "There's a station where he's still alive. Twelve. It's three years back there.")
-				await say("EIGHTY-ONE", "Don't go.")
+				await say("EIGHTY-ONE", "He's thirteen, and he'll take your hand if you hold it out. Don't.")
 				await mara("Why not?")
-				await say("EIGHTY-ONE", "Because I went. I brought him home. He lasted eleven days, and then his station went quiet with him in it.")
+				await say("EIGHTY-ONE", "Because I did. I brought him home. Eleven days.")
 				await wait(0.6)
-				await say("EIGHTY-ONE", "The second night, he took my kitchen radio apart and put it back together. I said, you did that?")
-				await say("EIGHTY-ONE", "He said, mostly.")
+				await say("EIGHTY-ONE", "The second night, he took my kitchen radio apart and put it back together. I said, you did that? He said, mostly.")
 				await mara("...That means yes.")
 				await say("EIGHTY-ONE", "That's what I said too.")
+				await mara("What happened on the eleventh day?")
+				await say("EIGHTY-ONE", "The white came back. I was down in the cellar, in the dark. He was in the kitchen with the light on.")
+				await narrate("She straightens the saucer. There is no tremor in her good hand until she lets go.")
 				GameState.set_flag("e81_tomas")
 			"early":
 				await say("EIGHTY-ONE", "You read Cal's board.")
@@ -137,10 +146,9 @@ func _questions() -> void:
 				await say("EIGHTY-ONE", "It's never the first time, love. I've sat at this table nineteen times. You've asked me that in four of them.")
 				await mara("What happens in the others?")
 				await say("EIGHTY-ONE", "In most of them you go to twelve anyway.")
-				await say("EIGHTY-ONE", "So go. Just know what you're carrying back.")
 				GameState.set_flag("pressed_81")
 	await _goodbye_beat()
-	await say("EIGHTY-ONE", "Meet me at the dish when it's time. You'll know when.")
+	await say("EIGHTY-ONE", "Go and see him, if you have to. Then meet me at the dish. You'll know when.")
 
 
 ## What Mara said to Tomas, every night. If she said it to the voice on an
@@ -150,6 +158,7 @@ func _goodbye_beat() -> void:
 		await say("EIGHTY-ONE", "\"%s\" That's what you said to him. Every night." % Story.signoff_line())
 		await mara("How do you know that?")
 		await say("EIGHTY-ONE", "You said it on 2.14 tonight. On an open band. Every one of us heard you.")
+		await say("EIGHTY-ONE", "A password stops being a password when you give it to the room.")
 		GameState.set_flag("e81_signoff")
 	else:
 		await say("EIGHTY-ONE", "What did you say to him? Last thing, every night.")
@@ -158,16 +167,22 @@ func _goodbye_beat() -> void:
 		GameState.set_flag("kept_signoff")
 
 
-## The switch: a third Mara, the match goes out, three seconds of dark.
+## The exchange. A second Mara (Blue, from 07) at the back door; the match
+## goes out. In the dark Eighty-One turns Red's set to 61 and takes it off her
+## shoulder as Red follows the carrier; then she retunes it to H and puts it
+## in Blue's hands. Nothing on screen says so (3.8 tells it). From here the
+## player is Blue: only the tape at the edge of the frame has changed.
 func _switch() -> void:
-	Audio.sfx("door", -8.0)
+	Audio.sfx("lock", -14.0, 1.3)
 	other.visible = true
 	other.position.x = 1180.0
+	other.prop = "radio"
 	await wait(0.4)
-	await other.walk_to(1000.0)
-	await mara("...What?")
+	await narrate("At the back door, a latch lifts. Another woman steps into the dark kitchen. The same face. A radio held against her chest.")
+	await other.walk_to(1040.0)
+	await say("SECOND MARA", "Ma?")
 	await say("EIGHTY-ONE", "Ah. Everyone's early.")
-	# A draft from the back door.
+	# A draft from the back door blows out the match.
 	Audio.play_loop("wind", -14.0, 0.2)
 	await wait(0.3)
 	create_tween().tween_property(self, "match_light", 0.0, 0.25)
@@ -177,12 +192,19 @@ func _switch() -> void:
 	blackout = true
 	player.visible = false
 	other.visible = false
-	await say("MARA", "Who's—")
-	Audio.sfx("scrape", -4.0)
+	Audio.sfx("scrape", -6.0)
+	await wait(0.45)
+	Audio.sfx("click", -16.0, 0.7)
+	await wait(0.35)
+	Audio.sfx("click", -20.0, 2.1)
+	await wait(0.3)
+	Audio.sfx("thunk", -14.0, 1.5)
+	await narrate("A draft from the back door blows out the match. Total darkness. A chair scrapes. A radio strap catches on something. A small dry click, like a thumbnail turning a screw. A set knocks against someone's hands.")
 	await say("MARA", "Let go of me—")
 	Audio.sfx("thunk", -2.0)
-	await wait(0.8)
-	# Unseen: our Mara is swept into the dark. The one who stays came from 07.
+	await narrate("A thump.")
+	await wait(0.4)
+	# Unseen: our Mara (Red) is in the dark. The one who stays came from 07.
 	GameState.set_flag("swapped")
 	GameState.set_flag("met_81")
 	if GameState.has_item("red_tape"):
@@ -190,44 +212,51 @@ func _switch() -> void:
 		GameState.inventory[at] = "blue_tape"
 		GameState.inventory_changed.emit()
 	player.wrist_tape = Color("2f63c9")
+	player.prop = "radio"
 	player.visible = keep
 	blackout = false
 	Audio.play_loop("wind", -30.0, 0.5)
 	Audio.sfx("match", -4.0)
 	create_tween().tween_property(self, "match_light", 1.0, 0.4)
-	await wait(1.0)
+	await wait(0.6)
+	# One Mara by the table, holding a radio, breathing hard. Only the tape
+	# at the edge of the frame says which one.
+	Audio.sfx("breath", -16.0, 0.95)
+	await narrate("Eighty-One strikes a new match. One Mara stands by the table, holding a radio, breathing hard.")
 	e81.face(-1)
-	await wait(1.2)
-	await say("EIGHTY-ONE", "Right. Where was I.")
+	await wait(0.8)
+	await say("EIGHTY-ONE", "Right. Where was I. Your brother. Station twelve. It's three years back there.")
+	await say("EIGHTY-ONE", "He's thirteen, and he'll take your hand if you hold it out. I'd tell you not to. You'll go anyway.")
+	await say("EIGHTY-ONE", "Then the dish. I'll meet you there.")
+	await narrate("She has said all of this before, nearly word for word. She says it now as if for the first time.")
 	await _response()
+	player.prop = "none"
 	await wait(0.4)
 	e81.seated = false
-	await say("EIGHTY-ONE", "Go see your brother if you have to. Just come back.")
+	e81.prop = "radio"
+	await narrate("Eighty-One goes out by the back door. She is carrying two radios.")
+	await say("EIGHTY-ONE", "Find the hum on that one. It knows the way home.")
 	await e81.walk_to(1180.0)
 	Audio.sfx("door", -12.0)
 	e81.visible = false
 	create_tween().tween_property(self, "match_light", 0.0, 1.2)
 	await wait(1.0)
 	light_off = false
-	await mara("Twelve. Three years back.")
-	await mara("He's alive in twelve.")
+	await mara("Twelve. Three years back. He's alive in twelve.")
+	await mara("And Ma's house, for sale. I need to get home.")
 	objective()
 
 
-## The player's answer to the switch (story SWITCH). Confronting her happens
-## here; saying nothing leaves a door open to tell June later.
+## The player's answer (story SWITCH): ask her, or say nothing.
 func _response() -> void:
-	await mara("My hands are shaking. There were two of us. Weren't there?")
-	var pick: int = await hud.choose(["\"What did you just do?\"", "Say nothing."])
+	await mara("There was somebody by the table. Where did she go?")
+	var pick: int = await hud.choose(["\"What did you just do?\"", "Say nothing"])
 	if pick == 0:
 		GameState.set_story("SWITCH", "confront")
-		await mara("What did you just do? There were two of us.")
-		await say("EIGHTY-ONE", "There's only ever one of you in a room, love. Rooms are strict about it.")
+		await mara("What did you just do?")
+		await say("EIGHTY-ONE", "Got one of you out. That's all a room like this can bear.")
 		await mara("Where did she go?")
 		await say("EIGHTY-ONE", "Somewhere dark. She's better in the dark than you'd think.")
-		await say("EIGHTY-ONE", "Look at your wrist if you have to. Then stop looking. It doesn't help.")
-		await narrate("The tape on Mara's wrist is blue.")
-		GameState.set_flag("saw_blue")
 	else:
 		GameState.set_story("SWITCH", "conceal")
 		await mara("Don't ask. Not her. Not now.")
@@ -275,6 +304,9 @@ func _draw_table(ci: CanvasItem) -> void:
 	ci.draw_rect(Rect2(546, 578, 208, 8), Color("5a4434"))
 	ci.draw_line(Vector2(554, 586), Vector2(554, 650), Color("5a4434"), 7.0)
 	ci.draw_line(Vector2(746, 586), Vector2(746, 650), Color("5a4434"), 7.0)
+	# The saucer the match burns in.
+	ci.draw_colored_polygon(PackedVector2Array([Vector2(672, 562), Vector2(708, 562), Vector2(702, 567), Vector2(678, 567)]), Color("d8d2c4"))
+	ci.draw_line(Vector2(674, 562), Vector2(706, 562), Color("b8b0a0"), 1.5)
 	if e81.visible:
 		# Her Tuner on the table: the same green field radio, a tally counter taped to it.
 		ci.draw_rect(Rect2(586, 542, 70, 24), Color("4a5a3a"))
@@ -286,7 +318,7 @@ func draw_glow(ci: CanvasItem) -> void:
 	if match_light <= 0.01:
 		return
 	# The match, in Eighty-One's fingers (or on the table once she's gone).
-	var p := Vector2(708, 544) if e81.visible else Vector2(690, 560)
+	var p := Vector2(690, 554)
 	var f := 0.8 + 0.2 * sin(t * 13.0) * sin(t * 5.0)
 	ci.draw_circle(p, 3.0, Color(1.0, 0.95, 0.7, match_light))
 	ci.draw_circle(p + Vector2(0, -3), 5.0 * f, Color(1.0, 0.75, 0.35, 0.7 * match_light))

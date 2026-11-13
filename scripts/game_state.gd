@@ -4,7 +4,10 @@ extends Node
 ## The `story` dictionary holds the hidden variables from the story bible
 ## (ANSWERED, TOMAS, EIGHTY, FINALE, FRACTURE, plus SIGNOFF: the goodbye Mara
 ## and Tomas always said, chosen in the prologue; SWITCH: how Mara answered
-## the kitchen switch; CROSSINGS: every crossing). `flags` holds every smaller
+## the kitchen switch; JUNE: "trusted" if Mara told June about the kitchen at
+## her shop door, "check" if she only asked for a radio check; EIGHTY: Choice 3,
+## "cut" or "keep" Red's channel; LETGO: what Blue asked Tomas in 1991;
+## CROSSINGS: every crossing). `flags` holds every smaller
 ## fact the scenes need ("read_note", "fuse_installed", ...). `meta` survives
 ## across playthroughs: it will hold the transmission's tail lines.
 ##
@@ -16,7 +19,7 @@ extends Node
 signal changed
 signal inventory_changed
 
-const VERSION := "0.6.2"
+const VERSION := "0.7.0"
 
 const ITEMS := {
 	"red_tape": {
@@ -85,15 +88,19 @@ const ITEMS := {
 	},
 	"station_log": {
 		"name": "Tomas's notebook",
-		"desc": "STATION LOG, in his handwriting. September to October 1980. Two strips of chart paper taped inside.",
+		"desc": "His notebook, out of a biscuit tin behind the boiler. September to October 1980. Day 42, and the dish drawn with arrows through it. One page torn out: HOLD IT STILL.",
 	},
-	"chart_strips": {
-		"name": "Chart strips",
-		"desc": "Two strips off the chart recorder, mine: flat with the dish parked, climbing while it listens. They match his.",
+	"service_card": {
+		"name": "Dad's service card",
+		"desc": "October 1979. Across REPLACE FAILED LINK, in Dad's hand: LEFT OPEN ON PURPOSE. PARK BEFORE RESTORING. Under it, Sollen: Programme requires an uninterrupted sample.",
 	},
 	"chain_sheet": {
 		"name": "Dad's diagram",
 		"desc": "THE 2.14 CHAIN, in Dad's hand. DISH LO-FEED to jack A1. Rx-2 IF OUT to jack B3. FIELD SET OUT to jack C2. Don't route through the forward bank. Λ.L. 10/79.",
+	},
+	"blue_set": {
+		"name": "My own radio",
+		"desc": "Mine. The strap I carried into the kitchen. Eighty-One pushed it back across the floor. I'm keeping Red's on the patch: that's where her voice is.",
 	},
 	"revolver": {
 		"name": "Sollen's revolver",
@@ -176,7 +183,7 @@ func use_test_paths() -> void:
 
 func new_game() -> void:
 	story = {"ANSWERED": null, "TOMAS": null, "EIGHTY": null, "FINALE": null, "FRACTURE": 0,
-		"CROSSINGS": 0, "SIGNOFF": null, "SWITCH": null, "LETGO": null}
+		"CROSSINGS": 0, "SIGNOFF": null, "SWITCH": null, "LETGO": null, "JUNE": null}
 	flags = {}
 	inventory.clear()
 	selected_item = ""
@@ -235,13 +242,11 @@ func item_name(id: String) -> String:
 
 func item_desc(id: String) -> String:
 	var d: String = ITEMS.get(id, {}).get("desc", "")
-	if id == "tuner" and has("notebook_read"):
-		# Tomas's Day 1: it was Dad's field set, and Dad wrote in the lid.
-		d += " Inside the lid, in Dad's writing: Λ  LIGHT = BALLAST."
+	if id == "tuner" and has("named_blue"):
+		# June's roster, 1991: this is H's set. Red pencilled the H.
+		d += " Under the strap, in red pencil: H. I didn't write it."
 	if id == "tuner" and has("patched"):
 		# Act 3: Dad's relay is in. The dial reads years.
-		if has("bank_burst"):
-			return d + " Its fourth digit is dark now. No more futures."
 		var y := Act3.next_future()
 		d += " Since Dad's relay clicked in, there's a fourth digit: the dial reads years."
 		d += (" The needle's on %s." % y) if y != "" else " The needle won't settle on anything."
@@ -363,7 +368,7 @@ func snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> void:
 	story = (data.get("story", {}) as Dictionary).duplicate(true)
-	for k in ["ANSWERED", "TOMAS", "EIGHTY", "FINALE", "SIGNOFF", "SWITCH", "LETGO"]:
+	for k in ["ANSWERED", "TOMAS", "EIGHTY", "FINALE", "SIGNOFF", "SWITCH", "LETGO", "JUNE"]:
 		if not story.has(k):
 			story[k] = null
 	if not story.has("CROSSINGS"):

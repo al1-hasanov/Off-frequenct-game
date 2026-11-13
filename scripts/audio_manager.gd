@@ -316,6 +316,22 @@ func loop_volume(sound: String, volume_db: float) -> void:
 	p.volume_db = volume_db
 
 
+## A clean gap in a playing loop: one note missing, then the tune again.
+func gap(sound: String, dur: float = 0.32) -> void:
+	var p: AudioStreamPlayer = _loops.get(sound)
+	if p == null or not p.playing:
+		return
+	if p.has_meta("tween"):
+		var old: Tween = p.get_meta("tween")
+		if old != null and old.is_valid():
+			old.kill()
+	var db := p.volume_db
+	p.volume_db = -70.0
+	get_tree().create_timer(dur).timeout.connect(func() -> void:
+		if is_instance_valid(p) and p.playing and p.volume_db <= -69.0:
+			p.volume_db = db)
+
+
 ## Glides a loop's pitch (each frequency's hum sits at its own pitch).
 func set_loop_pitch(sound: String, pitch: float, glide: float = 0.6) -> void:
 	var p: AudioStreamPlayer = _loops.get(sound)

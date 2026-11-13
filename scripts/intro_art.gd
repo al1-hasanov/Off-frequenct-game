@@ -144,19 +144,41 @@ static func trampled(ci: CanvasItem, seed: int = 0) -> void:
 
 ## The flashlight lying in the snow where Tomas was, and the light it throws
 ## along the ground. `beam` 0..1.
-static func dropped_flashlight(ci: CanvasItem, p: Vector2, beam: float) -> void:
+## `dir` 1 points the lens to the right; -1 back to the left (P1b: toward
+## the truck).
+static func dropped_flashlight(ci: CanvasItem, p: Vector2, beam: float, dir: float = 1.0) -> void:
+	var d := dir
 	if beam > 0.0:
 		var warm := Color(1.0, 0.94, 0.72)
-		ci.draw_polygon(PackedVector2Array([p + Vector2(10, -2), p + Vector2(230, -40), p + Vector2(250, 26), p + Vector2(10, 4)]),
+		ci.draw_polygon(PackedVector2Array([p + Vector2(10 * d, -2), p + Vector2(230 * d, -40), p + Vector2(250 * d, 26), p + Vector2(10 * d, 4)]),
 			PackedColorArray([Color(warm, 0.55 * beam), Color(warm, 0.0), Color(warm, 0.0), Color(warm, 0.55 * beam)]))
-		ci.draw_set_transform(p + Vector2(120, 4), 0.0, Vector2(1.0, 0.18))
+		ci.draw_set_transform(p + Vector2(120 * d, 4), 0.0, Vector2(1.0, 0.18))
 		ci.draw_circle(Vector2.ZERO, 110.0, Color(warm, 0.08 * beam))
 		ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	ci.draw_line(p + Vector2(-16, 2), p + Vector2(8, -1), Color("2b2d31"), 7.0)
-	ci.draw_line(p + Vector2(4, -1), p + Vector2(11, -2), Color("4a4d52"), 9.0)
-	ci.draw_circle(p + Vector2(12, -2), 4.0, Color("fff2c8") if beam > 0.0 else Color("8a8678"))
+	ci.draw_line(p + Vector2(-16 * d, 2), p + Vector2(8 * d, -1), Color("2b2d31"), 7.0)
+	ci.draw_line(p + Vector2(4 * d, -1), p + Vector2(11 * d, -2), Color("4a4d52"), 9.0)
+	ci.draw_circle(p + Vector2(12 * d, -2), 4.0, Color("fff2c8") if beam > 0.0 else Color("8a8678"))
 	# Half sunk: snow over its tail.
-	ci.draw_circle(p + Vector2(-14, 4), 6.0, Color("c8d2e2"))
+	ci.draw_circle(p + Vector2(-14 * d, 4), 6.0, Color("c8d2e2"))
+
+
+## Tomas's field set where it fell: olive case on its side in the snow, the
+## dial up, the battery cover knocked loose beside it, the aerial bent.
+static func dropped_set(ci: CanvasItem, p: Vector2) -> void:
+	var olive := Color("4a5a3a")
+	ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-17, -16), p + Vector2(15, -19), p + Vector2(18, 2), p + Vector2(-15, 4)]), olive)
+	ci.draw_polyline(PackedVector2Array([p + Vector2(-17, -16), p + Vector2(15, -19), p + Vector2(18, 2), p + Vector2(-15, 4), p + Vector2(-17, -16)]),
+		olive.darkened(0.45), 1.2, true)
+	ci.draw_rect(Rect2(p + Vector2(-12, -14), Vector2(13, 6)), Color("c8c39f"))
+	ci.draw_circle(p + Vector2(8, -7), 4.0, Color("1e2420"))
+	ci.draw_circle(p + Vector2(-6, -2), 2.4, Color("1e2420"))
+	ci.draw_line(p + Vector2(14, -18), p + Vector2(34, -34), Color("9aa0a6"), 1.5, true)
+	ci.draw_line(p + Vector2(34, -34), p + Vector2(41, -31), Color("9aa0a6"), 1.5, true)
+	# The battery cover, off and lying flat a hand's width away.
+	ci.draw_colored_polygon(PackedVector2Array([p + Vector2(22, 0), p + Vector2(40, -3), p + Vector2(42, 3), p + Vector2(24, 6)]), olive.darkened(0.15))
+	# Snow drifted against the low side.
+	ci.draw_circle(p + Vector2(-16, 3), 5.0, Color("c8d2e2"))
+	ci.draw_circle(p + Vector2(-8, 5), 4.0, Color("c8d2e2"))
 
 
 # --- the service road ----------------------------------------------------------------------

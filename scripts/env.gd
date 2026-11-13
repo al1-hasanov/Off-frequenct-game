@@ -142,8 +142,8 @@ func _future(key: String) -> void:
 			paint = Color("c8c0b0")
 			lamp_fixed = true
 		"F2009":
-			# A winter night. Nobody in the town below; lamps only up at the wing.
-			_look("winter", "night", "snow", true, false, "derelict")
+			# A wet October afternoon. The town below has lost half its roofs.
+			_look("autumn", "day", "rain", true, false, "derelict")
 			paint = Color("5a5652")
 		"F1991":
 			# Half past one in the morning, the first snow, the town lit.

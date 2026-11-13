@@ -62,6 +62,7 @@ func on_arrive() -> void:
 	if not GameState.has("center_seen"):
 		GameState.set_flag("center_seen")
 		await wait(0.3)
+		await narrate("A notice by the door: \"Some audio exhibits unavailable. Please ask a volunteer for a transcript.\"")
 		await mara("It's my lobby. Somebody's put the whole night in glass cases.")
 		await say("CAL", "(quietly) Afternoon. Welcome to Halvard Signal. Take your time.")
 	objective()
@@ -170,46 +171,66 @@ func _ruth_tape() -> void:
 
 
 func _transcript() -> void:
-	await narrate("DON'T LET HER IN. WHATEVER HAPPENS, DON'T OPEN THE DOOR—")
-	await narrate("Received on 2.14 MHz at 2:14 AM, October 14, 1983. The full transmission has never been recovered.")
+	await narrate("A framed transcript: DON'T LET HER IN. WHATEVER HAPPENS, DON'T OPEN THE DOOR — \"Received on 2.14 MHz at 2:14 AM, October 14, 1983.\"")
+	await narrate("Beneath it, a photograph shows a fallen chair beside the control-room console.")
+	await hud.choose(["Press the listening button"])
+	# The preserved section: the same scrape, the same clicks, the same breath.
+	for k in 2:
+		Audio.sfx("scrape", -14.0)
+		await wait(0.55)
+		Audio.sfx("click", -12.0)
+		await wait(0.28)
+		Audio.sfx("click", -12.0, 0.78)
+		await wait(0.45)
+		Audio.sfx("breath", -14.0, 1.1)
+		await wait(1.0)
+		if k == 0:
+			await narrate("A chair scrapes. Two relay clicks. The clipped breath. Mara presses it again. Same scrape, same clicks.")
 	GameState.set_flag("transcript_seen")
-	await mara("It cuts off. Like somebody pulled the plug.")
+	await mara("That chair. That sound.")
+	await say("CAL", "(quietly) There was nobody left to tell us whose voice it was.")
 
 
 func _desk() -> void:
-	await narrate("DR. HENRIK SOLLEN'S DESK, 1971. During the 1998 renovations, workers found the station's missing transmitter key inside its hollow left rear leg.")
+	await narrate("Behind a rope: \"DR. HENRIK SOLLEN'S DESK, 1971. During the 1998 renovations, workers found the station's missing transmitter key inside its hollow left rear leg.\"")
 	if not GameState.has("knows_key"):
 		GameState.set_flag("knows_key")
 		await mara("The key. In the leg of his desk. Fifteen years, and nobody looked.")
-		await mara("I can't take anything back from here. But I can remember it.")
+		await narrate("She reaches toward the desk. Cal gently catches the rope before she steps over it.")
+		await say("CAL", "(quietly) You can look underneath. Just don't move anything. It gets everyone arguing.")
+		await narrate("Mara kneels, and draws the foot cap in her notebook.")
+		GameState.set_flag("drew_foot_cap")
 		await _maybe_silence()
 	else:
-		await mara("The hollow left rear leg.")
+		await mara("The hollow left rear leg. It's in my notebook.")
 
 
 func _study() -> void:
 	var first := not GameState.has("anders_exhibit")
-	await narrate("THE 2.14 STUDY, 1974–79. Captain Anders Lind, U.S. Air Force, beside the feed horn.")
-	await narrate("His Air Force study of the energy of empty space, twenty years before anyone called it dark energy.")
-	await mara("Dad.")
-	await narrate("Beside the photo, a clipping: AIR FORCE ENGINEER KILLED ON OBSERVATORY ROAD.")
-	await mara("It says he was driving home. Down the mountain.")
+	await narrate("A photograph: \"THE 2.14 STUDY, 1974–79. Captain Anders Lind, U.S. Air Force, beside the feed horn.\"")
+	await narrate("Beside it, a clipping: AIR FORCE ENGINEER KILLED ON OBSERVATORY ROAD.")
+	await mara("Dad. It says he was driving home. Down the mountain.")
 	await mara("In the photograph of the wreck his car points uphill.")
 	if first:
 		GameState.set_flag("anders_exhibit")
-		await say("CAL", "(coming over) I was first on the scene, that night. That's what the report says.")
-		await say("CAL", "Except I wasn't. The Air Force was already there. They took his briefcase. Never saw it again.")
+		await say("CAL", "(coming over) I noticed that too. The report says I was first on the scene. I wasn't.")
+		await say("CAL", "The Air Force was already there. They took his briefcase.")
+		await say("CAL", "Somebody asked me to sign the time under a sentence I hadn't written.")
+		await mara("Did you?")
+		await narrate("Cal looks at the old photograph of himself in uniform.")
+		await say("CAL", "I was thirty-one. That's an explanation. It isn't much of one.")
+		GameState.set_flag("cal_signed")
 		await _maybe_silence()
 
 
 func _plaque() -> void:
-	await narrate("A small brass plaque: MARA LIND, NIGHT TECHNICIAN. FOUND HERE OCT 14, 1983.")
+	await narrate("A small brass plaque by the control-room door: MARA LIND, NIGHT TECHNICIAN. FOUND HERE OCT 14, 1983.")
 	if GameState.has("cal_plaque"):
 		return
 	GameState.set_flag("cal_plaque")
-	await say("CAL", "I found her. Against the console.")
+	await say("CAL", "I found her. By the console.")
 	await say("CAL", "Ruth never believed it was her. Said her girl used red tape.")
-	await narrate("Mara doesn't answer.")
+	await narrate("Mara looks at her wrist. She pulls her cuff down.")
 	await _maybe_silence()
 
 
@@ -219,17 +240,16 @@ func _equation() -> void:
 	var g := GameState
 	await narrate("High on the wall, in brass letters a foot tall: Einstein's field equation, with his cosmological constant. Λ.")
 	await hud.read_doc("WHAT WAS THE DISH LISTENING FOR?", [
-		"1917. Albert Einstein adds a term to his equations of gravity: Λ, the cosmological constant. It gives empty space an energy of its own. When astronomers find that the universe is expanding, he drops it.\n\n1935. Einstein and Nathan Rosen find that the equations allow a bridge joining two separate sheets of space. Physicists later call it a wormhole.",
-		"1949. Kurt Gödel, Einstein's friend at Princeton, finds a universe in Einstein's equations where a traveller can loop back into their own past.\n\n1957. Hugh Everett proposes that the world splits at every quantum event, and that every branch is real. It becomes known as the many-worlds interpretation. Popular books call the branches parallel universes.",
-		"1967. Yakov Zel'dovich argues that the particles flickering in and out of empty space give it an energy that behaves just like Λ.\n\n1974–79. THE 2.14 STUDY. Its Air Force code name was LAMBDA.\n\n1988. Kip Thorne and two colleagues show that a wormhole, if something could hold it open, could be made into a time machine.",
-		"1998. Two teams watching distant exploding stars find that the universe's expansion is speeding up. Something in empty space is pushing. It is named dark energy: about 68% of everything there is.\n\n2011. The discovery wins the Nobel Prize in Physics.\n\n2025. The DESI survey, mapping nearly 15 million galaxies and quasars, finds hints that dark energy is weakening over time.\n\nNobody yet knows what it is.",
+		"1917. Albert Einstein adds Λ, the cosmological constant, to his equations of gravity while seeking a static model of the universe.\n\n1935. Einstein and Nathan Rosen describe a bridge connecting two regions of a mathematical spacetime. It is not a demonstrated passage for a traveller.",
+		"1949. Kurt Gödel finds a rotating universe in Einstein's equations with paths that loop into their own past.\n\n1957. Hugh Everett proposes his relative-state formulation of quantum mechanics. Its later many-worlds reading makes parallel histories a familiar idea.",
+		"1967–68. Yakov Zel'dovich connects quantum vacuum energy with the cosmological constant.\n\n1974–79. THE 2.14 STUDY. Its Air Force code name was LAMBDA.\n\n1988. Michael Morris, Kip Thorne and Ulvi Yurtsever examine whether a traversable wormhole, if one could be maintained, could become a time machine.",
+		"1998. Two teams studying distant supernovae report evidence that the expansion of the universe is accelerating. The unknown cause becomes known as dark energy.\n\n2011. The discovery of accelerating expansion is recognised by the Nobel Prize in Physics.\n\n2025. DESI's first three years of observations cover nearly fifteen million galaxies and quasars. Combined with other observations, they strengthen hints that dark energy may change over time.\n\nNobody yet knows what it is.",
 	])
 	if g.has("museum_lambda"):
 		return
 	g.set_flag("museum_lambda")
 	await mara("Λ. Like the A in Dad's initials.")
-	await mara("LAMBDA. He wasn't listening for anybody out there. He was listening to empty space.")
-	await mara("Twenty years before anyone had a name for it.")
+	await mara("LAMBDA. Empty space. That's what he thought he was listening to.")
 	objective()
 
 
@@ -416,7 +436,16 @@ func _transcript_panel() -> void:
 	cv.draw_line(Vector2(642, 404), Vector2(776, 404), Color("c8a46a"), 1.0)
 	Kit.text(cv, Vector2(642, 422), "2.14 MHz · 2:14 AM", 10, Color("a8a49a"))
 	Kit.text(cv, Vector2(642, 436), "OCTOBER 14, 1983", 10, Color("a8a49a"))
-	Kit.text(cv, Vector2(642, 456), "TRANSCRIPT, INCOMPLETE", 9, Color("8a867c"))
+	# A small photograph under it: the fallen chair beside the console. And the listening button.
+	var ph := Rect2(642, 446, 52, 22)
+	cv.draw_rect(ph, Color("c8c2b4"))
+	cv.draw_rect(Rect2(ph.position + Vector2(3, 3), ph.size - Vector2(6, 6)), Color("4a4842"))
+	cv.draw_rect(Rect2(ph.position.x + 24, ph.position.y + 6, 22, 9), Color("2a2a28"))
+	cv.draw_line(ph.position + Vector2(8, 16), ph.position + Vector2(20, 12), Color("8a867c"), 2.0)
+	cv.draw_line(ph.position + Vector2(10, 12), ph.position + Vector2(14, 17), Color("8a867c"), 1.5)
+	cv.draw_circle(Vector2(760, 457), 8.0, Color("8a2a24"))
+	cv.draw_circle(Vector2(760, 457), 8.0, Color("c8a46a"), false, 1.5)
+	Kit.text(cv, Vector2(700, 470), "LISTEN", 7, Color("8a867c"))
 
 
 func _desk_exhibit() -> void:

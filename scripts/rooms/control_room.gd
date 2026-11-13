@@ -8,9 +8,10 @@ const CHECKS := ["inspected_wrist", "inspected_watch", "inspected_pocket", "insp
 
 var body: Actor
 var snow: Snowfall
-## Act 3.8: Eighty-One by the chalkboard, Sollen's revolver in her good hand
-## and Red's Tuner on her strap.
+## Act 3.8: Eighty-One on the floor beside the body; her two radios on the console.
 var eighty: Actor
+## Act 3.6: the service cupboard beside the console, open while Blue hears 07.
+var cupboard_open := false
 ## Act 3.9: the white cresting the ridge in the window, Halvard's lights going out.
 var white := 0.0
 var lights_out := 0.0
@@ -31,9 +32,9 @@ func setup() -> void:
 	add_child(snow)
 	body = add_actor("body", BODY_X, 1)
 	body.visible = _body_here()
-	eighty = add_actor("eighty_one", 360.0, -1)
-	eighty.prop = "revolver"
-	eighty.carried_radio = Color("b8322c")
+	eighty = add_actor("eighty_one", 590.0, 1)
+	eighty.seated = true
+	eighty.seat_y = 24.0  # on the floor, knees up, beside the body
 	eighty.visible = _e81_here()
 	make_player(300.0, 1)
 
@@ -49,11 +50,15 @@ func setup() -> void:
 	add_hotspot("body_wrist", Rect2(618, 616, 58, 42), "Her wrist", 600.0, 1, here)
 	add_hotspot("body_pocket", Rect2(676, 590, 36, 34), "Her jacket pocket", 600.0, 1, here)
 	add_hotspot("body_watch", Rect2(712, 608, 48, 40), "Her watch", 600.0, 1, here)
+	add_hotspot("body_arm", Rect2(636, 592, 36, 24), "Her arm", 600.0, 1, here)
 	var a3 := func() -> bool: return GameState.has("act3")
 	add_hotspot("patch_bay", Rect2(1056, 500, 128, 116), "Patch bay", 1010.0, 1, a3)
 	add_hotspot("chart", Rect2(306, 412, 134, 64), "Chart recorder", 380.0, 0, a3)
 	add_hotspot("drive", Rect2(920, 412, 84, 64), "Dish drive", 900.0, 0, a3)
-	add_hotspot("eighty", Rect2(318, 440, 84, 210), "Eighty-One", 220.0, 1, func() -> bool: return eighty.visible)
+	add_hotspot("eighty", Rect2(556, 470, 90, 180), "Eighty-One", 480.0, 1, func() -> bool: return eighty.visible)
+	add_hotspot("cupboard", Rect2(1204, 380, 66, 270), "Service cupboard", 1170.0, 1, a3)
+	if GameState.has("act3"):
+		walk_max = 1170.0
 
 
 func _body_here() -> bool:
@@ -61,12 +66,12 @@ func _body_here() -> bool:
 
 
 func _e81_here() -> bool:
-	return GameState.has("red_done") and not GameState.has("e81_done")
+	return GameState.has("red_done")
 
 
 func static_key() -> String:
 	var g := GameState
-	return "%s|%s|%s|%s" % [Act3.board_lines().size(), g.has("dish_parked") and not g.has("dish_released"), g.has("bank_burst"), g.has("patched")]
+	return "%s|%s|%s|%s|%s|%s|%s" % [Act3.board_lines().size(), g.has("dish_parked"), g.has("lead_pulled"), g.has("patched"), _chart_marks().size(), cupboard_open, g.has("wedged")]
 
 
 func enter(entry: String) -> void:
@@ -74,6 +79,9 @@ func enter(entry: String) -> void:
 	if entry == "from_corridor":
 		player.position.x = 112.0
 		player.face(1)
+	elif entry == "after_red":
+		player.position.x = 820.0
+		player.face(-1)
 
 
 func on_arrive() -> void:
@@ -108,7 +116,7 @@ func on_hotspot(id: String) -> void:
 		"old_chalk":
 			await _old_chalk()
 		"window":
-			if GameState.has("dish_parked") and not GameState.has("dish_released"):
+			if GameState.has("dish_parked"):
 				await mara("The dish, parked straight up at the zenith. Not listening to anything.")
 			elif GameState.has("act3"):
 				await mara("The dish, swung round to the horizon. Listening on 2.14, all by itself.")
@@ -121,7 +129,12 @@ func on_hotspot(id: String) -> void:
 		"drive":
 			await _drive()
 		"eighty":
-			await say("EIGHTY-ONE", "Not yet, love. Sit with it a minute.")
+			await say("EIGHTY-ONE", "I'm staying where you can see me.")
+		"cupboard":
+			if GameState.has("cupboard_07"):
+				await mara("The service cupboard. I closed it from the outside.")
+			else:
+				await mara("The service cupboard. Fuses, rags, a mop nobody uses. Dark enough to stand in.")
 		"console":
 			if _body_here():
 				await mara("I can't look at the console. I can only look at her.")
@@ -145,7 +158,16 @@ func on_hotspot(id: String) -> void:
 			await _check("inspected_wrist")
 		"body_watch":
 			await mara("Her watch stopped at 2:14. Same as every clock in the building.")
+			if not GameState.has("own_watch"):
+				GameState.set_flag("own_watch")
+				await narrate("Mara holds her own watch against her ear. Its hand shivers against the same mark. Her breathing and the chart motor go on.")
+				await mara("The clocks. Not us.")
 			await _check("inspected_watch")
+		"body_arm":
+			# Stretched out along the floor, toward the microphone stand (3.8).
+			await narrate("Her arm is stretched out along the floor, toward the microphone stand.")
+			await mara("She was reaching for the mic.")
+			GameState.set_flag("inspected_arm")
 		"body_pocket":
 			if GameState.has("inspected_pocket"):
 				await mara("Keys. Gum. My gum.")
@@ -204,6 +226,7 @@ func draw_back() -> void:
 		_patch_bay_art()
 		_chart_art()
 		_drive_art()
+		_cupboard_art()
 
 
 ## The console's traces and the transmitter's needles move.
@@ -229,7 +252,7 @@ func draw_anim(ci: CanvasItem) -> void:
 ## The pen on the chart: flat while the dish is parked, climbing while it listens.
 func _chart_pen(ci: CanvasItem) -> void:
 	var r := Rect2(320, 426, 80, 38)
-	var parked := GameState.has("dish_parked") and not GameState.has("dish_released")
+	var parked := GameState.has("dish_parked")
 	var pts := PackedVector2Array()
 	for k in 21:
 		var x := r.position.x + k * 4.0
@@ -333,11 +356,11 @@ func _act3_arrive() -> void:
 	if not g.has("cr3_seen"):
 		g.set_flag("cr3_seen")
 		await wait(0.3)
-		await mara("Two-fourteen. She's still here, against the console.")
+		await mara("Two-fourteen. She's still here.")
 		await mara("Out there the dish has swung round to face the horizon. Sollen parks it straight up every night.")
 		await mara("And the chart recorder's pen is creeping up the paper. Nobody's touching it.")
 		await mara("Whatever the dish is listening to, Tomas's dial can't find it. It runs out at ninety-nine.")
-	elif _e81_here():
+	elif entered_from == "after_red":
 		await _eighty_one()
 		return
 	elif g.has("chalk_2031") and g.has("key_taken") and not g.has("board_2009"):
@@ -346,14 +369,19 @@ func _act3_arrive() -> void:
 		await mara("The board.")
 		await mara("Under my SILENCE: 2031, somebody's written 2009. In my handwriting.")
 		await mara("I didn't write that. I haven't been there yet.")
+	elif g.has("woke_2009") and not g.has("chalk_2009"):
+		await _chalk_2009()
+	elif g.has("woke_1991") and not g.has("cupboard_07"):
+		await _call_07()
+		return
 	objective()
 
 
 ## 3.1: Dad's 2.14 chain. Three cables, six jacks: the Tuner into receiver 2.
 func _patch_bay() -> void:
 	var g := GameState
-	if g.has("bank_burst"):
-		await mara("The forward bank's black and split. The fourth digit's dark. No more futures.")
+	if g.has("lead_pulled"):
+		await mara("Red's lead, out of its jack. I pulled it.")
 		return
 	if g.has("patched"):
 		await mara("Dad's chain. Three cables, six jacks. Still holding.")
@@ -378,26 +406,35 @@ func _patch_bay() -> void:
 	g.set_flag("patched")
 	await wait(0.4)
 	Audio.sfx("click", -2.0)
-	await narrate("Inside Tomas's radio, a relay he never used clicks shut. Dad's modification.")
+	await narrate("Inside Tomas's radio, a relay he never used clicks shut: Dad's modification.")
 	await mara("The display's got a fourth digit. The needle's swinging past ninety-nine on its own.")
 	await mara("Tomas didn't build this. He finished it.")
 	await narrate("The needle settles: 2031.")
-	await say("JUNE (TUNER)", "Whatever you're doing up there, honey, don't do it twice.")
+	await say("JUNE (TUNER)", "Whatever you're doing up there, honey, don't do it twice. My needle just went over like a tree.")
+	if g.story.get("TOMAS") == "taken":
+		await say("TOMAS (TUNER)", "It jumped, Mara. Right when you plugged something in. June says that was you.")
 	await mara("The loudest future it can hear. And the darkest place on the mountain is the feed cabin. Up on the dish.")
 	objective()
 
 
-## 3.3: Mara writes the year she saw in Sollen's empty corner.
+## 3.3: Mara writes the year she saw in Sollen's empty corner, and ticks the chart.
 func _chalk() -> void:
 	var g := GameState
 	if g.has("been_2031") and not g.has("chalk_2031"):
 		Audio.sfx("chalk", -6.0)
-		await narrate("In the corner Sollen keeps empty for discoveries, she chalks: SILENCE: 2031.")
+		await narrate("In the corner of the chalkboard Sollen keeps empty for discoveries, she chalks: SILENCE: 2031.")
 		g.set_flag("chalk_2031")
 		g.set_flag("saw_oct25")
 		await mara("Beside his schedule. Its last line: 2.14 RUN, OCT 25.")
+		await player.walk_to(380.0)
+		Audio.sfx("scratch", -18.0)
+		await narrate("The chart recorder. The pen is higher than when she left. She ticks the paper beside it, a maintenance habit, and writes 2031 next to the tick.")
+		g.set_flag("chart_2031")
 		await mara("Now. Sollen's desk. The hollow left rear leg.")
 		objective()
+		return
+	if g.has("woke_2009") and not g.has("chalk_2009"):
+		await _chalk_2009()
 		return
 	var lines := Act3.board_lines()
 	g.set_flag("saw_oct25")
@@ -406,10 +443,25 @@ func _chalk() -> void:
 		await mara("He always leaves that corner empty. Says it's for discoveries.")
 		if not g.has("saw_chalk_lambda"):
 			await _old_chalk()
-	elif lines.has("TONIGHT"):
-		await mara("SILENCE: 2031. 2009. 1991. TONIGHT. Every line in my handwriting.")
 	else:
-		await mara("%s. In my handwriting. I wrote one of them." % ", ".join(lines))
+		await mara("%s. In my handwriting." % ", ".join(lines))
+		if g.has("chalk_2009"):
+			await mara("The broken chalk's still on the ledge.")
+
+
+## 3.5: beneath 2031 she writes 2009, and knows the crooked last digit.
+func _chalk_2009() -> void:
+	var g := GameState
+	await wait(0.3)
+	await player.walk_to(240.0)
+	player.face(-1)
+	Audio.sfx("chalk", -6.0)
+	await narrate("Beneath 2031, Mara writes 2009. She recognises the crooked last digit she saw before leaving. The chalk breaks in her fingers.")
+	g.set_flag("chalk_2009")
+	await mara("I wrote it. Later than I read it.")
+	await narrate("She leaves the broken chalk on the ledge. Beside the second, higher mark on the chart, she writes 2009 too.")
+	g.set_flag("chart_2009")
+	objective()
 
 
 ## The lambda nobody could rub off Sollen's board.
@@ -426,216 +478,345 @@ func _old_chalk() -> void:
 	g.set_flag("saw_chalk_lambda")
 
 
-## 3.5, Days 17 and 18 again: the chart recorder.
+## The years she has marked beside the pen, and the two words.
+func _chart_marks() -> Array:
+	var out: Array = []
+	for y in ["2031", "2009", "1991"]:
+		if GameState.has("chart_" + y):
+			out.append(y)
+	return out
+
+
 func _chart() -> void:
 	var g := GameState
-	if not g.has("notebook_read"):
+	var marks := _chart_marks()
+	if marks.is_empty():
 		await mara("The chart recorder. Signal on 2.14, in red ink. The pen's climbing, and nobody's touching it.")
 		return
-	if g.has("experiment_done"):
-		await mara("Still climbing.")
-		return
-	if not g.has("dish_parked"):
-		await mara("Days 17 and 18. First, park the dish. The drive panel, on the right of the console.")
-		return
-	if not g.has("crossed_parked"):
-		await mara("Flat, with the dish parked. Now cross: twice, through the dark east wing and back.")
-		return
-	if not g.has("strip_flat"):
-		Audio.sfx("tape_rip", -8.0)
-		await narrate("She tears off the strip. Two crossings, and the line is flat.")
-		g.set_flag("strip_flat")
-		await mara("Flat. Like his Day 17. Now let the dish go.")
-		objective()
-		return
-	if not g.has("dish_released"):
-		await mara("Release the dish first. Day 18.")
-		return
-	Audio.sfx("tape_rip", -8.0)
-	await narrate("She tears off the second strip. She hasn't crossed once, and the line climbs.")
-	g.add_item("chart_strips")
-	g.set_flag("experiment_done")
-	hud.toast("Got: Chart strips  ·  a new theory in the notebook")
-	await mara("They match his. Flat with the dish parked. Climbing while it listens.")
-	await mara("It isn't the crossings. It's the dish, listening.")
-	player.face(-1)
-	await mara("Every trip I took rode the dish. I've been pulling it in myself.")
-	await _park_for_good()
+	if g.has("held_here"):
+		await mara("My ticks: %s. And the flat stretch, HELD HERE." % ", ".join(marks))
+	else:
+		await mara("My ticks beside the pen: %s. Every one higher than the last." % ", ".join(marks))
 
 
-## The dish won't stay parked, and the needle has found 1991.
-func _park_for_good() -> void:
+## 3.5, both paths: one test. Dad's card beside the recorder, the key in the
+## console, AUTO to PARK. The pen levels; let go and it climbs; hold it, and
+## it holds. Then: one more.
+func _drive() -> void:
 	var g := GameState
-	await mara("Then it's parked. For good.")
+	if g.has("e81_done"):
+		if g.has("dish_parked"):
+			await mara("Wedged in PARK. The dish is still.")
+		else:
+			await mara("AUTO. I left it running. She's still on the line.")
+		return
+	if g.has("call_1991"):
+		await mara("AUTO. The screwdriver's out. One more, I said.")
+		return
+	if not g.has("tin_open"):
+		await mara("The dish drive. PARK, AUTO, and two readouts. Sollen's the only one who touches it.")
+		await mara("Nobody's touched it tonight. The dish turned anyway.")
+		return
+	if not g.has("reunion_done"):
+		await mara("June first. She said somebody's there.")
+		return
+	if not g.has_item("transmit_key"):
+		await mara("PARK needs the console key. Sollen's key.")
+		return
+	await _park_test()
+
+
+func _park_test() -> void:
+	var g := GameState
+	await player.walk_to(900.0)
+	player.face(1)
+	await narrate("She puts Dad's service card beside the recorder. The transmitter key turns the console from AUTO to PARK.")
 	Audio.sfx("click", -6.0)
-	Audio.stop_loop("dish_motor", 0.4)
-	await narrate("PARK. The dish swings up to the zenith, and stops.")
-	await wait(1.4)
-	Audio.play_loop("dish_motor", -18.0)
-	await narrate("Within a minute its drive engages on its own, and the dish swings back to the horizon.")
-	await mara("It won't stay parked.")
-	Audio.play_loop("static", -18.0, 0.4)
-	await narrate("On Tomas's dial the needle has already settled: 1991. And through the hiss on receiver 2, a man is calling.")
-	await say("TOMAS (RECEIVER)", "Mara? It's two-fourteen. I'm still here. I'll keep calling.")
-	Audio.stop_loop("static", 0.8)
-	await mara("Tomas. All grown up.")
-	await mara("One more. Then I park it for good.")
+	Audio.stop_loop("dish_motor", 1.6)
+	g.set_flag("dish_parked")
+	await narrate("Outside, the dish begins lifting its face away from the valley.")
+	await say("JUNE (TUNER)", "Oh. That's better. Keep doing that.")
+	Audio.sfx("voice_short", -18.0, 1.15)
+	await narrate("Just before the dish leaves the horizon, an older Tomas laughs through the Tuner. A woman's voice tells him to stop it, he'll wake her.")
+	await narrate("The display briefly finds 1991. Then that channel fades. June's local shop radio stays clear.")
+	await narrate("As the dish comes to rest, the chart pen levels. Mara marks the point.")
+	await hud.choose(["Let PARK go"])
+	g.set_flag("dish_parked", false)
+	Audio.play_loop("dish_motor", -22.0, 0.6)
+	Audio.sfx("voice_short", -18.0, 1.15)
+	await narrate("She watches it long enough to be sure. When she lets the spring-loaded PARK control return to AUTO, the distant laughter returns and the pen starts climbing again.")
+	await hud.choose(["Catch PARK"])
+	g.set_flag("dish_parked")
+	Audio.stop_loop("dish_motor", 1.0)
+	await narrate("She catches PARK once more. The rise stops. She writes only two words beside the flat section: HELD HERE.")
+	g.set_flag("held_here")
+	hud.toast("On the chart: HELD HERE")
+	await mara("Dad left it broken. I put it back on the air.")
+	await say("RUTH (TUNER)", "Mara, you fixed what was in front of you.")
+	await mara("I know what's in front of me now.")
+	Audio.sfx("thunk", -10.0, 1.3)
+	g.set_flag("wedged")
+	await narrate("She wedges the control in PARK with her screwdriver. The dish stays still.")
+	await player.walk_to(420.0)
+	player.face(-1)
+	await narrate("She heads toward the outside ladder, notebook open at her drawing of the coupling. On the way, she stops beside the Tuner. There is no laughter now. The last year it found is still on its display.")
+	await narrate("Mara's thumb rests on the power switch.")
+	await mara("One more. I need to know he got more than this.")
+	await player.walk_to(900.0)
+	player.face(1)
+	Audio.sfx("thunk", -12.0, 1.1)
+	g.set_flag("wedged", false)
+	g.set_flag("dish_parked", false)
+	Audio.play_loop("dish_motor", -22.0, 0.6)
+	await narrate("She takes the screwdriver out. The dish starts moving. The laughter clears.")
 	g.set_flag("call_1991")
-	await wait(0.5)
-	g.set_flag("board_1991")
-	await mara("And on the board, under 2009, in my handwriting: 1991.")
+	await narrate("June hears the change. She does not say I told you.")
+	await say("JUNE (TUNER)", "I'll be here when you come back.")
 	objective()
 
 
-## 3.5: the dish drive, PARK and RELEASE.
-func _drive() -> void:
+## End of 3.6, back from 1991: the third mark, and 07 on the Tuner. Her own
+## kitchen. She stops with one foot over the threshold.
+func _call_07() -> void:
 	var g := GameState
-	if not g.has("notebook_read"):
-		await mara("The dish drive. PARK, RELEASE, and two readouts. Sollen's the only one who touches it.")
-		await mara("Nobody's touched it tonight. The dish turned anyway.")
-		return
-	if not g.has("dish_parked"):
-		Audio.stop_loop("dish_motor", 0.5)
-		Audio.sfx("click", -6.0)
-		g.set_flag("dish_parked")
-		await narrate("PARK. Out of the window the dish swings up to the zenith, and stops.")
-		await mara("Day 17: dish parked. Now cross, twice, through the dark east wing and back.")
-		objective()
-		return
-	if not g.has("strip_flat"):
-		await mara("Not yet. Cross twice with it parked, then tear off the strip.")
-		return
-	if not g.has("dish_released"):
-		Audio.sfx("click", -6.0)
-		Audio.play_loop("dish_motor", -18.0)
-		g.set_flag("dish_released")
-		await narrate("RELEASE. The dish swings back down to the horizon by itself, and points at 2.14.")
-		await mara("Day 18. Don't cross. Stand still, in the light, and watch the pen.")
-		await wait(1.6)
-		await mara("It's climbing.")
-		objective()
-		return
-	await mara("Released. Listening. It does that whether I like it or not.")
+	await wait(0.3)
+	await player.walk_to(380.0)
+	await narrate("She writes 1991 beside the third mark on the chart. The marks are closer together. Above them, the line keeps rising.")
+	g.set_flag("chart_1991")
+	g.set_flag("board_1991")
+	await wait(0.4)
+	await narrate("She turns the Tuner to 07.")
+	Audio.play_loop("static", -30.0, 0.3)
+	Audio.play_loop("kettle", -26.0, 0.6)
+	Audio.sfx("scrape", -24.0, 1.6)
+	await narrate("A kitchen. A dog scratching the same place on a door. Her mother's voice: Biscuit, leave it. A kettle rattles on the stove.")
+	await mara("Ma?")
+	await say("RUTH FROM 07 (TUNER)", "Where are you? You went out without your gloves.")
+	await narrate("Blue presses her hand against her mouth. The ordinary impatience undoes her.")
+	await mara("I know. I know, I'm sorry.")
+	await say("RUTH FROM 07 (TUNER)", "Are you coming home?")
+	await player.walk_to(1170.0)
+	player.face(1)
+	Audio.sfx("door", -16.0)
+	cupboard_open = true
+	await narrate("Blue opens the service cupboard beside the console. It is dark enough inside. She can hear the kitchen more clearly as she steps toward it. Her mother's light lies across the bottom of the door, where no light should reach.")
+	await mara("I want to.")
+	Audio.sfx("voice_short", -22.0, 0.95)
+	await narrate("Through the Tuner, under the kettle, another woman is trying to say a word.")
+	await narrate("Blue stops with one foot over the threshold.")
+	await mara("There's someone else here, Ma. She's waiting too.")
+	await say("RUTH FROM 07 (TUNER)", "Bring her in, then. You're letting all the cold through.")
+	Audio.sfx("door", -14.0)
+	cupboard_open = false
+	g.set_flag("cupboard_07")
+	await narrate("Blue closes the cupboard from the outside. She has not gone home. It remains a choice she could have made.")
+	Audio.stop_loop("kettle", 1.0)
+	Audio.stop_loop("static", 1.0)
+	await wait(0.6)
+	Audio.stop_all(1.2)
+	await hud.fade_out(1.2)
+	Act3.become_red()
+	main.change_room("red_dark", "start")
 
 
-## 3.8, Choice 3: Eighty-One, the revolver, and Red still calling.
+## 3.8: Eighty-One on the floor beside the dead Mara. Her confession, the lead
+## that holds Red's channel open, and Choice 3.
 func _eighty_one() -> void:
 	var g := GameState
-	g.set_flag("board_tonight")
 	await wait(0.4)
-	Audio.play_loop("static", -24.0, 0.4)
-	await mara("The board. Under 1991, in my handwriting: TONIGHT.")
-	await narrate("Eighty-One stands beside it with chalk on her gauze. Sollen's old service revolver in her good hand, and a second Tuner on her strap, red tape round the handle.")
-	await say("RED (RECEIVER)", "...anyone on two-fourteen... somebody in my house...")
-	await say("EIGHTY-ONE", "Somebody had to tell you the order. I've watched it nineteen times.")
-	await mara("Blue. Zero-seven. Doesn't know.")
-	await say("EIGHTY-ONE", "You know now. I'm sorry it was him who told you.")
-	await mara("Eighty of me.")
-	await say("EIGHTY-ONE", "Every one of them would have done the same, if they'd seen what I've seen.")
-	await say("EIGHTY-ONE", "Station twenty-three. My home. I brought him back from twelve, the way you might have.")
-	await say("EIGHTY-ONE", "At two-fourteen there were two of us at the dish, and the white was on the ridge. She had the mic. I pulled her off it, and Sollen's revolver went off between us.")
-	await say("EIGHTY-ONE", "And the white went back over the ridge. I watched it go.")
-	await say("EIGHTY-ONE", "Eleven days. On the twenty-fifth it came back and took twenty-three, with him in it. I was down in the dark, or it would have had me too.")
-	await say("EIGHTY-ONE", "Every station I've seen go quiet had one too many of somebody.")
-	await say("EIGHTY-ONE", "One Mara, one world. Red stays in the dark. You keep the dish quiet at two-fourteen, I walk into the dark when it's done, and the loop closes.")
-	g.set_flag("e81_told")
-	await say("RED (RECEIVER)", "...somebody in my house...")
-	await say("EIGHTY-ONE", "There she is. Every night she calls, and every night some boy answers.")
-	await say("EIGHTY-ONE", "Pull the two-fourteen cable, love. She stops calling, and he stays home.")
-	var pick: int = await hud.choose(["Pull the cable", "Refuse"])
-	if pick == 0:
-		await _follow()
+	Audio.play_loop("static", -26.0, 0.4)
+	await narrate("Eighty-One is sitting on the control-room floor beside the dead Mara. Her two radios are on the console. One still has the strap Blue remembers carrying into the kitchen. The other has the tally counter. It reads 81.")
+	await mara("Give me my set.")
+	Audio.sfx("scrape", -14.0, 1.2)
+	await narrate("Eighty-One pushes it across the floor. Blue catches it with her boot. She keeps using Red's; that is where Red's voice is.")
+	g.add_item("blue_set")
+	hud.toast("Got: My own radio")
+	await mara("You took hers off her shoulder. Put it in my hands. Sent me to her mother.")
+	await say("EIGHTY-ONE", "I turned it to sixty-one while she still had it. Caught the strap when she fell. By the time I struck the match, she'd followed the carrier. I put the set back on H. Gave it to you.")
+	await say("EIGHTY-ONE", "I sent you to the boy.")
+	await mara("You told me the hum would take me home.")
+	await say("EIGHTY-ONE", "I needed you to come here.")
+	await narrate("Blue looks at the corpse. Eighty-One has covered the wound with a folded station towel. One corner is dark through.")
+	await mara("You needed her too?")
+	await narrate("Eighty-One says nothing. Blue kneels.")
+	await player.walk_to(660.0)
+	await narrate("The woman has Blue's uneven thumbnail, the same old solder burn. In her coat is a photograph: Biscuit under the kitchen table, Ruth laughing above him, Blue's gloved hand covering half the lens.")
+	await narrate("Blue has that photograph at home. On the back, in her own handwriting: MA IS STILL THERE. GO BACK FOR THE OTHER ONE.")
+	g.set_flag("saw_photo")
+	await mara("That's my kitchen.")
+	await say("EIGHTY-ONE", "She went home first.")
+	await mara("Then came back.")
+	await say("EIGHTY-ONE", "She wouldn't leave the caller.")
+	await narrate("Blue looks at the outstretched hand beside the microphone.")
+	await mara("You shot her.")
+	await say("EIGHTY-ONE", "Yes.")
+	await mara("Not because there were two of her. Because she said no to you.")
+	await narrate("Eighty-One looks down.")
+	await say("EIGHTY-ONE", "She'd parked it. The voice was nearly gone. Then somebody on the line said her brother's name and she reached to put it back.")
+	await narrate("Blue touches the dead woman's tape. Same colour, same ordinary overlap where it sticks to itself. It could be a few hours ahead of her own hand.")
+	await mara("You don't get to call this saving anyone.")
+	await narrate("Eighty-One takes the pistol from inside her coat, slowly, holding it by the barrel. She sets it on the floor between them and pushes it away from herself. Blue moves it beyond her reach.")
+	g.set_flag("pistol_away")
+	# The console replays the opening warning: the chair, the two relay clicks.
+	Audio.sfx("scrape", -12.0)
+	await wait(0.55)
+	Audio.sfx("click", -12.0)
+	await wait(0.28)
+	Audio.sfx("click", -12.0, 0.78)
+	await narrate("The console replays the opening warning. Chair scrape. Two relay clicks. Eighty-One nods toward the fallen chair.")
+	await say("EIGHTY-ONE", "That was her. She saw me coming back up the stairs. She'd locked the front door.")
+	await say("EIGHTY-ONE", "I came through the basement.")
+	await narrate("She looks toward the lobby handset, repaired by Red earlier that night.")
+	await say("EIGHTY-ONE", "She was ringing everyone. Other houses. Other us. Every answer moved the pen. I cut the pair at the board. Folded the ends away so they wouldn't touch.")
+	await mara("And so nobody could help her.")
+	await say("EIGHTY-ONE", "That too.")
+	await say("EIGHTY-ONE", "Later, the one I left in the kitchen fixed the pair. Called the office while I was sitting in it. I picked up. Said don't. One word. Then I couldn't think of anything else to say.")
+	g.set_flag("e81_confessed")
+	await say("RED (TUNER)", "The light's going. Whoever's there, please—")
+	Audio.sfx("voice_short", -22.0, 0.9)
+	await narrate("Far underneath: TOMAS. TREES.")
+	await narrate("Eighty-One flinches at the boy's name. The chart pen climbs another notch.")
+	await say("EIGHTY-ONE", "That's what I needed you for. This lead. It holds her channel open. Pull it and she stops reaching him. The rise slows. We get time to park the dish and get to the coupling.")
+	await mara("You put her in the dark.")
+	await say("EIGHTY-ONE", "I'd already heard her calling. On his tape. Before I ever found that kitchen. Somebody was going to make the call.")
+	await mara("You made sure it was her.")
+	await say("EIGHTY-ONE", "I thought if I knew where she was, if I chose who was at this end, I could stop it after the first few words. Before he got to the trees.")
+	await mara("So you made the caller. Then you went looking for someone who'd leave her there.")
+	await narrate("Eighty-One cannot look toward the body.")
+	await mara("Why not give us our radios? Send us home?")
+	await say("EIGHTY-ONE", "She would have gone after him. You would have gone after yours. I'd spent eleven days hearing one boy ask for a house I'd taken him out of. I wanted one of you at a switch, for once. Not another hand on a dial.")
+	await mara("You could have asked.")
+	await say("EIGHTY-ONE", "I did.")
+	await narrate("She looks at the body now. Blue waits until she looks away again.")
+	if g.story.get("TOMAS") == "taken":
+		await mara("Two of us were alive in your kitchen. Neither of us disappeared until you put your hands on us. At June's there's a woman holding a boy she didn't give birth to. They're still there. Your rules didn't kill this woman. You did.")
 	else:
-		await say("EIGHTY-ONE", "Then I will.")
-		await narrate("She raises the revolver at the receiver. Her hand shakes. She's never shot a Mara who was looking at her.")
-		var how: int = await hud.choose(["Show her the notebook", "Grab the revolver"])
-		if how == 0:
-			await _expose()
-		else:
-			await _force()
-	g.set_flag("e81_done")
-	await _three_knocks()
-
-
-func _follow() -> void:
-	var g := GameState
-	g.set_story("EIGHTY", "follow")
-	Audio.sfx("plug", -4.0)
-	await narrate("Mara pulls the two-fourteen cable.")
-	Audio.stop_loop("static", 0.1)
-	await say("RED (RECEIVER)", "...somebody in my h—")
-	await narrate("The chart pen dips. Then it goes on climbing. TONIGHT stays on the board.")
-	await say("EIGHTY-ONE", "Here.")
-	await narrate("She turns the revolver round and hands it over, handle first.")
-	await say("EIGHTY-ONE", "In case I lose my nerve.")
-	eighty.prop = "none"
-	g.add_item("revolver")
-	hud.toast("Got: Sollen's revolver")
-	await eighty.walk_to(620.0)
-	eighty.seated = true
-	await narrate("She sits down by the body to wait.")
-
-
-func _expose() -> void:
-	var g := GameState
-	g.set_story("EIGHTY", "expose")
-	await player.walk_to(470.0)
-	player.face(-1)
-	await narrate("Mara steps between the revolver and the receiver. She opens Tomas's notebook on the console and lays her two chart strips beside his.")
-	await mara("Flat with the dish parked. Climbing while it listens. And the board: 2.14 RUN, OCT 25.")
-	await mara("It's not us. It's the listening. You read this tonight, and you walled it up.")
-	await say("EIGHTY-ONE", "...Then what was it all for?")
-	await narrate("She lowers the revolver, and walks out into the dark corridor with it, and with Red's Tuner.")
-	await eighty.walk_to(40.0)
-	eighty.visible = false
-	Audio.sfx("door", -12.0)
-	await say("RED (RECEIVER)", "...anyone on two-fourteen...")
-
-
-func _force() -> void:
-	var g := GameState
-	g.set_story("EIGHTY", "force")
-	await narrate("Mara lunges for her wrist.")
-	await player.walk_to(400.0)
-	Audio.sfx("thunk", -2.0)
-	hud.glitch(0.4)
-	await wait(0.3)
-	Audio.sfx("crack", 0.0)
-	hud.glitch(0.8)
-	g.set_flag("bank_burst")
-	await narrate("They crash into the patch bay. The shot goes into it, and Dad's forward bank bursts in sparks under her gauzed hand.")
-	await say("EIGHTY-ONE", "Ah—!")
-	await narrate("She tears free, burned again, and runs into the dark corridor. The revolver skids under the console.")
-	await eighty.walk_to(40.0)
-	eighty.visible = false
-	Audio.sfx("door", -12.0)
-	await narrate("On the Tuner, the fourth digit goes dark. There will be no more futures.")
-	await say("RED (RECEIVER)", "...anyone on two-fourteen...")
-
-
-## 3.9: the white crests the ridge, Halvard's lights go out a street at a time,
-## and three slow knocks sound at the front door.
-func _three_knocks() -> void:
-	var g := GameState
-	Audio.play_loop("scratch", -14.0, 0.3)
-	await narrate("The chart recorder starts scratching on its own. The signal on 2.14 is climbing toward the moment it was first heard.")
+		await mara("Two of us were alive in your kitchen. Neither of us disappeared until you put your hands on us. The two Lunds were standing in the street together. One vanished later, with the dish running. You never saw a number decide it. Your rules didn't kill this woman. You did.")
+	await say("EIGHTY-ONE", "And your looking? What did that do?")
+	await narrate("She points at the chalkboard.")
+	await say("EIGHTY-ONE", "When you first climbed that ladder, the Silence was in 2031. Then 2009. Then 1991. Three trips. Look outside.")
 	player.face(1)
 	shot = "white"
 	var tw := create_tween()
-	tw.tween_property(self, "white", 1.0, 3.0)
-	tw.parallel().tween_property(self, "lights_out", 1.0, 4.0)
-	await narrate("Through the window, the white wall crests the ridge. Across the valley, Halvard's lights begin going out, one street at a time.")
-	await tw.finished
-	Audio.stop_loop("scratch", 0.5)
-	await wait(1.0)
-	for i in 3:
-		Audio.sfx("knock", -2.0)
-		await wait(1.1)
-	await wait(0.6)
-	await player.walk_to(150.0)
+	tw.tween_property(self, "white", 0.35, 2.0)
+	tw.parallel().tween_property(self, "lights_out", 0.25, 2.0)
+	await narrate("Below the window, the last house on the switchback road has no shadow. The streetlight beyond it is visible through its wall.")
+	await say("EIGHTY-ONE", "It's tonight, Mara.")
+	await narrate("Blue looks at the PARK control. At her screwdriver on the desk. She had stopped it. She started it again to hear him laugh.")
+	await mara("I know.")
+	await say("EIGHTY-ONE", "Then tell me I'm wrong about the wire.")
+	await narrate("Blue does not. She reaches toward PARK, then stops. She remembers the laughter fading when the dish turned away.")
+	await mara("If I park it, I lose her anyway.")
+	await say("EIGHTY-ONE", "Yes.")
+	var trusted: bool = g.story.get("JUNE") == "trusted"
+	if trusted:
+		await say("JUNE (TUNER)", "I've got her door lined up with your pen. She can hear you there. Give me a little longer and I can keep her on it.")
+	else:
+		await say("JUNE (TUNER)", "I keep losing which one she is. There's a door in there somewhere. She's doing it herself, Mara. I can hear her trying.")
+	if g.story.get("TOMAS") == "taken":
+		await say("TOMAS (LOCAL RADIO)", "Was she talking to me? The woman in the trees?")
+		await mara("Someone used what she said.")
+		await say("TOMAS (LOCAL RADIO)", "She sounds scared.")
+		await say("EIGHTY-ONE", "I told mine to stay under the kitchen lamp. He kept asking me to come upstairs.")
+		await narrate("Ruth takes the set, not to silence him but to hold it steady. He keeps his hand beside hers.")
+		await say("RUTH (LOCAL RADIO)", "We're at the truck. Tell June when we move.")
+	else:
+		await say("RUTH (LOCAL RADIO)", "June's got her lantern. I've got the keys. We can leave now if you need us to.")
+	var pick: int = await hud.choose(["Cut Red's channel and buy the town time", "Keep Red's channel open and stay with her"])
+	if pick == 0:
+		await _cut_channel()
+	else:
+		await _keep_channel(trusted)
+	await _three_knocks()
+
+
+## Choice 3, A: pull Red's lead. The rise eases; the white stops gaining. It does not retreat.
+func _cut_channel() -> void:
+	var g := GameState
+	g.set_story("EIGHTY", "cut")
+	await mara("June. Stay with Ruth. Get them moving.")
+	await player.walk_to(1010.0)
+	player.face(1)
+	await narrate("She puts her hand on the lead.")
+	await mara("Red. There's a door. Keep your foot against it. Don't follow another voice.")
+	await say("RED (TUNER)", "Please don't—")
+	Audio.sfx("plug", -4.0)
+	Audio.stop_loop("static", 0.05)
+	g.set_flag("lead_pulled")
+	await narrate("Blue pulls the lead. No clean end to the sentence. The chart pen's climb eases. Through the window, the white stops gaining on the next street. It does not retreat.")
+	await hud.fade_out(0.6)
+	await wait(0.4)
+	await narrate("At the door in the dark, Red's lamp goes out. Her hand finds the strip of tape she has tied around the mesh beside the hinge. She does not vanish.")
+	await hud.fade_in(0.6)
+	await say("JUNE (LOCAL RADIO)", "I've lost her.")
+	await mara("I know.")
+	Audio.sfx("thunk", -10.0, 1.3)
+	g.set_flag("dish_parked")
+	g.set_flag("wedged")
+	Audio.stop_loop("dish_motor", 1.2)
+	await narrate("Blue wedges the control in PARK. The dish stops; the chart levels. Red's lead stays disconnected.")
+
+
+## Choice 3, B: keep the channel open and stay with her. The pen climbs; the
+## white takes the corner; June takes Ruth down the steep lower track.
+func _keep_channel(trusted: bool) -> void:
+	var g := GameState
+	g.set_story("EIGHTY", "keep")
+	await mara("June. Take them downhill. Keep your set on. I'm staying with her.")
+	await say("EIGHTY-ONE", "You watched what happened to the last one.")
+	await mara("Yes.")
+	await narrate("She holds the talk button.")
+	await mara("Red. I can hear the recorder. Tap when you hear it scrape.")
+	await say("RED (TUNER)", "You sound like me.")
+	await mara("I know. Keep your foot there.")
+	Audio.sfx("voice_short", -22.0, 0.9)
+	var tw := create_tween()
+	tw.tween_property(self, "white", 0.7, 2.0)
+	tw.parallel().tween_property(self, "lights_out", 0.6, 2.0)
+	await narrate("Another clipped fragment reaches the boy in 1980. Tomas. Over here. The pen climbs. Outside, the white takes the corner where the streetlight stood. June has to turn Ruth away from the usual road and take the steep lower track.")
+	g.set_flag("white_corner")
+	for i in 2:
+		Audio.sfx("knock", -20.0, 1.6)
+		await wait(0.4)
+	if trusted:
+		await narrate("With June's help, Blue finds the live taps.")
+	else:
+		await narrate("Without June, Blue loses time answering two copied taps first.")
+	await narrate("Red's lamp goes out while Blue is still speaking. Red keeps her foot against the door. She is frightened. She is not alone.")
+	await narrate("Blue holds the key but leaves AUTO running. She can still hear Red. The pen keeps rising.")
+
+
+## The end of Act 3: one knock from the service door, then a second, a third.
+## The handle does not turn.
+func _three_knocks() -> void:
+	var g := GameState
+	g.set_flag("e81_done")
+	eighty.seated = false
+	eighty.seat_y = 54.0
+	await narrate("Eighty-One stands.")
+	await player.walk_to(820.0)
 	player.face(-1)
-	await narrate("Three slow knocks at the front door. As at the start of the night.")
-	await mara("...")
+	await mara("You stay where I can see you.")
+	await narrate("Eighty-One stays.")
+	await wait(0.8)
+	Audio.sfx("knock", -4.0)
+	await wait(0.6)
+	player.face(1)
+	await narrate("From the service door behind the console: one knock.")
+	await narrate("Blue turns. In that wall there was only a cupboard when she called 07.")
+	Audio.sfx("knock", -4.0)
+	await wait(1.1)
+	Audio.sfx("knock", -4.0)
+	if g.story.get("EIGHTY") == "keep":
+		await wait(0.2)
+		for i in 3:
+			Audio.sfx("knock", -20.0, 1.2)
+			await wait(0.35)
+		await narrate("A second knock. A third. Red's open channel carries the same three knocks a fraction later.")
+	else:
+		await narrate("A second knock. A third. They are the first sound Blue has had from that side since she pulled the lead.")
+	await wait(0.6)
+	await narrate("The handle does not turn.")
 	g.set_flag("act3_done")
 	Audio.stop_all(1.5)
 	await hud.fade_out(1.2)
@@ -650,7 +831,7 @@ func _window_dish() -> void:
 	var base := Vector2(700, WIN.end.y - 52)
 	var col := Color("0a0e18")
 	cv.draw_colored_polygon(PackedVector2Array([base + Vector2(-26, 0), base + Vector2(26, 0), base + Vector2(9, -86), base + Vector2(-9, -86)]), col)
-	var parked := GameState.has("dish_parked") and not GameState.has("dish_released")
+	var parked := GameState.has("dish_parked")
 	var aim := -PI / 2 if parked else (-0.2 if GameState.has("act3") else -1.1)
 	var d := Vector2(cos(aim), sin(aim))
 	var n := Vector2(-d.y, d.x)
@@ -683,10 +864,11 @@ func _patch_bay_art() -> void:
 			var b: Vector2 = ends[i][1]
 			var mid := (a + b) * 0.5 + Vector2(0, 26)
 			cv.draw_polyline(PackedVector2Array([a, a.lerp(mid, 0.5) + Vector2(0, 8), mid, b.lerp(mid, 0.5) + Vector2(0, 8), b]), cols[i], 3.0, true)
-	if GameState.has("bank_burst"):
-		cv.draw_rect(Rect2(1062, 506, 60, 104), Color(0.05, 0.04, 0.03, 0.85))
-		for k in 6:
-			cv.draw_line(Vector2(1070 + k * 8, 520), Vector2(1066 + k * 9, 600), Color("2a1a10"), 2.0)
+	if GameState.has("lead_pulled"):
+		# Red's lead, out of its jack, hanging.
+		cv.draw_rect(Rect2(1120, 578, 22, 20), Color("2a3036"))
+		cv.draw_polyline(PackedVector2Array([Vector2(1162, 520), Vector2(1172, 560), Vector2(1166, 610), Vector2(1150, 640)]), Color("2f63c9"), 3.0, true)
+		cv.draw_circle(Vector2(1150, 640), 4.0, Color("9aa3a8"))
 
 
 func _chart_art() -> void:
@@ -698,6 +880,30 @@ func _chart_art() -> void:
 		cv.draw_line(Vector2(r.position.x + 8, r.position.y + 10 + k * 8), Vector2(r.position.x + 88, r.position.y + 10 + k * 8), Color(0.6, 0.7, 0.8, 0.5), 1.0)
 	Kit.text(cv, Vector2(r.position.x + 92, r.position.y + 18), "2.14", 9, Color("9aa3a0"))
 	cv.draw_circle(Vector2(r.position.x + 106, r.position.y + 34), 6.0, Color("15191d"))
+	# Her ticks beside the pen, each higher than the last, and HELD HERE.
+	var marks := _chart_marks()
+	for i in marks.size():
+		var y := r.position.y + 36 - i * 9
+		cv.draw_line(Vector2(r.position.x + 10, y), Vector2(r.position.x + 16, y), Color("1a2a6a"), 1.5)
+		Kit.text(cv, Vector2(r.position.x + 18, y + 3), str(marks[i]), 6, Color("1a2a6a"))
+	if GameState.has("held_here"):
+		Kit.text(cv, Vector2(r.position.x + 50, r.position.y + 40), "HELD HERE", 6, Color("1a2a6a"))
+
+
+## The service cupboard beside the console, past the transmitter.
+func _cupboard_art() -> void:
+	var r := Rect2(1208, 386, 60, 264)
+	cv.draw_rect(r.grow(4), Color("3a4248"))
+	if cupboard_open:
+		cv.draw_rect(r, Color("050608"))
+		# Her mother's light, along the bottom of the dark, where no light should reach.
+		cv.draw_rect(Rect2(r.position.x + 4, r.end.y - 8, r.size.x - 8, 5), Color(1.0, 0.78, 0.45, 0.85))
+		cv.draw_colored_polygon(PackedVector2Array([r.position, r.position + Vector2(-26, 14), Vector2(r.position.x - 26, r.end.y - 6), Vector2(r.position.x, r.end.y)]), Color("4a545a"))
+	else:
+		cv.draw_rect(r, Color("4a545a"))
+		cv.draw_rect(r, Color("1e2428"), false, 2.0)
+		cv.draw_circle(Vector2(r.position.x + 10, r.position.y + 140), 4.0, Color("9aa3a8"))
+		Kit.text(cv, Vector2(r.position.x, r.position.y + 30), "SERVICE", 8, Color("c8d0c8"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 
 
 func _drive_art() -> void:
@@ -705,8 +911,12 @@ func _drive_art() -> void:
 	cv.draw_rect(r, Color("2a3036"))
 	cv.draw_rect(r, Color("12171b"), false, 2.0)
 	Kit.text(cv, Vector2(r.position.x, r.position.y + 12), "DISH DRIVE", 8, Color("9aa3a0"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
-	var parked := GameState.has("dish_parked") and not GameState.has("dish_released")
+	var parked := GameState.has("dish_parked")
 	cv.draw_rect(Rect2(r.position.x + 8, r.position.y + 20, 26, 14), Color("e8c040") if parked else Color("5a5030"))
 	cv.draw_rect(Rect2(r.position.x + 42, r.position.y + 20, 26, 14), Color("5ac06a") if not parked else Color("2a4a30"))
 	Kit.text(cv, Vector2(r.position.x + 8, r.position.y + 46), "PARK", 7, Color("c8d0c8"))
-	Kit.text(cv, Vector2(r.position.x + 40, r.position.y + 46), "RELEASE", 7, Color("c8d0c8"))
+	Kit.text(cv, Vector2(r.position.x + 42, r.position.y + 46), "AUTO", 7, Color("c8d0c8"))
+	if GameState.has("wedged"):
+		# Her screwdriver, wedged under the PARK control.
+		cv.draw_line(Vector2(r.position.x + 4, r.position.y + 38), Vector2(r.position.x + 36, r.position.y + 30), Color("c8322c"), 4.0)
+		cv.draw_line(Vector2(r.position.x + 36, r.position.y + 30), Vector2(r.position.x + 50, r.position.y + 27), Color("b8bcc0"), 2.0)

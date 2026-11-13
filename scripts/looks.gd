@@ -223,11 +223,11 @@ const ALL := {
 		"top": "sweatshirt", "top_col": Color("5f7a8c"), "top_trim": Color("4a6070"), "paint": true,
 		"bottom": "jeans", "bottom_col": Color("3a4560"), "shoes": "sneakers", "shoe_col": Color("e2e0da"),
 	},
-	# Lise Dahl, 24, six months pregnant: a high ponytail in a scrunchie, big
-	# curled bangs, an oversized cream sweater, light-wash jeans.
+	# Lise Dahl in 1991, the baby asleep against her shoulder: a high ponytail
+	# in a scrunchie, big curled bangs, an oversized cream sweater, light-wash jeans.
 	"lise_1991": {
 		"sex": "f", "age": 24, "height": 180.0, "head": 0.137,
-		"bust": 0.6, "belly": 0.0, "hips": 0.62, "pregnant": 1.0,
+		"bust": 0.6, "belly": 0.0, "hips": 0.62, "pregnant": 0.0,
 		"skin": Color("e8bfa4"), "hair": Color("8a6440"), "hair_hi": Color("b08a5e"), "eyes": Color("4a6a5a"),
 		"lips": Color("c2706e"), "style": "high_pony", "scrunchie": Color("2a8a8a"), "nose": "button",
 		"top": "sweater", "top_col": Color("e2d4b8"), "top_trim": Color("9a3a4a"),
@@ -245,18 +245,18 @@ const ALL := {
 		"beard": "scruff", "beard_col": Color("54463a"),
 		"top": "parka", "top_col": Color("4b4d3a"), "top_trim": Color("7a6a50"), "patched": true,
 		"bottom": "trousers", "bottom_col": Color("38362e"), "shoes": "boots", "shoe_col": Color("2a221a"),
-		"prop": "lamp",
+		"prop": "none",
 	},
-	# Mrs. Lund at 86, keeping the lamp line: white hair in a bun, a shawl over
-	# her coat, the register on a clipboard.
+	# Mrs. Lund at 86, keeping the gate: white hair in a bun, the green coat
+	# from 1983 (its darn darned again).
 	"lund_w_2009": {
 		"sex": "f", "age": 86, "height": 168.0, "head": 0.138, "stoop": 0.15,
 		"bust": 0.62, "belly": 0.4, "hips": 0.72,
 		"skin": Color("e8c2aa"), "hair": Color("e4e2de"), "hair_hi": Color("ffffff"), "eyes": Color("6a7a8a"),
 		"lips": Color("b8807a"), "style": "bun", "nose": "button", "lines": 1.0, "glasses": true,
-		"top": "long_coat", "top_col": Color("6a5446"), "top_trim": Color("4a3a30"), "scarf": Color("8a3a48"),
+		"top": "long_coat", "top_col": Color("3f5a3c"), "top_trim": Color("2c4029"), "scarf": Color("8a3a48"),
 		"bottom": "skirt", "bottom_col": Color("4a4038"), "skirt_len": 0.36,
-		"legs_col": Color("c8a898"), "shoes": "boots", "shoe_col": Color("3a2a22"), "prop": "clipboard",
+		"legs_col": Color("c8a898"), "shoes": "boots", "shoe_col": Color("3a2a22"), "prop": "none",
 	},
 	# Mr. Lund at 88, the one she kept: white, bent over a cane.
 	"lund_h_2009": {

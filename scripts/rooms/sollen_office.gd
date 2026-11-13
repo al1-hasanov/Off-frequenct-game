@@ -95,7 +95,12 @@ func on_hotspot(id: String) -> void:
 			if freq == "01":
 				await _sollen()
 			else:
-				await mara("Empty. The cushion's cold.")
+				if GameState.has("couch_seen"):
+					await mara("Empty. The cushion's cold.")
+				else:
+					GameState.set_flag("couch_seen")
+					await narrate("His couch. The blanket is folded. His coat is not on its hook.")
+					await mara("He sleeps here on run nights. He hasn't, tonight.")
 		"sollen":
 			await _sollen()
 		"coat":
@@ -220,8 +225,11 @@ func _logbook() -> void:
 		await narrate("\"Oct 14. Quiet night. Fuse holding. — M.\"")
 		await mara("My initial. Not my night.")
 		return
+	if GameState.has("act3") and GameState.has("read_logbook") and not GameState.has("chain_known"):
+		await _chain_sheet()
+		return
 	await hud.read_doc("HALVARD RADIO OBSERVATORY — STATION LOG", [
-		"Oct 14, 1980. Night shift: H. Sollen.\n\n02:14  Carrier on 2.14 MHz. Unlicensed. Female voice, words: \"Don't let her in.\"\n\nNo bearing. Source appears to be INSIDE Rx-2.\n\n[In the margin, in pencil: LAMBDA RUN.]",
+		"Oct 14, 1980. Night shift: H. Sollen.\n\n02:14  Carrier on 2.14 MHz. Unscheduled. Female voice, words: \"Don't let her in.\"\n\nNo bearing. Source appears to be INSIDE Rx-2.\n\n[In the margin, in pencil: LAMBDA RUN.]",
 		"02:31  M. Lind at the door. Her brother (Tomas, 13) gone from the clearing at the outer gate. Phoned the sheriff. Search parties out.\n\n03:40  Dep. Ostrander on site. Asked about our \"beacon.\" Told him we don't have one.",
 		"04:50  Air Force liaison, Maj. D. Price. Log sealed by order. All tapes from tonight surrendered.\n\n05:10  All but one.\n\n— H.S.",
 	])
@@ -239,13 +247,15 @@ func _logbook() -> void:
 func _chain_sheet() -> void:
 	await narrate("Folded into the back of the log, a sheet of graph paper.")
 	await hud.read_doc("THE 2.14 CHAIN", [
-		"Rx-2 patch routing, for the field set.\n\n1.  DISH LO-FEED  →  jack A1\n2.  Rx-2 IF OUT  →  jack B3\n3.  FIELD SET OUT  →  jack C2\n\nDo NOT route through the forward bank.\n\n— Λ.L.  10/79",
+		"Rx-2 patch routing, for the field set.\n\nDISH LO-FEED  to  jack A1\nRx-2 IF OUT  to  jack B3\nFIELD SET OUT  to  jack C2\n\nDo NOT route through the forward bank.\n\nIn the margin: \"Enable link: 5 A fast. It is meant to open. Park the drive BEFORE you replace it.\"\n\n— Λ.L.  10/79",
 	])
 	GameState.set_flag("chain_known")
+	GameState.set_flag("meant_to_open")
 	GameState.add_item("chain_sheet")
 	hud.toast("Got: Dad's diagram")
-	await mara("Λ.L. That's Dad's writing. He made his A like that, a Greek lambda. October '79. A month before the road.")
+	await mara("Λ.L. That's Dad's writing. October '79. A month before the road.")
 	await mara("He was the Air Force's engineer on the dish. I knew that. I didn't know he'd drawn anything Tomas would need.")
+	await mara("...\"It is meant to open.\" The fuse. Three years I've been putting it back.")
 	objective()
 
 
@@ -254,12 +264,12 @@ func _chain_sheet() -> void:
 ## branches and Gödel's loop, in his hand.
 func _dads_book() -> void:
 	var g := GameState
-	await narrate("Between the bird books, a black textbook as thick as a phone book: GRAVITATION. Misner, Thorne and Wheeler.")
+	await narrate("On Sollen's shelf, between the bird books, a black textbook as thick as a phone book: GRAVITATION, by Misner, Thorne and Wheeler.")
 	await narrate("Inside the cover: PROPERTY OF Λ. LIND, USAF. Folded in the back, three sheets of graph paper.")
 	await hud.read_doc("LAMBDA  ·  WORKING NOTES  ·  Λ.L.", [
-		"Einstein, 1917, with his constant:\n\n      Gμν + Λgμν = 8πG Tμν\n\nOn the left, the shape of space and time. On the right, what's in it. Matter tells space how to curve.\n\nΛ is what's left when you take everything else out: the energy of empty space. Gamow says Einstein called it his biggest blunder.",
-		"It isn't a blunder. It just isn't the same everywhere.\n\nHere, Λ runs thin. Where it's thin, the geometry gives.\n\nEinstein and Rosen, 1935: two sheets of space, joined by a bridge.\nEverett, 1957: every branch is real.\n\nOn 2.14 I can hear the next sheet over.",
-		"Gödel, 1949: the same equations let a path come back round to its own past. Einstein wrote that the problem had disturbed him since he first built the theory.\n\nSome nights the next sheet over is LATER.\n\nLIGHT = BALLAST. Keep a lamp lit and you stay where you are.\n\n— Λ.L.  6/79",
+		"Einstein, 1917, with his constant, setting c = 1:\n\n      Gμν + Λgμν = 8πG Tμν\n\nOn the left, the shape of space and time. On the right, what's in it. Matter tells space how to curve.\n\nΛ can act like energy belonging to empty space itself. Empty does not mean nothing.",
+		"It isn't a blunder. It just isn't the same everywhere.\n\nHere, Λ runs thin. Where it's thin, the geometry gives.\n\nEinstein and Rosen, 1935: a bridge in the equations.\nEverett, 1957: relative states.\nDifferent ways of thinking about more than the world we see.\n\nOn 2.14 I can hear the next sheet over.",
+		"Gödel, 1949: a rotating universe whose paths can come back to their own past.\n\nSome nights the next sheet over is LATER.\n\nLIGHT = BALLAST.  [Three lines under it.]\nKeep a lamp lit and you stay where you are.\n\n— Λ.L.  6/79\n\nAt the bottom, smaller: \"If Henrik calls this proof, take my name off it.\"",
 	])
 	if g.has("dad_notes_read"):
 		await mara("Dad's LAMBDA notes. I'm putting them back exactly where he left them.")
@@ -268,7 +278,8 @@ func _dads_book() -> void:
 	await mara("Dad's notes. The same capitals he did the crossword in.")
 	await mara("He wasn't listening for little green men. He was listening to empty space.")
 	await mara("'Some nights the next sheet over is later.' In 1979 he already knew.")
-	await mara("And LIGHT = BALLAST. Light holds you where you are. Dad worked that out before any of us.")
+	await mara("And LIGHT = BALLAST, with three lines under it. That one he tested.")
+	await mara("'If Henrik calls this proof, take my name off it.' I wish you'd said that to Henrik.")
 	objective()
 
 
@@ -280,11 +291,11 @@ func _desk_leg() -> void:
 		return
 	await narrate("She kneels, and unscrews the foot cap on the left rear leg of Sollen's desk.")
 	Audio.sfx("keys", -6.0)
-	await narrate("The transmitter key drops out on its lanyard.")
+	await narrate("The transmitter key drops out on its lanyard. A scrap of paper comes with it: \"H.S. — Lost is safer than available.\"")
 	g.add_item("transmit_key")
 	g.set_flag("key_taken")
 	hud.toast("Got: Transmit key")
-	await mara("The key. Right where 2031 said.")
+	await mara("The key. Right where 2031 said. Henrik hid it himself.")
 	await narrate("She checks the dial. The needle won't settle on 2031 any more. It slides past.")
 	await mara("That future needed the key lost. I took it.")
 	await say("JUNE (TUNER)", "Then it's a different song now.")
@@ -295,14 +306,18 @@ func _cassette() -> void:
 	if GameState.has("heard_cassette"):
 		await mara("I can't listen to it again. Not tonight.")
 		return
-	await narrate("A cassette in the deck. The label, in Sollen's hand: \"LIND / 1980.\"")
+	await narrate("A cassette in the deck. The label, in Sollen's hand: \"LIND (THE BOY'S) / 1980.\"")
 	Audio.sfx("click", -6.0)
 	Audio.play_loop("tape_hiss", -16.0, 0.3)
 	await wait(0.8)
-	await say("TOMAS (TAPE)", "Test, test. October twelfth, 1980. This is Tomas Lind, no call sign yet.")
-	await say("TOMAS (TAPE)", "If you're hearing this, I tuned it right. It's not static out there. It's other us.")
-	await say("TOMAS (TAPE)", "It only works in the dark. Like developing photos. Any light, and it just... holds you where you are.")
-	await say("TOMAS (TAPE)", "I'm keeping the radio in my box. Don't tell Mara.")
+	await say("TOMAS (TAPE)", "Test, test. October twelfth, 1980. Tomas Lind, still no call sign.")
+	await say("TOMAS (TAPE)", "Coal cellar: six steps to the shelf. Tonight it was eight. Same tins. Different labels.")
+	await say("TOMAS (TAPE)", "I lit Dad's inspection lamp and it stopped changing. Tried it three times.")
+	await say("TOMAS (TAPE)", "Keeping the set in my box. Don't tell Mara.")
+	Audio.sfx("click", -12.0)
+	await narrate("He stops the tape, then starts it again.")
+	Audio.sfx("click", -12.0)
+	await say("TOMAS (TAPE)", "Also. A voice can answer you and still not be talking to you. I haven't worked that one out.")
 	Audio.stop_loop("tape_hiss", 0.4)
 	Audio.sfx("click", -6.0)
 	GameState.set_flag("heard_cassette")

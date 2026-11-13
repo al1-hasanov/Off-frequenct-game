@@ -53,9 +53,22 @@ const SHOT_LINES := [
 	"coast car", "Lise picked it", "That means yes", "Blue. Zero-seven. Alive", "When did I", "until the white",
 	"Somebody breathes", "...Dad?", "first light since", "Hold on. I'm coming", "It was me he went to",
 	"Under 1991", "Station twenty-three", "lose my nerve", "what was it all for", "burned again", "Three slow knocks",
-	# v0.6.2: what Dad was listening to; Red's turnings, labelled.
-	"pressed in so hard", "same capitals", "Like the A in Dad's", "Twenty years after the road", "reads physics journals",
-	"Left: The Lunds", "Left: The farm report", "Left: A phone ringing",
+	# v0.7: the DOCX script.
+	"pressed in so hard", "same capitals", "Like the A in Dad's", "You already said that", "You still do that",
+	"You both got it wet", "Same breath, same scrape", "A week. This one's", "Shut the door gently", "Stations I've stood in",
+	"A thump", "Eighty-One goes out", "Pepper's fine", "I'm coming back. Over", "Tell me what you can feel",
+	"Everybody's got your voice", "PEPPER / BISCUIT", "It sounds better", "rails",
+	"meant to open", "take my name off it", "fallen chair", "I was thirty-one", "pulls her cuff down", "My notebook's still here",
+	"Lost is safer", "wet October grass", "Try another", "smooths the collar", "twenty years late", "Take the handle",
+	"leaving room to grow", "Park it. Pull this clear", "Down, then up. He used", "Catch his wrist", "windows remain",
+	"lifting a piano", "Later than I read it", "has split along", "Every trip I took rode", "Somebody's here",
+	"I buttoned that", "empty stool", "HELD HERE", "power switch", "high stool", "You took your time", "baby asleep",
+	"nobody reaches", "OVERNIGHT RADIO CHECKS", "red pencil H", "Come back to the control room", "lost its shadows",
+	"turns the Tuner to 07", "one foot over the threshold", "closes the cupboard", "Where's my light", "Left: A cupboard latch",
+	"Left: A dog", "Left: A typewriter", "wire-mesh partition", "tired lady", "It was me he went to", "EMERGENCY",
+	"Which dog", "Too many of you", "I can hear the pen", "I'm here.", "sitting on the control-room floor", "That's my kitchen",
+	"pushes it away", "It's tonight, Mara", "Cut Red's channel", "Please don't", "Keep your foot there", "one knock",
+	"The handle does not turn",
 ]
 
 
@@ -456,9 +469,9 @@ func _run_act2() -> void:
 	await _tap("streetlight")
 	await _wait_freq("14")
 	_expect(int(GameState.story["CROSSINGS"]) == 7, "the house with the lights off is 14, crossing 7")
-	# Every question in order (with the 2:05 challenge if Mara worked it out),
-	# then the response to the switch: confront her if Mara answered the voice.
-	var topics := 4 if GameState.has("theory_loop") else 3
+	# Every question in order (with the 2:05 challenge: Mara read Cal's board),
+	# then the response to the exchange: ask her if Mara answered the voice.
+	var topics := 4 if GameState.has("read_board") else 3
 	var kitchen: Array = []
 	for i in topics:
 		kitchen.append(0)
@@ -469,10 +482,10 @@ func _run_act2() -> void:
 	await _idle()
 	_expect(GameState.has("met_81") and GameState.has("swapped"), "met Eighty-One; the switch happened")
 	_expect(GameState.has("e81_gauze") and GameState.has("e81_tomas"), "her burned hand; she took a Tomas once (\"Mostly.\")")
-	_expect(GameState.has("pressed_81") == GameState.has("theory_loop"), "the 2:05 challenge only with the theory")
+	_expect(GameState.has("pressed_81") == GameState.has("read_board"), "the 2:05 challenge once she's read Cal's board")
 	if answered:
-		_expect(GameState.has("e81_signoff"), "Eighty-One knew the goodbye Mara said on air")
-		_expect(GameState.story.get("SWITCH") == "confront" and GameState.has("saw_blue"), "confronted her: the tape is blue")
+		_expect(GameState.has("e81_signoff"), "Eighty-One knew the goodbye Mara said on air: a password given to the room")
+		_expect(GameState.story.get("SWITCH") == "confront" and not GameState.has("saw_blue"), "asked her what she did; nothing on screen names the tape")
 	else:
 		_expect(GameState.has("kept_signoff") and not GameState.has("e81_signoff"), "she didn't hear it: Mara kept it")
 		_expect(GameState.story.get("SWITCH") == "conceal", "said nothing in the kitchen")
@@ -495,11 +508,9 @@ func _run_act2() -> void:
 	await _wait_room("diner")
 	await _tap("pantry")
 	_expect(not GameState.has("in_12"), "Ma won't let anyone into her pantry")
-	GameState.test_choices = [0]
 	await _tap("ruth")
 	_expect(GameState.has("talked_ma") and GameState.has("pie_sent"), "asked Ma for pie: she goes to the front")
-	_expect(GameState.has("signoff_wrong"), "Ma corrects the goodbye: this Mara remembers it differently")
-	_expect(Notebook.connect_notes("signoff", "signoff_wrong") == "not_me", "notebook: a life that isn't quite mine")
+	_expect(GameState.has("dog_wrong") and not GameState.has("signoff_wrong"), "one spoken mismatch: the dog. Nobody corrects the goodbye")
 	GameState.test_tune = ["H", "12"]
 	await _tap("pantry")
 	await _wait_freq("12")
@@ -513,41 +524,44 @@ func _run_act2() -> void:
 	await _wait_room("snowfield_1980")
 
 	print("  -- Act 2.6 Choice 2: ", "take Tomas" if take_tomas else "leave Tomas")
-	# Tomas's three questions, then the choice.
+	# Tomas's three questions, then the choice (and on the take path, June's door).
+	var trust := branch in ["answer", "cut"]
 	GameState.test_choices = [0, 0, 0, 0 if take_tomas else 1]
+	if take_tomas:
+		GameState.test_choices.append(0 if trust else 1)
 	GameState.test_tune = ["12", "H"]
 	_expect(GameState.has("saw_top_button") and main.room.tomas.buttoned, "this Tomas keeps his coat buttoned up: twelve's 1980, not hers")
 	await _tap("tomas")
 	_expect(GameState.has("tomas_goal"), "Tomas: he came to rescue the lady on 2.14")
 	if take_tomas:
 		await _wait_room("pike_radio", 120.0)
+		await _idle()
 		_expect(GameState.story.get("TOMAS") == "taken", "TOMAS = taken")
 		_expect(main.room.tomas.visible, "Tomas is safe at June's")
 		await _tap("tomas")
-		await _confide_if_quiet()
-		await _tap("door")
-		await _wait_room("main_street")
 	else:
 		await _wait_freq("H", 120.0)
+		await _idle()
 		_expect(GameState.story.get("TOMAS") == "left", "TOMAS = left")
 		_expect(main.room_id == "diner", "back in the 1983 pantry")
-		_expect(GameState.has("tomas12_goodbye"), "he answered their goodbye with someone else's")
+		_expect(GameState.has("tomas12_goodbye"), "Blue's goodbye; nobody corrects it")
 		_expect(not main.room.trucker.visible, "Mr. Dahl's booth is empty now")
-		await _tap("booths")
-		await _tap("ruth")
-		_expect(GameState.has("ate_pie"), "Ma made her eat")
+		_expect(GameState.has("ate_pie") and GameState.has("dish_turning"), "Ma made her eat; the dish turns; June: stop by the shop first")
 		await _tap("front_door")
 		await _wait_room("main_street")
-		if GameState.story.get("SWITCH") == "conceal":
-			await _tap("pike_door")
-			await _wait_room("pike_radio")
-			await _confide_if_quiet()
-			await _tap("door")
-			await _wait_room("main_street")
-	_expect(GameState.has("dish_turning"), "the dish is turning; June calls")
-	_expect(not main.room.couple_h2.visible, "one Mr. Lund is gone")
+		_expect(not GameState.has("lund_gone"), "Mrs. Lund waits until after June's door")
+		GameState.test_choices = [0 if trust else 1]
+		await _tap("pike_door")
+		await _wait_room("pike_radio")
+		await _idle()
+	_expect(GameState.has("june_door") and GameState.story.get("JUNE") == ("trusted" if trust else "check"), "June's door: JUNE = %s" % ("trusted" if trust else "check"))
+	_expect(GameState.has("june_card") == trust, "June's card, PEPPER / BISCUIT / ASH STREET, only if Mara told her")
+	await _tap("door")
+	await _wait_room("main_street")
+	await _idle()
+	_expect(GameState.has("dish_turning"), "the dish is turning")
+	_expect(GameState.has("lund_gone") and not main.room.couple_h2.visible and not main.room.couple_h.visible, "Mrs. Lund alone with the spare coat; the dish stopped for one clean song")
 	await _tap("couple")
-	_expect(GameState.has("lund_gone"), "Mrs. Lund: he went upstairs for a coat")
 	await _tap("bell")
 	_expect(int(GameState.story["FRACTURE"]) == 0, "the way forward never frays: FRACTURE 0")
 	_expect(int(GameState.story["CROSSINGS"]) == 10, "crossing 10")
@@ -571,16 +585,17 @@ func _run_act2() -> void:
 	_finish()
 
 
-## Act 3, start to end. The choices differ by branch: LETGO blessed (answer,
-## answer_leave) or asked (cut, cut_take); EIGHTY follow (answer), expose
-## (cut) or force (answer_leave, cut_take). The exhibits in 2031 are seen in a
-## different order in each half, and the cut run takes the feed cabin once
-## with nothing on the needle (+2 FRACTURE).
+## Act 3, start to end. The choices differ by branch: LETGO life (answer,
+## answer_leave) or asked (cut, cut_take); Choice 3 cut (answer, cut_take) or
+## keep (cut, answer_leave). The exhibits in 2031 are seen in a different
+## order in each half, and the cut run takes the feed cabin once with nothing
+## on the needle (+2 FRACTURE).
 func _run_act3() -> void:
 	var g := GameState
 	print("  -- Act 3.1 the 2.14 chain")
 	await _use("flashlight_cold", "boiler")
 	_expect(g.has("batteries_warm") and g.has_light(), "warmed the batteries on the boiler")
+	_expect(g.has("saw_plaster") and g.has("saw_gap"), "Blue sees the damp patch and the notebook-shaped gap for herself")
 	await _go_tap("stairs", "east_corridor")
 	await _go_tap("fire_doors", "corridor")
 	await _go_tap("control_door", "control_room")
@@ -595,12 +610,12 @@ func _run_act3() -> void:
 	await _go_tap("east_wing", "east_corridor")
 	await _go_tap("office_door", "sollen_office")
 	await _tap("logbook")
-	_expect(g.has("chain_known") and g.has_item("chain_sheet"), "Dad's diagram in Sollen's log: Λ.L. 10/79")
+	_expect(g.has("chain_known") and g.has_item("chain_sheet") and g.has("meant_to_open"), "Dad's diagram in Sollen's log, and the margin: it is meant to open")
 	_expect(Story.hint("sollen_office", g.frequency).contains("Optional: the black textbook"), "hint: the textbook, optional, while unread")
 	await _tap("book")
 	_expect(not Story.hint("sollen_office", g.frequency).contains("Optional"), "hint: no optional clue once the notes are read")
 	_expect(g.has("dad_notes_read") and _noted("dad_notes") and _noted("dad_bridge"), "Dad's GRAVITATION on Sollen's shelf, his LAMBDA notes inside")
-	_expect(Notebook.connect_notes("dad_bridge", "tape_lind") == "other_us", "notebook: every branch is real; other us")
+	_expect(Notebook.connect_notes("dad_bridge", "tape_lind") == "other_us", "notebook: the next sheet over; a voice can answer you")
 	await _go_tap("door", "east_corridor")
 	await _go_tap("fire_doors", "corridor")
 	await _go_tap("control_door", "control_room")
@@ -617,16 +632,15 @@ func _run_act3() -> void:
 	var crossings := int(g.story.CROSSINGS)
 	var fracture := int(g.story.FRACTURE)
 	await _go_tap("ladder", "dish")
-	_expect(g.era == "2031" and g.has("been_2031"), "through the feed cabin into 2031")
+	_expect(g.era == "2031" and g.has("been_2031") and g.has("heard_visitors"), "through the feed cabin into 2031: the whispering visitors")
 	_expect(int(g.story.CROSSINGS) == crossings + 1 and int(g.story.FRACTURE) == fracture, "a trip through the cabin is a crossing, never FRACTURE")
-	await _tap("visitors")
 	await _go_tap("doors", "visitor_center")
 	g.test_choices = [0]
 	await _tap("cal")
 	_expect(g.has("ruth_tape") and g.has_item("cassette_2031"), "Cal finds Ma's last night on tape and makes a copy")
 	await _tap("equation")
-	_expect(g.has("museum_lambda") and not g.has("silence_2031") and main.room_id == "visitor_center", "Einstein's Λ on the wall: what the dish was listening for")
-	_expect(Notebook.connect_notes("museum_lambda", "dad_notes") == "dark_energy", "notebook: Dad's Λ is dark energy")
+	_expect(g.has("museum_lambda") and not g.has("silence_2031") and main.room_id == "visitor_center", "the optional panel: what was the dish listening for?")
+	_expect(Notebook.connect_notes("museum_lambda", "dad_notes") == "dark_energy", "notebook: Dad's Λ and the museum's")
 	_mark("3.3", "dish", "wake")
 	var before: Node = main.room
 	for id in (["transcript", "desk", "study", "plaque"] if answered else ["plaque", "study", "transcript", "desk"]):
@@ -634,26 +648,24 @@ func _run_act3() -> void:
 		if main.room != before:
 			break
 	await _wait_until(func() -> bool: return main.room != before and main.room_id == "dish" and g.era == "", "back from 2031")
-	_expect(g.has("knows_key") and g.has("anders_exhibit") and g.has("cal_plaque"), "the desk leg, Dad's photograph, the plaque")
+	_expect(g.has("knows_key") and g.has("drew_foot_cap") and g.has("cal_signed") and g.has("cal_plaque"), "the foot cap drawn; Cal signed under a sentence he hadn't written; the plaque")
 	_expect(g.has("silence_2031") and not g.has_item("cassette_2031") and g.has("cassette_faded"), "2:14 PM, the Silence; the cassette fades on the way back")
+	_expect(g.has("note_futures") and _noted("note_futures"), "the notebook: things from a projected year fade; what she wrote stays")
 	_expect(Notebook.connect_notes("body_tape", "red_tape_cal") == "not_hers", "notebook: her girl used red tape; the body wore blue")
+	if g.has("transcript_seen"):
+		_expect(Notebook.connect_notes("signature", "transcript") == "same_room", "notebook: the chair and the clicks, in our control room")
 
 	print("  -- Act 3.3 the desk and the chalkboard")
 	await _go_tap("doors", "lobby")
 	await _go_tap("corridor_door", "corridor")
-	await _go_tap("east_wing", "east_corridor")
-	await _go_tap("office_door", "sollen_office")
-	_expect(not main.room.hotspot_enabled(main.room.get_hotspot("desk_leg")) or not g.has("chalk_2031"), "the desk leg waits for the chalkboard")
-	await _go_tap("door", "east_corridor")
-	await _go_tap("fire_doors", "corridor")
 	await _go_tap("control_door", "control_room")
 	await _tap("chalkboard")
-	_expect(g.has("chalk_2031") and g.has("saw_oct25"), "SILENCE: 2031, beside 2.14 RUN, OCT 25")
+	_expect(g.has("chalk_2031") and g.has("saw_oct25") and g.has("chart_2031"), "SILENCE: 2031, beside 2.14 RUN, OCT 25; 2031 ticked on the chart")
 	await _go_tap("door", "corridor")
 	await _go_tap("east_wing", "east_corridor")
 	await _go_tap("office_door", "sollen_office")
 	await _tap("desk_leg")
-	_expect(g.has_item("transmit_key") and Act3.next_future() == "", "the key, out of the desk leg; the needle slides past 2031")
+	_expect(g.has_item("transmit_key") and Act3.next_future() == "" and _noted("lost_safer"), "the key and Henrik's scrap: lost is safer than available")
 	if branch == "cut":
 		await _go_tap("door", "east_corridor")
 		await _go_tap("fire_doors", "corridor")
@@ -678,127 +690,89 @@ func _run_act3() -> void:
 	await _go_tap("front_door", "dish")
 	_mark("3.4", "dish", "arrive")
 	await _go_tap("ladder", "dish")
-	_expect(g.era == "2009", "2009")
-	await _tap("graffiti")
-	await _tap("lunds")
-	_expect(g.has("lund_count"), "the count at the lamp line: down, then up, dear")
-	await _tap("tomas")
-	_expect(g.has("tomas09_met"), "Tomas at forty, outside the line")
-	await _tap("padlock")
-	_expect(Story.hint("dish", g.frequency).contains("Optional: the papers on Tomas's hut door"), "hint: the papers on his door, optional")
-	await _tap("hut_papers")
-	_expect(g.has("big_rip") and _noted("big_rip"), "Tomas's door: dark energy, 1999; the Big Rip, 2003")
-	await _go_tap("chute", "basement_2009")
-	await _tap("light")
-	await _tap("light")
-	_expect(int(main.room.get("stage")) == 2, "followed his lamp to the boiler")
+	_expect(g.era == "2009" and main.room.env().season == "autumn", "2009: wet October grass")
+	await _tap("rope")
+	await _tap("poster")
+	_expect(not main.room.hotspot_enabled(main.room.get_hotspot("tomas")), "the rope's across the path until Mrs. Lund lifts it")
+	await _tap("lund")
+	_expect(g.has("lund_gate") and main.room.rope_up, "name, hands, the empty chair: she lifts the rope")
 	_mark("3.5", "dish", "wake")
 	before = main.room
-	await _tap("cavity")
+	await _tap("tomas")
 	await _wait_until(func() -> bool: return main.room_id == "dish" and g.era == "" and not main.is_busy(), "back from 2009")
-	_expect(g.has("knows_tin") and g.has("woke_2009"), "the T.L. tin behind the boiler; the coupling glows at 2:14")
+	_expect(g.has("tomas09_met") and g.has("coupling_drawn") and g.has("held_handle"), "the coupling: park it, pull it clear, latch it; she held the handle with him")
+	_expect(g.has("woke_2009"), "1983, gripping something that isn't there")
+	_expect(not g.has("knows_tin") and not g.has("big_rip"), "he doesn't reveal the tin; no 2009 papers")
 
-	print("  -- Act 3.5 Tomas's notebook")
+	print("  -- Act 3.5 what the light can hold")
 	await _go_tap("doors", "lobby")
 	await _go_tap("corridor_door", "corridor")
-	await _go_tap("east_wing", "east_corridor")
-	await _tap("axe_case")
-	_expect(g.has_item("fire_axe"), "the fire axe")
-	await _go_tap("basement_door", "basement")
-	await _use("fire_axe", "plaster")
-	_expect(g.has("wall_broken") and g.has_item("station_log") and g.has("notebook_read"), "wet plaster, the tin, Tomas's STATION LOG")
-	_expect(Notebook.connect_notes("day1_whistle", "lund_whistle") == "dad_whistle", "notebook: Dad whistled down, then up")
-	await _go_tap("stairs", "east_corridor")
-	await _go_tap("fire_doors", "corridor")
 	await _go_tap("control_door", "control_room")
-	await _tap("drive")
-	_expect(g.has("dish_parked"), "parked the dish")
+	_expect(g.has("chalk_2009") and g.has("chart_2009"), "she writes 2009 under 2031: the crooked digit, later than she read it")
 	await _go_tap("door", "corridor")
-	var cr := int(g.story.CROSSINGS)
-	var fr := int(g.story.FRACTURE)
-	await _tap("east_wing")
-	_expect(g.has("crossed_parked") and int(g.story.CROSSINGS) == cr + 4 and int(g.story.FRACTURE) == fr, "two crossings there and back with the dish parked: required, no FRACTURE")
-	await _go_tap("control_door", "control_room")
-	await _tap("chart")
-	_expect(g.has("strip_flat"), "the flat strip")
+	await _go_tap("east_wing", "east_corridor")
+	await _go_tap("basement_door", "basement")
+	_expect(g.has("plaster_split"), "the boiler knocks; the plaster has split")
+	await _tap("plaster")
+	await _wait_until(func() -> bool: return main.room_id == "control_room" and not main.is_busy(), "June's shop over the Tuner, then the console")
+	_expect(g.has("tin_open") and g.has_item("station_log") and g.has_item("service_card"), "the tin: Day 42, Dad's service card")
+	_expect(g.has("reunion_done"), "June called: %s" % ("Ruth and the boy who isn't hers" if take_tomas else "the empty stool"))
+	_expect(g.has("tomas_wants_home") == take_tomas, "the boy wants to go back to his own mother (take path only)")
+	_expect(Notebook.connect_notes("fuse_label", "service_card") == "meant_to_open", "notebook: the fuse was meant to open")
+	_expect(Notebook.connect_notes("hold_it_still", "early_phrase") == "words_ahead", "notebook: words ahead of the people who say them")
+	_expect(Notebook.connect_notes("ruth_whistle", "tomas_whistle") == "the_whistle", "notebook: down, then up")
 	await _tap("drive")
-	await _tap("chart")
-	_expect(g.has("experiment_done") and g.has_item("chart_strips"), "the climbing strip: they match his")
-	_expect(Notebook.theories().any(func(e: Dictionary) -> bool: return e.id == "listening"), "theory: it's the dish listening")
-	_expect(Notebook.connect_notes("strips", "big_rip") == "white_rip", "notebook: the white is a small Big Rip, and the dish is pulling")
-	_expect(g.item_desc("tuner").contains("LIGHT = BALLAST"), "the Tuner's lid: Λ, LIGHT = BALLAST")
-	_expect(g.has("call_1991") and g.has("board_1991") and Act3.next_future() == "1991", "Tomas calling from 1991; 1991 on the board")
+	_expect(g.has("held_here") and not g.has("wedged") and not g.has("dish_parked"), "PARK holds; HELD HERE; then the screwdriver comes out")
+	_expect(g.has("call_1991") and Act3.next_future() == "1991", "one more: 1991 on the display")
+	_expect(Notebook.theories().any(func(e: Dictionary) -> bool: return e.id == "listening"), "theory: it's the listening")
 
 	print("  -- Act 3.6 future three: 1991")
 	await _go_tap("door", "corridor")
 	await _go_tap("lobby_door", "lobby")
 	await _go_tap("front_door", "dish")
 	_mark("3.6", "shop_1991")
-	await _go_tap("ladder", "shop_1991")
-	_expect(g.has("tomas91_met") and g.era == "1991", "1991, Pike & Lind Radio")
-	_expect(main.room.tomas.kind == ("tomas_21" if take_tomas else "tomas_24"), "Tomas is %s" % ("21, with June" if take_tomas else "24, with Lise"))
-	await _tap("other")
-	await _tap("tomas")
-	_expect(Story.hint("shop_1991", g.frequency).contains("Optional: the photocopy"), "hint: the photocopy, optional")
-	await _tap("photocopy")
-	_expect(not Story.hint("shop_1991", g.frequency).contains("Optional"), "hint: no optional clue once it's read")
-	_expect(g.has("wormhole_paper") and _noted("wormhole_paper"), "Tomas's pegboard: wormholes, time machines, 1988")
-	_expect(Notebook.connect_notes("wormhole_paper", "relay") == "time_door", "notebook: Dad's relay found the way through")
-	await _tap("shelves")
-	await _go_tap("door", "main_street_1991")
-	await _tap("news")
-	await _tap("video")
-	await _tap("car")
-	_expect(g.has("street_done"), "the street, eight years on: his car, the white at the end")
-	await _go_tap("pike_door", "shop_1991")
-	await _tap("bench")
-	_expect(g.has("held_light"), "held the light; he fixed it, mostly")
-	var bless := branch in ["answer", "answer_leave"]
-	g.test_choices = [0 if bless else 1]
 	_mark("3.7", "red_dark")
-	before = main.room
-	await _tap("tomas")
-	await _wait_until(func() -> bool: return main.room_id == "red_dark" and not main.is_busy(), "into the dark")
-	_expect(g.has("roll_call") and g.story.get("LETGO") == ("blessed" if bless else "asked"), "the roll call; LETGO = %s" % ("blessed" if bless else "asked"))
-	_expect(g.has("playing_red") and g.inventory.is_empty() and main.room.player.wrist_tape.is_equal_approx(Color("b8322c")), "now Red: red tape, empty pockets")
-
-	print("  -- Act 3.7 Red")
-	await _tap("coats")
-	_expect(Story.hint("red_dark", g.frequency).contains("Listen"), "hint, in the basement: tap Listen")
-	await _tap("listen")
-	_expect(Story.hint("red_dark", g.frequency).contains("Turning 1 of 3") and Story.hint("red_dark", g.frequency).contains("ahead"), "hint, turning 1: the farm report is ahead")
-	await _tap("left")
-	_expect(int(main.room.get("stage")) == 1, "a wrong sound walks her back round to the stairs")
-	await _tap("ahead")
-	_expect(Story.hint("red_dark", g.frequency).contains("Turning 2 of 3") and Story.hint("red_dark", g.frequency).contains("on the left"), "hint, turning 2: on the left")
-	await _tap("left")
-	_expect(g.has("red_whistle") and int(main.room.get("stage")) == 3, "the third turning: a whistle, down then up")
-	_expect(Story.hint("red_dark", g.frequency).contains("June's voice") and Story.hint("red_dark", g.frequency).contains("on the right"), "hint, turning 3: on the right, June's voice")
-	await _go_tap("right", "pike_dark")
-	_expect(g.frequency == "44", "Pike Radio in 44, the power out")
-	g.test_choices = [1, 0]
-	await _tap("batteries")
-	_expect(g.has("red_lamp"), "a spark, then fat to fat: the pilot lamp")
-	_mark("3.8", "dish", "wake")
-	await _tap("rig")
-	await _wait_until(func() -> bool: return main.room_id == "dish" and not main.is_busy(), "back to Blue")
-	_expect(g.has("red_called") and g.has("red_done") and not g.has("playing_red") and g.has_item("tuner"), "Red's call goes three years back; Blue's pockets back")
-	_expect(g.frequency == "H" and g.era == "", "Blue, in the feed cabin, 1983")
-
-	print("  -- Act 3.8 Eighty-One")
-	var eighty: String = {"answer": "follow", "cut": "expose"}.get(branch, "force")
-	g.test_choices = {"follow": [0], "expose": [1, 0], "force": [1, 1]}[eighty]
+	var life := branch in ["answer", "answer_leave"]
+	var cut3 := branch in ["answer", "cut_take"]
+	g.test_choices = [0 if life else 1]
+	await _tap("ladder")
+	await _wait_until(func() -> bool: return main.room_id == "dish" and g.era == "" and g.has("woke_1991") and not main.is_busy(), "back from 1991")
+	_expect(g.has("tomas91_met") and g.story.get("LETGO") == ("life" if life else "asked"), "1991: LETGO = %s" % ("life" if life else "asked"))
+	_expect(g.has("named_blue") and g.has("roster_done"), "June's roster: after Ash Street, H's set answered as 07")
+	_expect(_noted("roster") and _noted("red_h"), "the roster and the red pencil H, in the notebook")
 	await _go_tap("doors", "lobby")
 	await _go_tap("corridor_door", "corridor")
 	await _tap("control_door")
+	await _wait_until(func() -> bool: return main.room_id == "red_dark" and not main.is_busy(), "the 07 cupboard, then the dark")
+	_expect(g.has("cupboard_07") and g.has("chart_1991") and g.has("board_1991"), "07 on the Tuner: Ma, Biscuit; one foot over the threshold, then she closes it")
+	_expect(g.has("playing_red") and g.inventory.is_empty() and main.room.player.wrist_tape.is_equal_approx(Color("b8322c")), "now Red: red tape, no light, no dial")
+
+	print("  -- Act 3.7 Red")
+	_expect(Story.hint("red_dark", g.frequency).contains("Turning 1 of 3") and Story.hint("red_dark", g.frequency).contains("on the left"), "hint, turning 1: the cupboard latch, on the left")
+	await _tap("ahead")
+	_expect(int(main.room.get("stage")) == 1, "a wrong sound walks her back to the tape on the floor")
+	await _tap("left")
+	_expect(Story.hint("red_dark", g.frequency).contains("Turning 2 of 3") and Story.hint("red_dark", g.frequency).contains("on the right"), "hint, turning 2: the engine, on the right")
+	await _tap("right")
+	_expect(Story.hint("red_dark", g.frequency).contains("whistle"), "hint, turning 3: the whistle")
+	await _tap("ahead")
+	_expect(int(main.room.get("stage")) == 4, "the mesh, the lamp, the microphone")
+	await _tap("mic")
+	_expect(g.has("red_knows") and g.has("red_strip") == answered, "it was me he went to; the chart strip only if she kept it")
+	_mark("3.8", "control_room", "after_red")
+	g.test_choices = [0 if cut3 else 1]
+	await _tap("door")
 	await _wait_room("end_card", 240.0)
-	_expect(g.has("e81_told") and g.has("board_tonight"), "TONIGHT on the board; station twenty-three")
-	_expect(g.story.get("EIGHTY") == eighty and g.has("act3_done"), "Choice 3: EIGHTY = %s; three knocks" % eighty)
-	if eighty == "follow":
-		_expect(g.has_item("revolver"), "she hands over the revolver, handle first")
-	if eighty == "force":
-		_expect(g.has("bank_burst") and Act3.next_future() == "", "the forward bank burst: no more futures")
-	for id in ["dark_energy", "other_us", "white_rip", "time_door"]:
+
+	print("  -- Act 3.8 the woman beside the body")
+	_expect(g.has("red_done") and g.has("red_tape_hinge") and not g.has("playing_red"), "Red at the door, foot against it; back to Blue")
+	_expect(g.has("e81_confessed") and g.has("saw_photo") and g.has_item("blue_set") and g.has("pistol_away"), "her set back; the photograph; the confession; the pistol out of reach")
+	_expect(g.story.get("EIGHTY") == ("cut" if cut3 else "keep") and g.has("act3_done"), "Choice 3: %s; three knocks at the service door" % ("cut" if cut3 else "keep"))
+	if cut3:
+		_expect(g.has("lead_pulled") and g.has("dish_parked"), "the lead pulled, the dish wedged in PARK")
+	else:
+		_expect(not g.has("lead_pulled") and not g.has("dish_parked") and g.has("white_corner"), "the channel open, AUTO running, the white takes the corner")
+	for id in ["dark_energy", "other_us", "meant_to_open", "words_ahead", "the_whistle"]:
 		_expect(g.has("theory_" + id), "theory kept to the end: " + id)
 	_expect(Notebook.LINKS.size() == 12, "twelve theories to work out")
 
@@ -1044,14 +1018,12 @@ const ERA_VISITS := [
 	["dish", "2031", "x", []],
 	["visitor_center", "2031", "x", []],
 	["dish", "2009", "x", []],
-	["basement_2009", "2009", "chute", []],
-	["shop_1991", "1991", "x", ["coffee_1991"], "taken"],
-	["main_street_1991", "1991", "x", []],
-	["shop_1991", "1991", "x", [], "left"],
-	["main_street_1991", "1991", "x", []],
-	["red_dark", "", "x", ["playing_red"]],
-	["pike_dark", "", "x", ["red_lamp"]],
-	["control_room", "", "x", ["act3", "cr3_seen", "patched", "chalk_2031", "board_2009", "board_1991", "board_tonight", "red_done"]],
+	["dish", "2009", "x", ["lund_gate"]],
+	["shop_1991", "1991", "x", [], "taken"],
+	["shop_1991", "1991", "x", ["lise_out"], "left"],
+	["red_dark", "", "x", ["playing_red", "red_woke"]],
+	["red_dark", "", "x", ["playing_red", "red_woke", "red_mic", "red_tape_hinge"]],
+	["control_room", "", "x", ["act3", "cr3_seen", "patched", "chalk_2031", "board_2009", "chalk_2009", "board_1991", "chart_2031", "chart_2009", "chart_1991", "held_here", "red_done"]],
 ]
 
 
@@ -1581,12 +1553,3 @@ func _notebook_checks() -> void:
 	main.hud.close_notebook()
 	await get_tree().process_frame
 	_expect(not main.hud.notebook_layer.visible, "the notebook closes")
-
-
-## If Mara said nothing in the kitchen, she can tell June (story SWITCH).
-func _confide_if_quiet() -> void:
-	if GameState.story.get("SWITCH") != "conceal":
-		return
-	GameState.test_choices = [0]
-	await _tap("june")
-	_expect(GameState.story.get("SWITCH") == "confide" and GameState.has("told_june"), "told June: she remembers a Tuesday that never happened")
